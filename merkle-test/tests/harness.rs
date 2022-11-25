@@ -4,9 +4,9 @@ use sha3::{Digest, Keccak256};
 use std::{fs::File, io::Read};
 
 // Load abi from json
-abigen!(MyContract, "out/debug/merkle-test-abi.json");
+abigen!(TestStorageMerkleTree, "out/debug/merkle-test-abi.json");
 
-async fn get_contract_instance() -> (MyContract, ContractId) {
+async fn get_contract_instance() -> (TestStorageMerkleTree, ContractId) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -31,7 +31,7 @@ async fn get_contract_instance() -> (MyContract, ContractId) {
     .await
     .unwrap();
 
-    let instance = MyContract::new(id.clone(), wallet);
+    let instance = TestStorageMerkleTree::new(id.clone(), wallet);
 
     (instance, id.into())
 }
@@ -83,11 +83,11 @@ async fn satisfies_test_cases() {
         }
 
         // Ensure the count is correct
-        let count = test_merkle.methods().get_count().call().await.unwrap();
+        let count = test_merkle.methods().get_count().simulate().await.unwrap();
         assert_eq!(count.value, case.leaves.len() as u64);
 
         // Ensure it produces the correct root
-        let root = test_merkle.methods().root().call().await.unwrap();
+        let root = test_merkle.methods().root().simulate().await.unwrap();
         assert_eq!(root.value, case.expected_root);
 
         // Ensure it can verify each of the leaves' proofs
@@ -96,7 +96,7 @@ async fn satisfies_test_cases() {
             let proof_root = test_merkle
                 .methods()
                 .branch_root(proof.leaf, path, proof.index)
-                .call()
+                .simulate()
                 .await
                 .unwrap();
             assert_eq!(proof_root.value, case.expected_root);
