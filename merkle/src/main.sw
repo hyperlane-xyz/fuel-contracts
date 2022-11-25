@@ -5,6 +5,7 @@ use std::{constants::ZERO_B256, hash::{keccak256, sha256}, storage::{get, store}
 // The depth of the merkle tree.
 // Forc has a bug that thinks this is unused when it's only used
 // in while loop conditions. You can safely ignore this.
+// Issue tracking this: https://github.com/FuelLabs/sway/issues/3425
 const TREE_DEPTH: u64 = 32;
 // The max number of leaves in the tree.
 // Sway doesn't let you exponentiate in a const - this is the

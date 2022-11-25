@@ -104,7 +104,7 @@ async fn satisfies_test_cases() {
     }
 }
 
-// Kludge to deserialize into Bits256
+/// Kludge to deserialize into Bits256
 fn deserialize_bits_256<'de, D>(deserializer: D) -> Result<Bits256, D::Error>
 where
     D: Deserializer<'de>,
@@ -114,7 +114,7 @@ where
     Bits256::from_hex_str(&buf).map_err(serde::de::Error::custom)
 }
 
-// Kludge to deserialize into Vec<Bits256>
+/// Kludge to deserialize into Vec<Bits256>
 fn deserialize_vec_bits_256<'de, D>(deserializer: D) -> Result<Vec<Bits256>, D::Error>
 where
     D: Deserializer<'de>,
@@ -130,7 +130,8 @@ where
     Ok(vec)
 }
 
-/// Reads merkle test case json file and returns a vector of `MerkleTestCase`s
+/// Reads merkle test case json file and returns a vector of `TestCase`s
+/// The test case is taken from https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/vectors/merkle.json
 fn get_test_cases() -> Vec<TestCase> {
     let mut file = File::open("./tests/test_cases.json").unwrap();
     let mut data = String::new();
@@ -138,9 +139,9 @@ fn get_test_cases() -> Vec<TestCase> {
     serde_json::from_str(&data).unwrap()
 }
 
-// See https://eips.ethereum.org/EIPS/eip-191
-// This is required because the leaf strings in the merkle test cases
-// are hashed using ethers.utils.hashMessage (https://eips.ethereum.org/EIPS/eip-191)
+/// See https://eips.ethereum.org/EIPS/eip-191
+/// This is required because the leaf strings in the merkle test cases
+/// are hashed using ethers.utils.hashMessage (https://eips.ethereum.org/EIPS/eip-191)
 fn to_eip_191_payload(message: &str) -> String {
     format!(
         "\x19Ethereum Signed Message:\n{:}{:}",
