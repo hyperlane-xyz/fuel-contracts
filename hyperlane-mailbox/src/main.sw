@@ -13,10 +13,13 @@ abi Mailbox {
     fn dispatch(destination_domain: u32, recipient: b256, message_body: Vec<u8>) -> b256;
 
     #[storage(read)]
-    fn count() -> u64;
+    fn count() -> u32;
 
     #[storage(read)]
     fn root() -> b256;
+
+    #[storage(read)]
+    fn latest_checkpoint() -> (b256, u32);
 }
 
 // Sway doesn't allow pow in a const.
@@ -43,7 +46,7 @@ impl Mailbox for Contract {
 
         let message = Message {
             version: VERSION,
-            nonce: count(), // TODO: how to explicitly cast to u32 to suppress the warning?
+            nonce: count(),
             origin_domain: LOCAL_DOMAIN,
             sender: contract_id().into(),
             destination_domain,
@@ -65,7 +68,7 @@ impl Mailbox for Contract {
     }
 
     #[storage(read)]
-    fn count() -> u64 {
+    fn count() -> u32 {
         count()
     }
 
@@ -73,10 +76,17 @@ impl Mailbox for Contract {
     fn root() -> b256 {
         root()
     }
+
+    #[storage(read)]
+    fn latest_checkpoint() -> (b256, u32) {
+        (root(), count())
+    }
 }
 
 #[storage(read)]
-fn count() -> u64 {
+fn count() -> u32 {
+    // Downcasting to u32 is implicit but generates a warning.
+    // Consider changing the merkle tree to use u32 instead to avoid this altogether.
     storage.merkle_tree.get_count()
 }
 
