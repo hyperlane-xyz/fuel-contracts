@@ -19,6 +19,15 @@ abi Mailbox {
     fn root() -> b256;
 }
 
+// Sway doesn't allow pow in a const.
+// Equal to 2 KiB, or 2 * (2 ** 10).
+const MAX_MESSAGE_BODY_BYTES: u64 = 2048;
+const VERSION: u8 = 0;
+// TODO: can this be set at compile / deploy time?
+// https://fuellabs.github.io/sway/v0.31.1/basics/variables.html#configuration-time-constants
+// "fuel" in bytes
+const LOCAL_DOMAIN: u32 = 0x6675656cu32;
+
 storage {
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
 }
@@ -30,34 +39,48 @@ impl Mailbox for Contract {
         recipient: b256,
         message_body: Vec<u8>,
     ) -> b256 {
+        require(message_body.len() <= MAX_MESSAGE_BODY_BYTES, "msg too long");
+
         let message = Message {
-            version: 1u8,
-            nonce: 2u32,
-            origin_domain: 3u32,
+            version: VERSION,
+            nonce: count(), // TODO: how to explicitly cast to u32 to suppress the warning?
+            origin_domain: LOCAL_DOMAIN,
             sender: contract_id().into(),
             destination_domain,
             recipient,
             body: message_body,
         };
 
-        // TODO: correctly encode and hash the message to get the correct leaf
-        storage.merkle_tree.insert(0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb);
+        // TODO: correctly encode and hash the message to get the correct message id.
+        // https://github.com/hyperlane-xyz/fuel-contracts/issues/2
+        let message_id = 0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb;
 
-        // TODO: correctly encode the message.
+        storage.merkle_tree.insert(message_id);
+
         // TODO: investigate how to log dynamically sized data (because of the message body).
+        // https://github.com/hyperlane-xyz/fuel-contracts/issues/3
         log(message);
 
-        // TODO: return the actual message ID.
-        std::constants::ZERO_B256
+        message_id
     }
 
     #[storage(read)]
     fn count() -> u64 {
-        storage.merkle_tree.get_count()
+        count()
     }
 
     #[storage(read)]
     fn root() -> b256 {
-        storage.merkle_tree.root()
+        root()
     }
+}
+
+#[storage(read)]
+fn count() -> u64 {
+    storage.merkle_tree.get_count()
+}
+
+#[storage(read)]
+fn root() -> b256 {
+    storage.merkle_tree.root()
 }

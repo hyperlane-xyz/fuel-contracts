@@ -34,7 +34,7 @@ async fn get_contract_instance() -> (Mailbox, ContractId) {
 }
 
 #[tokio::test]
-async fn test_dispatch() {
+async fn test_max_message_body() {
     let (_mailbox, _id) = get_contract_instance().await;
 
     // TODO
