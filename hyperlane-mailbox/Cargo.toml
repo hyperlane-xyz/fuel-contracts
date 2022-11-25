@@ -1,6 +1,6 @@
 [package]
 name = "hyperlane-mailbox"
-description = "A cargo-generate template for Rust + Sway integration testing."
+description = "A Sway implementation of the Hyperlane Mailbox contract"
 version = "0.1.0"
 edition = "2021"
 authors = ["Trevor Porter <trkporter@ucdavis.edu>"]
