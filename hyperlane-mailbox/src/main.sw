@@ -7,7 +7,7 @@ use std::{call_frames::contract_id, logging::log};
 use merkle::StorageMerkleTree;
 use message::Message;
 
-// TODO move the abi declaration to its own library?
+// TODO move the abi declaration to its own library to follow best practice.
 abi Mailbox {
     #[storage(read, write)]
     fn dispatch(destination_domain: u32, recipient: b256, message_body: Vec<u8>) -> b256;
@@ -40,10 +40,14 @@ impl Mailbox for Contract {
             body: message_body,
         };
 
+        // TODO: correctly encode and hash the message to get the correct leaf
         storage.merkle_tree.insert(0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb);
 
+        // TODO: correctly encode the message.
+        // TODO: investigate how to log dynamically sized data (because of the message body).
         log(message);
 
+        // TODO: return the actual message ID.
         std::constants::ZERO_B256
     }
 

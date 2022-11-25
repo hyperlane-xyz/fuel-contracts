@@ -2,6 +2,7 @@ contract;
 
 use merkle::StorageMerkleTree;
 
+// A contract to test the StorageMerkleTree.
 abi TestStorageMerkleTree {
     #[storage(read, write)]
     fn insert(leaf: b256);
