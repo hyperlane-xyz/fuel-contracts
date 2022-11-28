@@ -49,7 +49,8 @@ forc fmt
 ## Fuel / Sway resources
 
 * [Sway book](https://fuellabs.github.io/sway/latest) - recommend reading this in its entirety
-* [Fuel docs](https://docs.fuel.sh/) - high level introduction, `Concepts` section is particularly useful
+* [Fuel book](https://fuellabs.github.io/fuel-docs/master/) - Higher level intro to Fuel
+* [Fuel docs](https://docs.fuel.sh/) - `Concepts` section is the most useful part here. Not 100% sure if this is describing v1 or v2 of Fuel though.
 * [Fuel specs](https://fuellabs.github.io/fuel-specs/master/fuel-specs.html) - rather specific, good for searching for specific things
 * [Sway std lib](https://github.com/FuelLabs/sway/tree/master/sway-lib-std/) - great for existing Sway patterns & understanding the std lib
 * [Fuel Rust SDK book](https://fuellabs.github.io/fuels-rs/v0.31.1/index.html) - good for understanding how to interact with Fuel/Sway contracts via the Rust SDK

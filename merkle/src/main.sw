@@ -117,8 +117,6 @@ impl StorageMerkleTree {
 
         let mut node = leaf;
 
-        let foo = TREE_DEPTH;
-
         let mut i = 0;
         while i < TREE_DEPTH {
             if (count & 1) == 1 {
