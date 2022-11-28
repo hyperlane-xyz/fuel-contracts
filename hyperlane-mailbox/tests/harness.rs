@@ -82,7 +82,7 @@ async fn test_dispatch_returns_id() {
         .await
         .unwrap();
 
-    // TODO change when message IDs are calcualted correctly
+    // TODO change when message IDs are calculated correctly
     // https://github.com/hyperlane-xyz/fuel-contracts/issues/2
     assert_eq!(
         dispatch_call.value,
