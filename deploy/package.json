@@ -11,7 +11,7 @@
     "deploy": "yarn build-contracts && yarn generate-types && ts-node ./src/deploy.ts",
     "generate-types": "yarn exec -- fuelchain --target=fuels --out-dir=types ../hyperlane-mailbox/out/debug/hyperlane-mailbox-abi.json",
     "local-node": "fuel-core run --chain local_testnet --db-type in-memory --dev-keys true",
-    "prettier": "prettier --write ./src"
+    "prettier": "prettier --write ./src tsconfig.json"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.0.0",
