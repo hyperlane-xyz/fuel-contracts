@@ -14,6 +14,11 @@ Be extra sure you've installed `fuel-core`, which is the Fuel blockchain node th
 cargo install fuel-core
 ```
 
+Install all dependencies:
+```
+yarn
+```
+
 ## Deploying contracts locally
 
 In one terminal, start the local node. This will run a `fuel-core` command to run a local node with pre-set keys that will expose a GraphQL endpoint at `http://localhost:4000`:
@@ -29,3 +34,9 @@ yarn deploy
 ```
 
 This will output the contract ID of the deployed contracts. Contract IDs are deterministic but change if there are any changes to the contract's bytecode. Keep this in mind!
+
+## Prettier
+
+```
+yarn prettier
+```
