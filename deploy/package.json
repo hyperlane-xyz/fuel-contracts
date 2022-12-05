@@ -1,0 +1,22 @@
+{
+  "name": "deploy",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "fuels": "^0.21.2"
+  },
+  "scripts": {
+    "build-contracts": "cd .. && ./build.sh",
+    "deploy": "yarn build-contracts && ts-node ./src/deploy.ts",
+    "generate-types": "yarn exec -- fuelchain --target=fuels --out-dir=types ../hyperlane-mailbox/out/debug/hyperlane-mailbox-abi.json",
+    "local-node": "fuel-core run --chain local_testnet --db-type in-memory --dev-keys true",
+    "prettier": "prettier --write ./src"
+  },
+  "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^4.0.0",
+    "fuelchain": "^0.21.2",
+    "prettier": "^2.8.0",
+    "typechain-target-fuels": "^0.21.2"
+  }
+}
