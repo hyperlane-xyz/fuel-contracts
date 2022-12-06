@@ -1,13 +1,12 @@
 contract;
 
 dep interface;
-dep message;
 
 use std::{call_frames::contract_id, logging::log};
 
 use interface::Mailbox;
 use merkle::StorageMerkleTree;
-use message::EncodedMessage;
+use hyperlane_message::EncodedMessage;
 
 // Sway doesn't allow pow in a const.
 // Equal to 2 KiB, or 2 * (2 ** 10).

@@ -3,17 +3,17 @@ name = 'core'
 source = 'path+from-root-A5A9AFB187495FC2'
 
 [[package]]
-name = 'merkle'
-source = 'path+from-root-9DDB9CEBDFC13552'
-dependencies = ['std']
-
-[[package]]
-name = 'merkle-test'
+name = 'hyperlane-message-test'
 source = 'member'
 dependencies = [
-    'merkle',
+    'hyperlane_message',
     'std',
 ]
+
+[[package]]
+name = 'hyperlane_message'
+source = 'path+from-root-6CA64B415D07732F'
+dependencies = ['std']
 
 [[package]]
 name = 'std'
