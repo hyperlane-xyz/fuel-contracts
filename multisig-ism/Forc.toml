@@ -5,3 +5,4 @@ license = "Apache-2.0"
 name = "multisig"
 
 [dependencies]
+merkle = { path = "../merkle" }
