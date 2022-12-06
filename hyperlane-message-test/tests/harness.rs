@@ -2,9 +2,16 @@ use ethers::{
     abi::AbiDecode,
     types::H256,
 };
-use fuels::{prelude::*, tx::ContractId};
+use fuels::{
+    core::parameters::TxParameters,
+    prelude::*,
+    tx::{ContractId, Receipt},
+};
 use hex::FromHex;
-use hyperlane_core::HyperlaneMessage as HyperlaneAgentMessage;
+use hyperlane_core::{
+    Decode,
+    HyperlaneMessage as HyperlaneAgentMessage,
+};
 
 // Load abi from json
 abigen!(TestMessage, "out/debug/hyperlane-message-test-abi.json");
@@ -39,7 +46,7 @@ async fn get_contract_instance() -> (TestMessage, ContractId) {
     (instance, id.into())
 }
 
-fn message() -> HyperlaneAgentMessage {
+fn test_messages() -> Vec<HyperlaneAgentMessage> {
     // HyperlaneAgentMessage {
     //     version: 255u8,
     //     nonce: 1234u32,
@@ -50,54 +57,118 @@ fn message() -> HyperlaneAgentMessage {
     //     body: Vec::from_hex("0123456789abcdef").unwrap(),
     // }
 
-    println!("len {:?}", Vec::from_hex("012345").unwrap());
-
-    HyperlaneAgentMessage {
-        version: u8::MAX,
-        nonce: u32::MAX,
-        origin: u32::MAX,
-        sender: H256::decode_hex("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb").unwrap(),
-        destination: u32::MAX,
-        recipient: H256::decode_hex("0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc").unwrap(),
-        body: Vec::from_hex("0123456789abcdef0123456789abcdef").unwrap(),
-    }
+    vec![
+        // Empty body
+        HyperlaneAgentMessage {
+            version: 255u8,
+            nonce: 1234u32,
+            origin: 420u32,
+            sender: H256::decode_hex("0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba").unwrap(),
+            destination: 69u32,
+            recipient: H256::decode_hex("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap(),
+            body: vec![],
+        },
+        // Very small body (2 bytes)
+        HyperlaneAgentMessage {
+            version: 255u8,
+            nonce: 1234u32,
+            origin: 420u32,
+            sender: H256::decode_hex("0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba").unwrap(),
+            destination: 69u32,
+            recipient: H256::decode_hex("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap(),
+            body: Vec::from_hex("0123").unwrap(),
+        },
+        // Small body (9 bytes)
+        HyperlaneAgentMessage {
+            version: 255u8,
+            nonce: 1234u32,
+            origin: 420u32,
+            sender: H256::decode_hex("0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba").unwrap(),
+            destination: 69u32,
+            recipient: H256::decode_hex("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap(),
+            body: Vec::from_hex("0123456789abcdef01").unwrap(),
+        },
+        // Medium body (100 bytes)
+        HyperlaneAgentMessage {
+            version: 255u8,
+            nonce: 1234u32,
+            origin: 420u32,
+            sender: H256::decode_hex("0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba").unwrap(),
+            destination: 69u32,
+            recipient: H256::decode_hex("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap(),
+            body: Vec::from_hex("0123456789abcdef0102").unwrap().repeat(10),
+        },
+        // Large body (2000 bytes)
+        HyperlaneAgentMessage {
+            version: 255u8,
+            nonce: 1234u32,
+            origin: 420u32,
+            sender: H256::decode_hex("0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba").unwrap(),
+            destination: 69u32,
+            recipient: H256::decode_hex("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap(),
+            body: Vec::from_hex("0123456789abcdef0102").unwrap().repeat(200),
+        },
+    ]
 }
 
 #[tokio::test]
 async fn test_message_id() {
     let (instance, _id) = get_contract_instance().await;
 
-    let msg = message();
+    let messages = test_messages();
 
-    let t = instance
-        .methods()
-        .log(msg.clone().into())
-        .call()
-        .await
-        .unwrap();
-    
-    println!("{:?}\n\n\n\n", t);
+    for msg in messages.into_iter() {
+        let expected_id = msg.id();
+        let id = instance
+            .methods()
+            .id(msg.into())
+            .tx_params(TxParameters::new(None, Some(100_000_000), None))
+            .simulate()
+            .await
+            .unwrap();
 
-    // let t = instance
-    //     .methods()
-    //     .try_byte_writer(msg.clone().into())
-    //     .call()
-    //     .await
-    //     .unwrap();
-    
-    // println!("byte_wrtier {:?}", t);
+        assert_eq!(
+            bits256_to_h256(id.value),
+            expected_id,
+        );
+    }
+}
 
-    let id = instance
-        .methods()
-        .id(msg.clone().into())
-        .simulate()
-        .await
-        .unwrap();
+#[tokio::test]
+async fn test_message_log() {
+    let (instance, _id) = get_contract_instance().await;
 
-    assert_eq!(
-        bits256_to_h256(id.value),
-        msg.id(),
-    );
+    let messages = test_messages();
+
+    for msg in messages.into_iter() {
+        let expected_id = msg.id();
+        let log_tx = instance
+            .methods()
+            .log(msg.into())
+            .tx_params(TxParameters::new(None, Some(100_000_000), None))
+            .simulate()
+            .await
+            .unwrap();
+
+        // The log is expected to be the second receipt
+        let log_receipt = &log_tx.receipts[1];
+        let log_data = if let Receipt::LogData { data, .. } = log_receipt {
+            data
+        } else {
+            panic!(
+                "Expected LogData receipt. Receipt: {:?}",
+                log_receipt
+            );
+        };
+
+        let recovered_message = HyperlaneAgentMessage::read_from(&mut log_data.as_slice()).unwrap();
+
+        // Assert equality of the message ID
+        assert_eq!(
+            recovered_message.id(),
+            expected_id,
+        );
+    }
 }
 
 impl From<HyperlaneAgentMessage> for Message {
