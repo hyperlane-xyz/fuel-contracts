@@ -8,9 +8,11 @@ use std::{
     logging::log,
 };
 
-use interface::Mailbox;
+use interface::{Mailbox, MessageRecipient};
 use merkle::StorageMerkleTree;
 use hyperlane_message::EncodedMessage;
+
+use multisig::{MultisigIsm, MultisigMetadata};
 
 // Sway doesn't allow pow in a const.
 // Equal to 2 KiB, or 2 * (2 ** 10).
@@ -25,6 +27,8 @@ const LOCAL_DOMAIN: u32 = 0x6675656cu32;
 storage {
     // A merkle tree that includes outbound message IDs as leaves.
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
+    delivered: StorageMap<b256, bool> = StorageMap {},
+    default_ism: ContractId = ContractId::default(),
 }
 
 impl Mailbox for Contract {
@@ -62,6 +66,24 @@ impl Mailbox for Contract {
         message.log();
 
         message_id
+    }
+
+    #[storage(read, write)]
+    fn process(metadata: MultisigMetadata, message: Message) {
+        require(message.version == VERSION, "!version");
+        require(message.destination == LOCAL_DOMAIN, "!destination");
+
+        let id = message.id();
+        require(storage.delivered.get(id) == false, "delivered");
+        storage.delivered.insert(id, true);
+
+        // TODO: defer to message.recipient.ism
+        require(storage.default_ism.verify(metadata, message), "!module");
+        abi(MessageRecipient, message.recipient).handle(message.origin, message.sender, message.body);
+
+        // TODO: investigate how to log dynamically sized data (because of the message body).
+        // https://github.com/hyperlane-xyz/fuel-contracts/issues/3
+        log(message);
     }
 
     /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.

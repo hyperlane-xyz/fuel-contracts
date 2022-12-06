@@ -1,5 +1,5 @@
 [project]
-authors = ["Trevor Porter"]
+authors = ["Trevor Porter", "Yorke Rhodes"]
 entry = "main.sw"
 license = "Apache-2.0"
 name = "hyperlane-mailbox"
@@ -7,3 +7,4 @@ name = "hyperlane-mailbox"
 [dependencies]
 hyperlane_message = { path = "../hyperlane-message" }
 merkle = { path = "../merkle" }
+multisig = { path = "../multisig-ism" }
