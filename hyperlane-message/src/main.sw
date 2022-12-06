@@ -11,6 +11,7 @@ use word_buffer::{
     WordBuffer,
 };
 
+/// A Hyperlane message.
 pub struct Message {
     version: u8,
     nonce: u32,
@@ -21,6 +22,50 @@ pub struct Message {
     body: Vec<u8>,
 }
 
+/// A heap-allocated tightly packed Hyperlane message.
+///
+/// ============ word 0 ============
+///  version   nonce      origin
+/// [ 1 byte ][ 4 bytes ][ 3 bytes ]
+///
+/// ============ word 1 ============
+///  origin    sender
+/// [ 1 byte ][      7 bytes       ]
+///
+/// ============ word 2 ============
+///  sender
+/// [            8 bytes           ]
+///
+/// ============ word 3 ============
+///  sender
+/// [            8 bytes           ]
+///
+/// ============ word 4 ============
+///  sender
+/// [            8 bytes           ]
+///
+/// ============ word 5 ============
+///  sender    dest.      recipient
+/// [ 1 byte ][ 4 bytes ][ 3 bytes ]
+///
+/// ============ word 6 ============
+///  recipient
+/// [            8 bytes           ]
+///
+/// ============ word 7 ============
+///  recipient
+/// [            8 bytes           ]
+///
+/// ============ word 8 ============
+///  recipient
+/// [            8 bytes           ]
+///
+/// ============ word 9 ============
+///  recipient           body
+/// [      5 bytes     ][   ????   ]
+///
+/// ============ word ? ============
+/// [              ????            ]
 pub struct EncodedMessage {
     buffer: WordBuffer,
 }
@@ -173,16 +218,18 @@ impl EncodedMessage {
         }
     }
 
+    /// The message's ID.
     pub fn id(self) -> b256 {
         self.buffer.keccak256()
     }
 
+    /// Logs the entire encoded packed message.
     pub fn log(self) {
         self.buffer.log();
     }
 }
 
-/// Get a tuple of 4 u64 values from a single b256 value.
+/// Gets a tuple of 4 u64 values from a single b256 value.
 fn decompose(val: b256) -> (u64, u64, u64, u64) {
     asm(r1: __addr_of(val)) { r1: (u64, u64, u64, u64) }
 }
