@@ -3,9 +3,17 @@ name = 'core'
 source = 'path+from-root-A5A9AFB187495FC2'
 
 [[package]]
+name = 'merkle'
+source = 'path+from-root-27DD95601AC24F8E'
+dependencies = ['std']
+
+[[package]]
 name = 'multisig'
 source = 'member'
-dependencies = ['std']
+dependencies = [
+    'merkle',
+    'std',
+]
 
 [[package]]
 name = 'std'

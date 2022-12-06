@@ -51,10 +51,10 @@ impl MultisigIsm for Contract {
     #[storage(read)]
     fn verify(metadata: MultisigMetadata, message: Message) -> bool {
         let calculated_root = StorageMerkleTree::branch_root(message.id(), metadata.proof, metadata.index);
-        assert(metadata.root == calculated_root);
+        require(metadata.root == calculated_root, "!merkle");
 
         let commitment = metadata.commitment();
-        assert(commitment == storage.commitment.get(message.origin_domain));
+        require(commitment == storage.commitment.get(message.origin_domain), "!commitment");
 
         let digest = metadata.checkpoint_digest(message);
 
@@ -64,7 +64,7 @@ impl MultisigIsm for Contract {
             let signature = metadata.signatures.get(signature_index).unwrap();
             let signer = ec_recover_address(signature, digest).unwrap();
 
-            assert(metadata.signer_is_after_index(validator_index, signer));
+            require(metadata.signer_is_after_index(validator_index, signer), "!threshold");
 
             validator_index += 1;
             signature_index += 1;
