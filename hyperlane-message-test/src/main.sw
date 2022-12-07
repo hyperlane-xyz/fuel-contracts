@@ -1,10 +1,6 @@
 contract;
 
-use hyperlane_message::{
-    EncodedMessage,
-    Message,
-    word_buffer::BYTES_PER_WORD,
-};
+use hyperlane_message::{EncodedMessage, Message, word_buffer::BYTES_PER_WORD};
 
 use std::logging::log;
 

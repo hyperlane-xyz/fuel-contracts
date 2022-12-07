@@ -1,12 +1,9 @@
-use ethers::{
-    abi::AbiDecode,
-    types::H256,
-};
+use ethers::{abi::AbiDecode, types::H256};
 use fuels::{
     prelude::*,
     tx::{ContractId, Receipt},
 };
-use hyperlane_core::{HyperlaneMessage as HyperlaneAgentMessage, Decode};
+use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
 
 // Load abi from json
 abigen!(Mailbox, "out/debug/hyperlane-mailbox-abi.json");
@@ -98,19 +95,13 @@ async fn test_dispatch_logs_message() {
     let log_data = if let Receipt::LogData { data, .. } = log_receipt {
         data
     } else {
-        panic!(
-            "Expected LogData receipt. Receipt: {:?}",
-            log_receipt
-        );
+        panic!("Expected LogData receipt. Receipt: {:?}", log_receipt);
     };
 
     let recovered_message = HyperlaneAgentMessage::read_from(&mut log_data.as_slice()).unwrap();
 
     // Assert equality of the message ID
-    assert_eq!(
-        recovered_message.id(),
-        message.id(),
-    );
+    assert_eq!(recovered_message.id(), message.id(),);
 }
 
 #[tokio::test]
@@ -140,10 +131,7 @@ async fn test_dispatch_returns_id() {
         .await
         .unwrap();
 
-    assert_eq!(
-        bits256_to_h256(dispatch_call.value),
-        message.id(),
-    );
+    assert_eq!(bits256_to_h256(dispatch_call.value), message.id(),);
 }
 
 #[tokio::test]

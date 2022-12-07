@@ -5,11 +5,7 @@ dep word_buffer;
 use std::alloc::alloc;
 use std::constants::ZERO_B256;
 
-use word_buffer::{
-    BITS_PER_BYTE,
-    BYTES_PER_WORD,
-    WordBuffer,
-};
+use word_buffer::{BITS_PER_BYTE, BYTES_PER_WORD, WordBuffer};
 
 /// A Hyperlane message.
 pub struct Message {
@@ -137,7 +133,13 @@ impl EncodedMessage {
         word = word | (sender_word3 >> 8);
         buffer.write_word(4, word);
 
-        let (recipient_word0, recipient_word1, recipient_word2, recipient_word3) = decompose(recipient);
+        let (
+
+            recipient_word0,
+            recipient_word1,
+            recipient_word2,
+            recipient_word3,
+        ) = decompose(recipient);
 
         // ========== word 5 ==========
         //
@@ -179,7 +181,6 @@ impl EncodedMessage {
         word = (recipient_word3 << 24);
 
         // Write the body to the remainder of word 9 and any subsequent words if necessary.
-
         // Word 9 is partially written to. Begin writing the body in this word.
         let mut current_word_index = 9;
         // The current byte index in the body as we loop through it.
@@ -213,9 +214,7 @@ impl EncodedMessage {
             buffer.write_word(current_word_index, word);
         }
 
-        Self {
-            buffer,
-        }
+        Self { buffer }
     }
 
     /// Calculates the message's ID.
@@ -256,10 +255,10 @@ impl EncodedMessage {
         let word5 = self.buffer.read_word(5u64);
 
         compose(
-            (word1 << 8) | (word2 >> 56),
-            (word2 << 8) | (word3 >> 56),
-            (word3 << 8) | (word4 >> 56),
-            (word4 << 8) | (word5 >> 56),
+            (word1 << 8) | (word2 >> 56), // The last 7 bytes of word 1 and the first byte of word 2
+            (word2 << 8) | (word3 >> 56), // The last 7 bytes of word 2 and the first byte of word 3
+            (word3 << 8) | (word4 >> 56), // The last 7 bytes of word 3 and the first byte of word 4
+            (word4 << 8) | (word5 >> 56), // The last 7 bytes of word 4 and the first byte of word 5
         )
     }
 
@@ -278,10 +277,10 @@ impl EncodedMessage {
         let word9 = self.buffer.read_word(9u64);
 
         compose(
-            (word5 << 40) | (word6 >> 24),
-            (word6 << 40) | (word7 >> 24),
-            (word7 << 40) | (word8 >> 24),
-            (word8 << 40) | (word9 >> 24),
+            (word5 << 40) | (word6 >> 24), // The last 3 bytes of word 5 and the 5 bytes of word 6
+            (word6 << 40) | (word7 >> 24), // The last 3 bytes of word 6 and the 5 bytes of word 7
+            (word7 << 40) | (word8 >> 24), // The last 3 bytes of word 7 and the 5 bytes of word 8
+            (word8 << 40) | (word9 >> 24), // The last 3 bytes of word 8 and the 5 bytes of word 9
         )
     }
 
@@ -302,6 +301,7 @@ impl EncodedMessage {
             // Push the byte to the Vec.
             let byte = (word >> right_shift) & 0xff;
             body.push(byte);
+
             
             // If this was the last byte in the word, read the next word.
             if byte_index_within_word == 7u64 {
@@ -337,15 +337,7 @@ fn compose(word_1: u64, word_2: u64, word_3: u64, word_4: u64) -> b256 {
 
 impl From<Message> for EncodedMessage {
     fn from(message: Message) -> Self {
-        Self::new(
-            message.version,
-            message.nonce,
-            message.origin,
-            message.sender,
-            message.destination,
-            message.recipient,
-            message.body,
-        )
+        Self::new(message.version, message.nonce, message.origin, message.sender, message.destination, message.recipient, message.body)
     }
 
     // TODO: fix

@@ -1,17 +1,11 @@
-use ethers::{
-    abi::AbiDecode,
-    types::H256,
-};
+use ethers::{abi::AbiDecode, types::H256};
 use fuels::{
     core::parameters::TxParameters,
     prelude::*,
     tx::{ContractId, Receipt},
 };
 use hex::FromHex;
-use hyperlane_core::{
-    Decode,
-    HyperlaneMessage as HyperlaneAgentMessage,
-};
+use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
 
 // Load abi from json
 abigen!(TestMessage, "out/debug/hyperlane-message-test-abi.json");
@@ -54,9 +48,15 @@ fn test_message() -> HyperlaneAgentMessage {
         version: 255u8,
         nonce: 1234u32,
         origin: 420u32,
-        sender: H256::decode_hex("0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba").unwrap(),
+        sender: H256::decode_hex(
+            "0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba",
+        )
+        .unwrap(),
         destination: 69u32,
-        recipient: H256::decode_hex("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap(),
+        recipient: H256::decode_hex(
+            "0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe",
+        )
+        .unwrap(),
         body: Vec::from_hex("0123456789abcdef").unwrap(),
     }
 }
@@ -109,10 +109,7 @@ async fn test_message_id() {
             .await
             .unwrap();
 
-        assert_eq!(
-            bits256_to_h256(id.value),
-            expected_id,
-        );
+        assert_eq!(bits256_to_h256(id.value), expected_id,);
     }
 }
 
@@ -141,19 +138,13 @@ async fn test_message_log() {
         let log_data = if let Receipt::LogData { data, .. } = log_receipt {
             data
         } else {
-            panic!(
-                "Expected LogData receipt. Receipt: {:?}",
-                log_receipt
-            );
+            panic!("Expected LogData receipt. Receipt: {:?}", log_receipt);
         };
 
         let recovered_message = HyperlaneAgentMessage::read_from(&mut log_data.as_slice()).unwrap();
 
         // Assert equality of the message ID
-        assert_eq!(
-            recovered_message.id(),
-            expected_id,
-        );
+        assert_eq!(recovered_message.id(), expected_id,);
     }
 }
 
@@ -170,11 +161,8 @@ async fn test_version() {
         .simulate()
         .await
         .unwrap();
-    
-    assert_eq!(
-        version.value,
-        expected_version,
-    );
+
+    assert_eq!(version.value, expected_version,);
 }
 
 #[tokio::test]
@@ -190,11 +178,8 @@ async fn test_nonce() {
         .simulate()
         .await
         .unwrap();
-    
-    assert_eq!(
-        nonce.value,
-        expected_nonce,
-    );
+
+    assert_eq!(nonce.value, expected_nonce,);
 }
 
 #[tokio::test]
@@ -210,11 +195,8 @@ async fn test_origin() {
         .simulate()
         .await
         .unwrap();
-    
-    assert_eq!(
-        origin.value,
-        expected_origin,
-    );
+
+    assert_eq!(origin.value, expected_origin,);
 }
 
 #[tokio::test]
@@ -230,11 +212,8 @@ async fn test_sender() {
         .simulate()
         .await
         .unwrap();
-    
-    assert_eq!(
-        bits256_to_h256(sender.value),
-        expected_sender,
-    );
+
+    assert_eq!(bits256_to_h256(sender.value), expected_sender,);
 }
 
 #[tokio::test]
@@ -250,11 +229,8 @@ async fn test_destination() {
         .simulate()
         .await
         .unwrap();
-    
-    assert_eq!(
-        destination.value,
-        expected_destination,
-    );
+
+    assert_eq!(destination.value, expected_destination,);
 }
 
 #[tokio::test]
@@ -270,11 +246,8 @@ async fn test_recipient() {
         .simulate()
         .await
         .unwrap();
-    
-    assert_eq!(
-        bits256_to_h256(recipient.value),
-        expected_recipient,
-    );
+
+    assert_eq!(bits256_to_h256(recipient.value), expected_recipient,);
 }
 
 #[tokio::test]
@@ -299,10 +272,7 @@ async fn test_body() {
         let body_log_data = if let Receipt::LogData { data, .. } = body_log_receipt {
             data
         } else {
-            panic!(
-                "Expected LogData receipt. Receipt: {:?}",
-                body_log_receipt
-            );
+            panic!("Expected LogData receipt. Receipt: {:?}", body_log_receipt);
         };
         // Recall that a Vec<u8> in Sway will store each u8 element in its
         // own 64 bit word. The log data therefore logs the padded zeroes in
@@ -312,11 +282,8 @@ async fn test_body() {
             .chunks(BYTES_PER_WORD)
             .map(|buf| buf[BYTES_PER_WORD - 1])
             .collect();
-        
-        assert_eq!(
-            body,
-            expected_body,
-        );
+
+        assert_eq!(body, expected_body,);
     }
 }
 

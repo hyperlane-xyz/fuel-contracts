@@ -1,9 +1,6 @@
 library word_buffer;
 
-use std::{
-    alloc::alloc,
-    constants::ZERO_B256,
-};
+use std::{alloc::alloc, constants::ZERO_B256};
 
 /// A heap-allocated buffer with basic operations to read and write
 /// a single word at a time.
