@@ -109,7 +109,7 @@ async fn test_message_id() {
             .await
             .unwrap();
 
-        assert_eq!(bits256_to_h256(id.value), expected_id,);
+        assert_eq!(bits256_to_h256(id.value), expected_id);
     }
 }
 
@@ -144,7 +144,7 @@ async fn test_message_log() {
         let recovered_message = HyperlaneAgentMessage::read_from(&mut log_data.as_slice()).unwrap();
 
         // Assert equality of the message ID
-        assert_eq!(recovered_message.id(), expected_id,);
+        assert_eq!(recovered_message.id(), expected_id);
     }
 }
 
@@ -162,7 +162,7 @@ async fn test_version() {
         .await
         .unwrap();
 
-    assert_eq!(version.value, expected_version,);
+    assert_eq!(version.value, expected_version);
 }
 
 #[tokio::test]
@@ -179,7 +179,7 @@ async fn test_nonce() {
         .await
         .unwrap();
 
-    assert_eq!(nonce.value, expected_nonce,);
+    assert_eq!(nonce.value, expected_nonce);
 }
 
 #[tokio::test]
@@ -196,7 +196,7 @@ async fn test_origin() {
         .await
         .unwrap();
 
-    assert_eq!(origin.value, expected_origin,);
+    assert_eq!(origin.value, expected_origin);
 }
 
 #[tokio::test]
@@ -213,7 +213,7 @@ async fn test_sender() {
         .await
         .unwrap();
 
-    assert_eq!(bits256_to_h256(sender.value), expected_sender,);
+    assert_eq!(bits256_to_h256(sender.value), expected_sender);
 }
 
 #[tokio::test]
@@ -230,7 +230,7 @@ async fn test_destination() {
         .await
         .unwrap();
 
-    assert_eq!(destination.value, expected_destination,);
+    assert_eq!(destination.value, expected_destination);
 }
 
 #[tokio::test]
@@ -247,7 +247,7 @@ async fn test_recipient() {
         .await
         .unwrap();
 
-    assert_eq!(bits256_to_h256(recipient.value), expected_recipient,);
+    assert_eq!(bits256_to_h256(recipient.value), expected_recipient);
 }
 
 #[tokio::test]
@@ -283,7 +283,7 @@ async fn test_body() {
             .map(|buf| buf[BYTES_PER_WORD - 1])
             .collect();
 
-        assert_eq!(body, expected_body,);
+        assert_eq!(body, expected_body);
     }
 }
 

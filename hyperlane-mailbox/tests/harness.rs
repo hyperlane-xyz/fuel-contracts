@@ -101,7 +101,7 @@ async fn test_dispatch_logs_message() {
     let recovered_message = HyperlaneAgentMessage::read_from(&mut log_data.as_slice()).unwrap();
 
     // Assert equality of the message ID
-    assert_eq!(recovered_message.id(), message.id(),);
+    assert_eq!(recovered_message.id(), message.id());
 }
 
 #[tokio::test]
@@ -131,7 +131,7 @@ async fn test_dispatch_returns_id() {
         .await
         .unwrap();
 
-    assert_eq!(bits256_to_h256(dispatch_call.value), message.id(),);
+    assert_eq!(bits256_to_h256(dispatch_call.value), message.id());
 }
 
 #[tokio::test]
