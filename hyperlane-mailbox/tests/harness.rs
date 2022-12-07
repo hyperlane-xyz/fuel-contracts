@@ -4,10 +4,7 @@ use fuels::{
     tx::{ContractId, Receipt},
 };
 use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
-use test_utils::{
-    bits256_to_h256,
-    get_revert_string,
-};
+use test_utils::{bits256_to_h256, get_revert_string, h256_to_bits256};
 
 // Load abi from json
 abigen!(Mailbox, "out/debug/hyperlane-mailbox-abi.json");
@@ -47,6 +44,21 @@ async fn get_contract_instance() -> (Mailbox, ContractId) {
     (instance, id.into())
 }
 
+// Gets the wallet address from the `Mailbox` instance, and
+// creates a test message with that address as the sender.
+fn test_message(mailbox: &Mailbox) -> HyperlaneAgentMessage {
+    let sender: Address = mailbox.get_wallet().address().into();
+    HyperlaneAgentMessage {
+        version: 0u8,
+        nonce: 0u32,
+        origin: TEST_ORIGIN_DOMAIN,
+        sender: H256::from_slice(sender.as_slice()),
+        destination: TEST_DESTINATION_DOMAIN,
+        recipient: H256::decode_hex(TEST_RECIPIENT).unwrap(),
+        body: vec![10u8; 100],
+    }
+}
+
 #[tokio::test]
 async fn test_dispatch_too_large_message() {
     let (mailbox, _id) = get_contract_instance().await;
@@ -71,23 +83,13 @@ async fn test_dispatch_too_large_message() {
 async fn test_dispatch_logs_message() {
     let (mailbox, _id) = get_contract_instance().await;
 
-    let sender: Address = mailbox.get_wallet().address().into();
-
-    let message = HyperlaneAgentMessage {
-        version: 0u8,
-        nonce: 0u32,
-        origin: TEST_ORIGIN_DOMAIN,
-        sender: H256::from_slice(sender.as_slice()),
-        destination: TEST_DESTINATION_DOMAIN,
-        recipient: H256::decode_hex(TEST_RECIPIENT).unwrap(),
-        body: vec![10u8; 100],
-    };
+    let message = test_message(&mailbox);
 
     let dispatch_call = mailbox
         .methods()
         .dispatch(
-            TEST_DESTINATION_DOMAIN,
-            Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
+            message.destination,
+            h256_to_bits256(message.recipient),
             message.body.clone(),
         )
         .call()
@@ -112,23 +114,13 @@ async fn test_dispatch_logs_message() {
 async fn test_dispatch_returns_id() {
     let (mailbox, _id) = get_contract_instance().await;
 
-    let sender: Address = mailbox.get_wallet().address().into();
-
-    let message = HyperlaneAgentMessage {
-        version: 0u8,
-        nonce: 0u32,
-        origin: TEST_ORIGIN_DOMAIN,
-        sender: H256::from_slice(sender.as_slice()),
-        destination: TEST_DESTINATION_DOMAIN,
-        recipient: H256::decode_hex(TEST_RECIPIENT).unwrap(),
-        body: vec![10u8; 100],
-    };
+    let message = test_message(&mailbox);
 
     let dispatch_call = mailbox
         .methods()
         .dispatch(
-            TEST_DESTINATION_DOMAIN,
-            Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
+            message.destination,
+            h256_to_bits256(message.recipient),
             message.body.clone(),
         )
         .call()
