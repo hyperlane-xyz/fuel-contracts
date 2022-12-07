@@ -4,6 +4,10 @@ use fuels::{
     tx::{ContractId, Receipt},
 };
 use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
+use test_utils::{
+    bits256_to_h256,
+    get_revert_string,
+};
 
 // Load abi from json
 abigen!(Mailbox, "out/debug/hyperlane-mailbox-abi.json");
@@ -183,43 +187,4 @@ async fn test_latest_checkpoint() {
 
     // The index is 0-indexed
     assert_eq!(index, 0u32);
-}
-
-// Given an Error from a call or simulation, returns the revert reason.
-// Panics if it's unable to find the revert reason.
-fn get_revert_string(call_error: Error) -> String {
-    let receipts = if let Error::RevertTransactionError(_, r) = call_error {
-        r
-    } else {
-        panic!(
-            "Error is not a RevertTransactionError. Error: {:?}",
-            call_error
-        );
-    };
-
-    // The receipts will be:
-    // [any prior receipts..., LogData with reason, Revert, ScriptResult]
-    // We want the LogData with the reason, which is utf-8 encoded as the `data`.
-    let revert_reason_receipt = &receipts[receipts.len() - 3];
-    let data = if let Receipt::LogData { data, .. } = revert_reason_receipt {
-        data
-    } else {
-        panic!(
-            "Expected LogData receipt. Receipt: {:?}",
-            revert_reason_receipt
-        );
-    };
-
-    // Null bytes `\0` will be padded to the end of the revert string, so we remove them.
-    let data: Vec<u8> = data
-        .into_iter()
-        .cloned()
-        .filter(|byte| *byte != b'\0')
-        .collect();
-
-    String::from_utf8(data).unwrap()
-}
-
-fn bits256_to_h256(b: Bits256) -> H256 {
-    H256(b.0)
 }
