@@ -2,7 +2,11 @@ contract;
 
 dep interface;
 
-use std::{call_frames::contract_id, logging::log};
+use std::{
+    auth::msg_sender,
+    call_frames::contract_id,
+    logging::log,
+};
 
 use interface::Mailbox;
 use merkle::StorageMerkleTree;
@@ -44,7 +48,7 @@ impl Mailbox for Contract {
             VERSION,
             count(), // nonce
             LOCAL_DOMAIN,
-            contract_id().into(), // sender
+            msg_sender_b256(), // sender
             destination_domain,
             recipient,
             message_body,
@@ -90,4 +94,11 @@ fn count() -> u32 {
 #[storage(read)]
 fn root() -> b256 {
     storage.merkle_tree.root()
+}
+
+fn msg_sender_b256() -> b256 {
+    match msg_sender().unwrap() {
+        Identity::Address(address) => address.into(),
+        Identity::ContractId(id) => id.into(),
+    }
 }

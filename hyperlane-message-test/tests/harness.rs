@@ -16,6 +16,9 @@ use hyperlane_core::{
 // Load abi from json
 abigen!(TestMessage, "out/debug/hyperlane-message-test-abi.json");
 
+// The number of bytes in a 64 bit word.
+const BYTES_PER_WORD: usize = 8;
+
 async fn get_contract_instance() -> (TestMessage, ContractId) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
@@ -46,68 +49,46 @@ async fn get_contract_instance() -> (TestMessage, ContractId) {
     (instance, id.into())
 }
 
-fn test_messages() -> Vec<HyperlaneAgentMessage> {
-    // HyperlaneAgentMessage {
-    //     version: 255u8,
-    //     nonce: 1234u32,
-    //     origin: 420u32,
-    //     sender: H256::decode_hex("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb").unwrap(),
-    //     destination: 69u32,
-    //     recipient: H256::decode_hex("0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc").unwrap(),
-    //     body: Vec::from_hex("0123456789abcdef").unwrap(),
-    // }
+fn test_message() -> HyperlaneAgentMessage {
+    HyperlaneAgentMessage {
+        version: 255u8,
+        nonce: 1234u32,
+        origin: 420u32,
+        sender: H256::decode_hex("0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba").unwrap(),
+        destination: 69u32,
+        recipient: H256::decode_hex("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap(),
+        body: Vec::from_hex("0123456789abcdef").unwrap(),
+    }
+}
+
+fn test_messages_varying_bodies() -> Vec<HyperlaneAgentMessage> {
+    let msg = test_message();
+
+    let mut empty_body = msg.clone();
+    empty_body.body = vec![];
+
+    // 2 byte body
+    let mut very_small_body = msg.clone();
+    very_small_body.body = Vec::from_hex("0123").unwrap();
+
+    // 11 bytes. Also fits perfectly into 10 words.
+    let mut small_body = msg.clone();
+    small_body.body = Vec::from_hex("0123456789abcdef443322").unwrap();
+
+    // 100 bytes
+    let mut medium_body = msg.clone();
+    medium_body.body = Vec::from_hex("0123456789abcdef4433").unwrap().repeat(10);
+
+    // 2000 bytes
+    let mut large_body = msg.clone();
+    large_body.body = Vec::from_hex("0123456789abcdef4433").unwrap().repeat(200);
 
     vec![
-        // Empty body
-        HyperlaneAgentMessage {
-            version: 255u8,
-            nonce: 1234u32,
-            origin: 420u32,
-            sender: H256::decode_hex("0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba").unwrap(),
-            destination: 69u32,
-            recipient: H256::decode_hex("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap(),
-            body: vec![],
-        },
-        // Very small body (2 bytes)
-        HyperlaneAgentMessage {
-            version: 255u8,
-            nonce: 1234u32,
-            origin: 420u32,
-            sender: H256::decode_hex("0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba").unwrap(),
-            destination: 69u32,
-            recipient: H256::decode_hex("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap(),
-            body: Vec::from_hex("0123").unwrap(),
-        },
-        // Small body (9 bytes)
-        HyperlaneAgentMessage {
-            version: 255u8,
-            nonce: 1234u32,
-            origin: 420u32,
-            sender: H256::decode_hex("0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba").unwrap(),
-            destination: 69u32,
-            recipient: H256::decode_hex("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap(),
-            body: Vec::from_hex("0123456789abcdef01").unwrap(),
-        },
-        // Medium body (100 bytes)
-        HyperlaneAgentMessage {
-            version: 255u8,
-            nonce: 1234u32,
-            origin: 420u32,
-            sender: H256::decode_hex("0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba").unwrap(),
-            destination: 69u32,
-            recipient: H256::decode_hex("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap(),
-            body: Vec::from_hex("0123456789abcdef0102").unwrap().repeat(10),
-        },
-        // Large body (2000 bytes)
-        HyperlaneAgentMessage {
-            version: 255u8,
-            nonce: 1234u32,
-            origin: 420u32,
-            sender: H256::decode_hex("0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba").unwrap(),
-            destination: 69u32,
-            recipient: H256::decode_hex("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap(),
-            body: Vec::from_hex("0123456789abcdef0102").unwrap().repeat(200),
-        },
+        empty_body,
+        very_small_body,
+        small_body,
+        medium_body,
+        large_body,
     ]
 }
 
@@ -115,13 +96,14 @@ fn test_messages() -> Vec<HyperlaneAgentMessage> {
 async fn test_message_id() {
     let (instance, _id) = get_contract_instance().await;
 
-    let messages = test_messages();
+    let messages = test_messages_varying_bodies();
 
     for msg in messages.into_iter() {
         let expected_id = msg.id();
         let id = instance
             .methods()
             .id(msg.into())
+            // If the body is very large, a lot of gas is used!
             .tx_params(TxParameters::new(None, Some(100_000_000), None))
             .simulate()
             .await
@@ -138,15 +120,19 @@ async fn test_message_id() {
 async fn test_message_log() {
     let (instance, _id) = get_contract_instance().await;
 
-    let messages = test_messages();
+    let messages = test_messages_varying_bodies();
 
     for msg in messages.into_iter() {
+        if msg.body.len() != 11 {
+            continue;
+        }
         let expected_id = msg.id();
         let log_tx = instance
             .methods()
             .log(msg.into())
+            // If the body is very large, a lot of gas is used!
             .tx_params(TxParameters::new(None, Some(100_000_000), None))
-            .simulate()
+            .call()
             .await
             .unwrap();
 
@@ -171,14 +157,177 @@ async fn test_message_log() {
     }
 }
 
+#[tokio::test]
+async fn test_version() {
+    let (instance, _id) = get_contract_instance().await;
+
+    let msg = test_message();
+    let expected_version = msg.version;
+
+    let version = instance
+        .methods()
+        .version(msg.into())
+        .simulate()
+        .await
+        .unwrap();
+    
+    assert_eq!(
+        version.value,
+        expected_version,
+    );
+}
+
+#[tokio::test]
+async fn test_nonce() {
+    let (instance, _id) = get_contract_instance().await;
+
+    let msg = test_message();
+    let expected_nonce = msg.nonce;
+
+    let nonce = instance
+        .methods()
+        .nonce(msg.into())
+        .simulate()
+        .await
+        .unwrap();
+    
+    assert_eq!(
+        nonce.value,
+        expected_nonce,
+    );
+}
+
+#[tokio::test]
+async fn test_origin() {
+    let (instance, _id) = get_contract_instance().await;
+
+    let msg = test_message();
+    let expected_origin = msg.origin;
+
+    let origin = instance
+        .methods()
+        .origin(msg.into())
+        .simulate()
+        .await
+        .unwrap();
+    
+    assert_eq!(
+        origin.value,
+        expected_origin,
+    );
+}
+
+#[tokio::test]
+async fn test_sender() {
+    let (instance, _id) = get_contract_instance().await;
+
+    let msg = test_message();
+    let expected_sender = msg.sender;
+
+    let sender = instance
+        .methods()
+        .sender(msg.into())
+        .simulate()
+        .await
+        .unwrap();
+    
+    assert_eq!(
+        bits256_to_h256(sender.value),
+        expected_sender,
+    );
+}
+
+#[tokio::test]
+async fn test_destination() {
+    let (instance, _id) = get_contract_instance().await;
+
+    let msg = test_message();
+    let expected_destination = msg.destination;
+
+    let destination = instance
+        .methods()
+        .destination(msg.into())
+        .simulate()
+        .await
+        .unwrap();
+    
+    assert_eq!(
+        destination.value,
+        expected_destination,
+    );
+}
+
+#[tokio::test]
+async fn test_recipient() {
+    let (instance, _id) = get_contract_instance().await;
+
+    let msg = test_message();
+    let expected_recipient = msg.recipient;
+
+    let recipient = instance
+        .methods()
+        .recipient(msg.into())
+        .simulate()
+        .await
+        .unwrap();
+    
+    assert_eq!(
+        bits256_to_h256(recipient.value),
+        expected_recipient,
+    );
+}
+
+#[tokio::test]
+async fn test_body() {
+    let (instance, _id) = get_contract_instance().await;
+
+    let messages = test_messages_varying_bodies();
+    for msg in messages.into_iter() {
+        let expected_body = msg.body.clone();
+
+        let body_log_tx = instance
+            .methods()
+            .log_body(msg.into())
+            // If the body is very large, a lot of gas is used!
+            .tx_params(TxParameters::new(None, Some(100_000_000), None))
+            .simulate()
+            .await
+            .unwrap();
+
+        // The log is expected to be the second receipt
+        let body_log_receipt = &body_log_tx.receipts[1];
+        let body_log_data = if let Receipt::LogData { data, .. } = body_log_receipt {
+            data
+        } else {
+            panic!(
+                "Expected LogData receipt. Receipt: {:?}",
+                body_log_receipt
+            );
+        };
+        // Recall that a Vec<u8> in Sway will store each u8 element in its
+        // own 64 bit word. The log data therefore logs the padded zeroes in
+        // each of these words. We only care about the rightmost byte for each
+        // word that's logged.
+        let body: Vec<u8> = body_log_data
+            .chunks(BYTES_PER_WORD)
+            .map(|buf| buf[BYTES_PER_WORD - 1])
+            .collect();
+        
+        assert_eq!(
+            body,
+            expected_body,
+        );
+    }
+}
+
 impl From<HyperlaneAgentMessage> for Message {
     fn from(m: HyperlaneAgentMessage) -> Self {
         Self {
             version: m.version,
             nonce: m.nonce,
-            origin_domain: m.origin,
+            origin: m.origin,
             sender: h256_to_bits256(m.sender),
-            destination_domain: m.destination,
+            destination: m.destination,
             recipient: h256_to_bits256(m.recipient),
             body: m.body,
         }

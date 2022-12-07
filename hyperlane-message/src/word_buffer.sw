@@ -42,7 +42,13 @@ impl WordBuffer {
         // If the number of bytes doesn't cleanly fits into words,
         // allocate an entire final word that just will be partially used.
         let words = if bytes_len % BYTES_PER_WORD == 0 {
-            (bytes_len / BYTES_PER_WORD)
+            // TODO: remove the `+ 1`.
+            // There seems to be a bug in the FuelVM that prevents logging the
+            // byte closest to the top of the heap. This can occur if the WordBuffer
+            // is the first to make heap allocations. For now, we allocate an extra word
+            // to avoid this.
+            // See https://github.com/FuelLabs/fuel-vm/issues/282.
+            (bytes_len / BYTES_PER_WORD) + 1
         } else {
             (bytes_len / BYTES_PER_WORD) + 1
         };
