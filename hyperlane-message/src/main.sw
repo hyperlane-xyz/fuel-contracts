@@ -89,6 +89,14 @@ impl EncodedMessage {
 
         let buffer = WordBuffer::with_bytes(bytes_len);
 
+        // Note that due to some issues with the Sway compiler, it doesn't
+        // correctly imply types all the time. Sometimes `word` must be assigned
+        // in a couple statements to get the compiler to correctly pick up on the type.
+        // Additionally, there are a number of warnings generated about loss of precision
+        // throughout this library.
+        // We should address these warnings once implicit casting is removed in favor of
+        // explicit casting: https://github.com/FuelLabs/sway/issues/3470
+
         // ========== word 0 ==========
         //
         // version   [0:8]   - 1 byte
@@ -113,24 +121,21 @@ impl EncodedMessage {
         //
         // sender_word0  [0:8]   - 1 byte  (continued from previous word)
         // sender_word1  [8:64]  - 7 bytes (continued in next word)
-        word = (sender_word0 << 56);
-        word = word | (sender_word1 >> 8);
+        word = (sender_word0 << 56) | (sender_word1 >> 8);
         buffer.write_word(2, word);
 
         // ========== word 3 ==========
         //
         // sender_word1  [0:8]   - 1 byte  (continued from previous word)
         // sender_word2  [8:64]  - 7 bytes (continued in next word)
-        word = (sender_word1 << 56);
-        word = word | (sender_word2 >> 8);
+        word = (sender_word1 << 56) | (sender_word2 >> 8);
         buffer.write_word(3, word);
 
         // ========== word 4 ==========
         //
         // sender_word2  [0:8]   - 1 byte  (continued from previous word)
         // sender_word3  [8:64]  - 7 bytes (continued in next word)
-        word = (sender_word2 << 56);
-        word = word | (sender_word3 >> 8);
+        word = (sender_word2 << 56) | (sender_word3 >> 8);
         buffer.write_word(4, word);
 
         let (
@@ -146,32 +151,28 @@ impl EncodedMessage {
         // sender_word3     [0:8]   - 1 byte  (continued from previous word)
         // destination      [8:40]  - 4 bytes
         // recipient_word0  [40:64] - 3 bytes (continued in next word)
-        word = (sender_word3 << 56);
-        word = word | (destination << 24) | (recipient_word0 >> 40);
+        word = (sender_word3 << 56) | (destination << 24) | (recipient_word0 >> 40);
         buffer.write_word(5, word);
 
         // ========== word 6 ==========
         //
         // recipient_word0  [0:40]   - 5 bytes (continued from previous word)
         // recipient_word1  [40:64]  - 3 bytes (continued in next word)
-        word = (recipient_word0 << 24);
-        word = word | (recipient_word1 >> 40);
+        word = (recipient_word0 << 24) | (recipient_word1 >> 40);
         buffer.write_word(6, word);
 
         // ========== word 7 ==========
         //
         // recipient_word1  [0:40]   - 5 bytes (continued from previous word)
         // recipient_word2  [40:64]  - 3 bytes (continued in next word)
-        word = (recipient_word1 << 24);
-        word = word | (recipient_word2 >> 40);
+        word = (recipient_word1 << 24) | (recipient_word2 >> 40);
         buffer.write_word(7, word);
 
         // ========== word 8 ==========
         //
         // recipient_word2  [0:40]   - 5 bytes (continued from previous word)
         // recipient_word3  [40:64]  - 3 bytes (continued in next word)
-        word = (recipient_word2 << 24);
-        word = word | (recipient_word3 >> 40);
+        word = (recipient_word2 << 24) | (recipient_word3 >> 40);
         buffer.write_word(8, word);
 
         // ========== word 9 ==========
@@ -181,7 +182,6 @@ impl EncodedMessage {
         word = (recipient_word3 << 24);
 
         // Write the body to the remainder of word 9 and any subsequent words if necessary.
-        // Word 9 is partially written to. Begin writing the body in this word.
         let mut current_word_index = 9;
         // The current byte index in the body as we loop through it.
         let mut body_index: u64 = 0u64;
@@ -299,10 +299,9 @@ impl EncodedMessage {
             let byte_index_within_word = (body_index + BODY_START_BYTE_IN_WORD) % BYTES_PER_WORD;
             let right_shift = ((7 - byte_index_within_word) * BITS_PER_BYTE);
             // Push the byte to the Vec.
-            let byte = (word >> right_shift) & 0xff;
+            let byte: u8 = (word >> right_shift) & 0xff;
             body.push(byte);
 
-            
             // If this was the last byte in the word, read the next word.
             if byte_index_within_word == 7u64 {
                 // Move to the next word.
@@ -315,6 +314,24 @@ impl EncodedMessage {
         }
 
         body
+    }
+}
+
+impl From<Message> for EncodedMessage {
+    fn from(message: Message) -> Self {
+        Self::new(message.version, message.nonce, message.origin, message.sender, message.destination, message.recipient, message.body)
+    }
+
+    fn into(self) -> Message {
+        Message {
+            version: self.version(),
+            nonce: self.nonce(),
+            origin: self.origin(),
+            sender: self.sender(),
+            destination: self.destination(),
+            recipient: self.recipient(),
+            body: self.body(),
+        }
     }
 }
 
@@ -332,24 +349,5 @@ fn compose(word_1: u64, word_2: u64, word_3: u64, word_4: u64) -> b256 {
         sw result w3 i2;
         sw result w4 i3;
         result: b256
-    }
-}
-
-impl From<Message> for EncodedMessage {
-    fn from(message: Message) -> Self {
-        Self::new(message.version, message.nonce, message.origin, message.sender, message.destination, message.recipient, message.body)
-    }
-
-    // TODO: fix
-    fn into(self) -> Message {
-        Message {
-            version: self.version(),
-            nonce: self.nonce(),
-            origin: self.origin(),
-            sender: self.sender(),
-            destination: self.destination(),
-            recipient: self.recipient(),
-            body: self.body(),
-        }
     }
 }

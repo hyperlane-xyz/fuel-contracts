@@ -7,6 +7,7 @@ use std::{alloc::alloc, constants::ZERO_B256};
 /// Supports log and keccak256 operations for the entire buffer based
 /// on the number of bytes, even when the number of bytes doesn't fit
 /// perfectly in words.
+/// Partially inspired by RawVec: https://github.com/FuelLabs/sway/blob/master/sway-lib-std/src/vec.sw#L8
 pub struct WordBuffer {
     ptr: raw_ptr,
     bytes_len: u64,
@@ -60,7 +61,7 @@ impl WordBuffer {
         let ptr = self.ptr.add::<u64>(word_offset);
         asm(ptr: ptr, value: value) {
             sw ptr value i0; // Write the word `value` into memory at `ptr`. i0 means there's no immediate word offset.
-        }
+        };
     }
 
     /// Reads the word at `word_offset` in the buffer.
@@ -72,7 +73,7 @@ impl WordBuffer {
         }
     }
 
-    /// Logs the entire buffer. Does not perform any padding even if the number of
+    /// Logs the entire buffer. Does not include any padding even if the number of
     /// bytes doesn't cleanly fit into words -- only the required bytes are logged.
     pub fn log(self) {
         // See https://fuellabs.github.io/fuel-specs/master/vm/instruction_set.html#logd-log-data-event
