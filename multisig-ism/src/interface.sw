@@ -4,11 +4,13 @@ dep metadata;
 
 use std::{vm::evm::{evm_address::EvmAddress}};
 
-use metadata::{MultisigMetadata, Message};
+use hyperlane_message::EncodedMessage;
+
+use metadata::MultisigMetadata;
 
 abi MultisigIsm {
     #[storage(read)]
-    fn verify(metadata: MultisigMetadata, message: Message) -> bool;
+    fn verify(metadata: MultisigMetadata, message: EncodedMessage) -> bool;
 
     #[storage(read)]
     fn threshold(domain: u32) -> u8;

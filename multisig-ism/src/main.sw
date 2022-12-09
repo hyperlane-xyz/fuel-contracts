@@ -5,11 +5,14 @@ dep metadata;
 
 use std::{vm::evm::{evm_address::EvmAddress, ecr::ec_recover_evm_address}, logging::log};
 
-use interface::MultisigIsm;
-
-use metadata::{Message, MultisigMetadata, commitment};
+use hyperlane_message::EncodedMessage;
 
 use merkle::StorageMerkleTree;
+
+use interface::MultisigIsm;
+
+use metadata::{MultisigMetadata, commitment};
+
 
 storage {
     // TODO: consider u32 => struct
@@ -50,15 +53,16 @@ impl MultisigIsm for Contract {
     }
 
     #[storage(read)]
-    fn verify(metadata: MultisigMetadata, message: Message) -> bool {
+    fn verify(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
         let calculated_root = StorageMerkleTree::branch_root(message.id(), metadata.proof, metadata.index);
         require(metadata.root == calculated_root, "!merkle");
 
-        require(metadata.commitment() == storage.commitment.get(message.origin_domain), "!commitment");
+        let origin = message.origin();
+        require(metadata.commitment() == storage.commitment.get(origin), "!commitment");
 
         require(metadata.threshold <= metadata.signatures.len(), "!threshold");
 
-        let digest = metadata.checkpoint_digest(message);
+        let digest = metadata.checkpoint_digest(origin);
 
         let mut validator_index = 0;
         let mut signature_index = 0;
