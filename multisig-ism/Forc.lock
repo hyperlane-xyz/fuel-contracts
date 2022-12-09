@@ -4,11 +4,11 @@ source = 'path+from-root-A5A9AFB187495FC2'
 
 [[package]]
 name = 'merkle'
-source = 'path+from-root-27DD95601AC24F8E'
+source = 'path+from-root-7E53ADC53725AC82'
 dependencies = ['std']
 
 [[package]]
-name = 'multisig'
+name = 'multisig-ism'
 source = 'member'
 dependencies = [
     'merkle',

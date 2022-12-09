@@ -1,18 +1,20 @@
 contract;
 
 dep interface;
+dep metadata;
 
-use std::{b512::B512, ecr::{ec_recover, ec_recover_address, EcRecoverError}, logging::log};
-use std::{hash::{keccak256, sha256}};
+use std::{vm::evm::{evm_address::EvmAddress, ecr::ec_recover_evm_address}, logging::log};
 
-use interface::{Message, MultisigIsm, MultisigMetadata};
+use interface::MultisigIsm;
+
+use metadata::{Message, MultisigMetadata, commitment};
 
 use merkle::StorageMerkleTree;
 
 storage {
     // TODO: consider u32 => struct
     threshold: StorageMap<u32, u8> = StorageMap {},
-    validators: StorageMap<u32, Vec<Address>> = StorageMap {},
+    validators: StorageMap<u32, Vec<EvmAddress>> = StorageMap {},
     commitment: StorageMap<u32, b256> = StorageMap {},
 }
 
@@ -20,8 +22,7 @@ storage {
 fn update_commitment(domain: u32) {
     let validators = storage.validators.get(domain);
     let threshold = storage.threshold.get(domain);
-    let commitment = sha256((threshold, validators));
-    storage.commitment.insert(domain, commitment);
+    storage.commitment.insert(domain, commitment(threshold, validators));
 }
 
 impl MultisigIsm for Contract {
@@ -31,12 +32,12 @@ impl MultisigIsm for Contract {
     }
 
     #[storage(read)]
-    fn validators(domain: u32) -> Vec<Address> {
+    fn validators(domain: u32) -> Vec<EvmAddress> {
         storage.validators.get(domain)
     }
 
     #[storage(read)]
-    fn is_enrolled(domain: u32, validator: Address) -> bool {
+    fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
         let validators = storage.validators.get(domain);
         let mut i = 0;
         while i < validators.len() {
@@ -53,18 +54,23 @@ impl MultisigIsm for Contract {
         let calculated_root = StorageMerkleTree::branch_root(message.id(), metadata.proof, metadata.index);
         require(metadata.root == calculated_root, "!merkle");
 
-        let commitment = metadata.commitment();
-        require(commitment == storage.commitment.get(message.origin_domain), "!commitment");
+        require(metadata.commitment() == storage.commitment.get(message.origin_domain), "!commitment");
+
+        require(metadata.threshold <= metadata.signatures.len(), "!threshold");
 
         let digest = metadata.checkpoint_digest(message);
 
         let mut validator_index = 0;
         let mut signature_index = 0;
         while signature_index < metadata.threshold {
-            let signature = metadata.signatures.get(signature_index).unwrap();
-            let signer = ec_recover_address(signature, digest).unwrap();
+            let signature = metadata.signatures.get(signature_index).unwrap(); // safe because of require above
 
-            require(metadata.signer_is_after_index(validator_index, signer), "!threshold");
+            let signer = ec_recover_evm_address(signature, digest);
+            if let Result::Ok(address) = signer {
+                require(metadata.signer_is_after_index(validator_index, address), "!signature");
+            } else {
+                revert(0);
+            }
 
             validator_index += 1;
             signature_index += 1;
@@ -79,7 +85,7 @@ impl MultisigIsm for Contract {
     }
 
     #[storage(read, write)]
-    fn enroll_validator(domain: u32, validator: Address) {
+    fn enroll_validator(domain: u32, validator: EvmAddress) {
         storage.validators.get(domain).push(validator);
         update_commitment(domain);
     }
