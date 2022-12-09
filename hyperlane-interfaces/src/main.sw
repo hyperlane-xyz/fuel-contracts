@@ -33,7 +33,7 @@ abi Mailbox {
 
 
 abi InterchainSecurityModule {
-    #[storage(read)]
+    #[storage(read,write)]
     fn verify(metadata: Vec<u8>, message: EncodedMessage) -> bool;
 }
 
