@@ -69,7 +69,7 @@ impl Mailbox for Contract {
     }
 
     #[storage(read, write)]
-    fn process(metadata: MultisigMetadata, message: Message) {
+    fn process(metadata: MultisigMetadata, message: EncodedMessage) {
         require(message.version == VERSION, "!version");
         require(message.destination == LOCAL_DOMAIN, "!destination");
 
@@ -81,9 +81,7 @@ impl Mailbox for Contract {
         require(storage.default_ism.verify(metadata, message), "!module");
         abi(MessageRecipient, message.recipient).handle(message.origin, message.sender, message.body);
 
-        // TODO: investigate how to log dynamically sized data (because of the message body).
-        // https://github.com/hyperlane-xyz/fuel-contracts/issues/3
-        log(message);
+        log(id);
     }
 
     /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
