@@ -8,11 +8,9 @@ use std::{
     logging::log,
 };
 
-use interface::{Mailbox, MessageRecipient};
+use interface::{Mailbox, MessageRecipient, InterchainSecurityModule};
 use merkle::StorageMerkleTree;
 use hyperlane_message::EncodedMessage;
-
-use multisig::{MultisigIsm, MultisigMetadata};
 
 // Sway doesn't allow pow in a const.
 // Equal to 2 KiB, or 2 * (2 ** 10).
@@ -28,7 +26,28 @@ storage {
     // A merkle tree that includes outbound message IDs as leaves.
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
     delivered: StorageMap<b256, bool> = StorageMap {},
-    default_ism: ContractId = ContractId::default(),
+    default_ism: ContractId = ContractId {
+        value: 0x000000000000000000000000000000000000000000000000000000000000002A
+    },
+}
+
+#[storage(read)]
+fn count() -> u32 {
+    // Downcasting to u32 is implicit but generates a warning.
+    // Consider changing the merkle tree to use u32 instead to avoid this altogether.
+    storage.merkle_tree.get_count()
+}
+
+#[storage(read)]
+fn root() -> b256 {
+    storage.merkle_tree.root()
+}
+
+fn msg_sender_b256() -> b256 {
+    match msg_sender().unwrap() {
+        Identity::Address(address) => address.into(),
+        Identity::ContractId(id) => id.into(),
+    }
 }
 
 impl Mailbox for Contract {
@@ -69,17 +88,17 @@ impl Mailbox for Contract {
     }
 
     #[storage(read, write)]
-    fn process(metadata: MultisigMetadata, message: EncodedMessage) {
-        require(message.version == VERSION, "!version");
-        require(message.destination == LOCAL_DOMAIN, "!destination");
+    fn process(metadata: Vec<u8>, message: EncodedMessage) {
+        require(message.version() == VERSION, "!version");
+        require(message.destination() == LOCAL_DOMAIN, "!destination");
 
         let id = message.id();
         require(storage.delivered.get(id) == false, "delivered");
         storage.delivered.insert(id, true);
 
         // TODO: defer to message.recipient.ism
-        require(storage.default_ism.verify(metadata, message), "!module");
-        abi(MessageRecipient, message.recipient).handle(message.origin, message.sender, message.body);
+        require(abi(InterchainSecurityModule, storage.default_ism.into()).verify(metadata, message), "!verify");
+        abi(MessageRecipient, message.recipient()).handle(message.origin(), message.sender(), message.body());
 
         log(id);
     }
@@ -104,24 +123,3 @@ impl Mailbox for Contract {
     }
 }
 
-/// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
-#[storage(read)]
-fn count() -> u32 {
-    // Downcasting to u32 is implicit but generates a warning.
-    // Consider changing the merkle tree to use u32 instead to avoid this altogether.
-    storage.merkle_tree.get_count()
-}
-
-/// Calculates and returns the merkle tree's current root.
-#[storage(read)]
-fn root() -> b256 {
-    storage.merkle_tree.root()
-}
-
-/// Gets the b256 representation of the msg_sender.
-fn msg_sender_b256() -> b256 {
-    match msg_sender().unwrap() {
-        Identity::Address(address) => address.into(),
-        Identity::ContractId(id) => id.into(),
-    }
-}

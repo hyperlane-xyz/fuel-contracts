@@ -1,9 +1,6 @@
 library interface;
 
-dep message;
-
-use message::Message;
-use multisig::MultisigMetadata;
+use hyperlane_message::EncodedMessage;
 
 abi Mailbox {
     /// Dispatches a message to the destination domain and recipient.
@@ -18,7 +15,7 @@ abi Mailbox {
     fn dispatch(destination_domain: u32, recipient: b256, message_body: Vec<u8>) -> b256;
 
     #[storage(read, write)]
-    fn process(metadata: MultisigMetadata, message: Message);
+    fn process(metadata: Vec<u8>, message: EncodedMessage);
 
     /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
     #[storage(read)]
@@ -35,5 +32,10 @@ abi Mailbox {
 }
 
 abi MessageRecipient {
-    fn handle(origin: u32, sender: b256, message: Vec<u8>);
+    fn handle(origin: u32, sender: b256, message_body: Vec<u8>);
+}
+
+abi InterchainSecurityModule {
+    #[storage(read)]
+    fn verify(metadata: Vec<u8>, message: EncodedMessage) -> bool;
 }
