@@ -11,8 +11,17 @@ source = 'path+from-root-211041F05ED22121'
 name = 'hyperlane-mailbox'
 source = 'member'
 dependencies = [
+    'hyperlane_interfaces',
     'hyperlane_message',
     'merkle',
+    'std',
+]
+
+[[package]]
+name = 'hyperlane_interfaces'
+source = 'path+from-root-D26B060B9C691B9B'
+dependencies = [
+    'hyperlane_message',
     'std',
 ]
 

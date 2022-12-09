@@ -1,7 +1,5 @@
 contract;
 
-dep interface;
-
 use std::{
     auth::msg_sender,
     call_frames::contract_id,
@@ -9,8 +7,9 @@ use std::{
     constants::ZERO_B256,
 };
 
-use interface::{Mailbox, MessageRecipient, InterchainSecurityModule};
 use merkle::StorageMerkleTree;
+
+use hyperlane_interfaces::{Mailbox, MessageRecipient, InterchainSecurityModule};
 use hyperlane_message::EncodedMessage;
 
 // Sway doesn't allow pow in a const.
