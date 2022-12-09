@@ -6,6 +6,7 @@ use std::{
     auth::msg_sender,
     call_frames::contract_id,
     logging::log,
+    constants::ZERO_B256,
 };
 
 use interface::{Mailbox, MessageRecipient, InterchainSecurityModule};
@@ -22,13 +23,15 @@ const VERSION: u8 = 0;
 // "fuel" in bytes
 const LOCAL_DOMAIN: u32 = 0x6675656cu32;
 
+const ZERO_ID: ContractId = ContractId {
+    value: 0x0000000000000000000000000000000000000000000000000000000000000000,
+};
+
 storage {
     // A merkle tree that includes outbound message IDs as leaves.
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
     delivered: StorageMap<b256, bool> = StorageMap {},
-    default_ism: ContractId = ContractId {
-        value: 0x000000000000000000000000000000000000000000000000000000000000002A
-    },
+    default_ism: ContractId = ZERO_ID
 }
 
 #[storage(read)]
@@ -96,9 +99,18 @@ impl Mailbox for Contract {
         require(storage.delivered.get(id) == false, "delivered");
         storage.delivered.insert(id, true);
 
-        // TODO: defer to message.recipient.ism
-        require(abi(InterchainSecurityModule, storage.default_ism.into()).verify(metadata, message), "!verify");
-        abi(MessageRecipient, message.recipient()).handle(message.origin(), message.sender(), message.body());
+
+        let msg_recipient = abi(MessageRecipient, message.recipient());
+
+        let mut ism_id = msg_recipient.interchainSecurityModule();
+        if (ism_id == ZERO_ID) {
+            ism_id = storage.default_ism;
+        }
+
+        let ism = abi(InterchainSecurityModule, ism_id.into());
+        require(ism.verify(metadata, message), "!verify");
+
+        msg_recipient.handle(message.origin(), message.sender(), message.body());
 
         log(id);
     }
@@ -122,4 +134,3 @@ impl Mailbox for Contract {
         (root(), count() - 1u32)
     }
 }
-

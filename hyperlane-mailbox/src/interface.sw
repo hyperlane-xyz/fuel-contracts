@@ -32,7 +32,10 @@ abi Mailbox {
 }
 
 abi MessageRecipient {
+    #[storage(read,write)]
     fn handle(origin: u32, sender: b256, message_body: Vec<u8>);
+    #[storage(read)]
+    fn interchainSecurityModule() -> ContractId;
 }
 
 abi InterchainSecurityModule {
