@@ -22,5 +22,7 @@ abi MultisigIsm {
     #[storage(read, write)]
     fn enroll_validator(domain: u32, validator: EvmAddress);
     #[storage(read, write)]
+    fn unenroll_validator(domain: u32, validator: EvmAddress);
+    #[storage(read, write)]
     fn set_threshold(domain: u32, threshold: u8);
 }

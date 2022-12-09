@@ -28,6 +28,25 @@ fn update_commitment(domain: u32) {
     storage.commitment.insert(domain, commitment(threshold, validators));
 }
 
+#[storage(read)]
+fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
+    let validators = storage.validators.get(domain);
+    let mut i = 0;
+    let len = validators.len();
+    while i < len {
+        if validators.get(i).unwrap() == validator {
+            return true;
+        }
+        i += 1;
+    }
+    return false;
+}
+
+#[storage(read)]
+fn validators(domain: u32) -> Vec<EvmAddress> {
+    storage.validators.get(domain)
+}
+
 impl MultisigIsm for Contract {
     #[storage(read)]
     fn threshold(domain: u32) -> u8 {
@@ -36,20 +55,12 @@ impl MultisigIsm for Contract {
 
     #[storage(read)]
     fn validators(domain: u32) -> Vec<EvmAddress> {
-        storage.validators.get(domain)
+        validators(domain)
     }
 
     #[storage(read)]
     fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
-        let validators = storage.validators.get(domain);
-        let mut i = 0;
-        while i < validators.len() {
-            if validators.get(i).unwrap() == validator {
-                return true;
-            }
-            i += 1;
-        }
-        return false;
+        is_enrolled(domain, validator)
     }
 
     #[storage(read)]
@@ -84,13 +95,31 @@ impl MultisigIsm for Contract {
 
     #[storage(read, write)]
     fn set_threshold(domain: u32, threshold: u8) {
+        require(threshold > 0 && threshold <= validators(domain).len(), "!range");
         storage.threshold.insert(domain, threshold);
         update_commitment(domain);
     }
 
     #[storage(read, write)]
     fn enroll_validator(domain: u32, validator: EvmAddress) {
+        require(!is_enrolled(domain, validator), "enrolled");
         storage.validators.get(domain).push(validator);
+        update_commitment(domain);
+    }
+
+    #[storage(read, write)]
+    fn unenroll_validator(domain: u32, validator: EvmAddress) {
+        require(is_enrolled(domain, validator), "!enrolled");
+        let mut validators = storage.validators.get(domain);
+        let mut i = 0;
+        let len = validators.len();
+        while i < len {
+            if validators.get(i).unwrap() == validator {
+                validators.remove(i);
+                break;
+            }
+            i += 1;
+        }
         update_commitment(domain);
     }
 }
