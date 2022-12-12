@@ -3,7 +3,7 @@ name = "hyperlane-mailbox"
 description = "A Sway implementation of the Hyperlane Mailbox contract"
 version = "0.1.0"
 edition = "2021"
-authors = ["Trevor Porter <trkporter@ucdavis.edu>"]
+authors = ["Trevor Porter <trevor@hyperlane.xyz>"]
 license = "Apache-2.0"
 
 [dev-dependencies]
