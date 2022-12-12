@@ -1,0 +1,16 @@
+[package]
+name = "hyperlane-mailbox"
+description = "A Sway implementation of the Hyperlane Mailbox contract"
+version = "0.1.0"
+edition = "2021"
+authors = ["Trevor Porter <trevor@hyperlane.xyz>"]
+license = "Apache-2.0"
+
+[dev-dependencies]
+fuels = { version = "0.31", features = ["fuel-core-lib"] }
+tokio = { version = "1.12", features = ["rt", "macros"] }
+
+[[test]]
+harness = true
+name = "integration_tests"
+path = "tests/harness.rs"

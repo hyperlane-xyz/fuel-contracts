@@ -1,0 +1,19 @@
+[package]
+name = "merkle-test"
+description = "Tests for the Sway StorageMerkleTree implementation"
+version = "0.1.0"
+edition = "2021"
+authors = ["Trevor Porter <trevor@hyperlane.xyz>"]
+license = "Apache-2.0"
+
+[dev-dependencies]
+fuels = { version = "0.31", features = ["fuel-core-lib"] }
+tokio = { version = "1.12", features = ["rt", "macros"] }
+serde = "1.0.147"
+serde_json = "1.0"
+sha3 = "0.10.6"
+
+[[test]]
+harness = true
+name = "integration_tests"
+path = "tests/harness.rs"
