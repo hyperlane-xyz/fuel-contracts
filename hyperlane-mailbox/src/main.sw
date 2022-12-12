@@ -98,6 +98,7 @@ fn root() -> b256 {
     storage.merkle_tree.root()
 }
 
+/// Gets the b256 representation of the msg_sender.
 fn msg_sender_b256() -> b256 {
     match msg_sender().unwrap() {
         Identity::Address(address) => address.into(),
