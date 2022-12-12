@@ -284,6 +284,10 @@ impl EncodedMessage {
         )
     }
 
+    /// Gets the message's body.
+    /// The body's bytes are tightly packed in the EncodedMessage, however Vec<u8> requires
+    /// each u8 element to have its own word (8 bytes) to itself. Therefore we must iterate
+    /// through each byte in the EncodedMessage and push to the Vec.
     pub fn body(self) -> Vec<u8> {
         let body_len = self.buffer.bytes_len - PREFIX_BYTES;
 

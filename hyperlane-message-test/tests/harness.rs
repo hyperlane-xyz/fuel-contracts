@@ -124,9 +124,6 @@ async fn test_message_log() {
     let messages = test_messages_varying_bodies();
 
     for msg in messages.into_iter() {
-        if msg.body.len() != 11 {
-            continue;
-        }
         let expected_id = msg.id();
         let log_tx = instance
             .methods()
