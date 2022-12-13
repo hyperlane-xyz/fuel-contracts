@@ -1,11 +1,7 @@
 library hyperlane_message;
 
-dep word_buffer;
-
 use std::alloc::alloc;
 use std::constants::ZERO_B256;
-
-use word_buffer::{BITS_PER_BYTE, BYTES_PER_WORD, WordBuffer};
 
 use std::bytes::Bytes;
 use bytes_extended::*;
