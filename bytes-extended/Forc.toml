@@ -1,0 +1,8 @@
+[project]
+authors = ["Trevor Porter"]
+entry = "main.sw"
+license = "Apache-2.0"
+name = "bytes_extended"
+
+[dependencies]
+std = { git = 'https://github.com/fuellabs/sway', branch = "master" }

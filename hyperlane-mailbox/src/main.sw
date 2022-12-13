@@ -1,13 +1,16 @@
 contract;
 
 dep interface;
-dep message;
 
-use std::{call_frames::contract_id, logging::log};
+use std::{
+    auth::msg_sender,
+    call_frames::contract_id,
+    logging::log,
+};
 
 use interface::Mailbox;
 use merkle::StorageMerkleTree;
-use message::Message;
+use hyperlane_message::EncodedMessage;
 
 // Sway doesn't allow pow in a const.
 // Equal to 2 KiB, or 2 * (2 ** 10).
@@ -41,25 +44,22 @@ impl Mailbox for Contract {
     ) -> b256 {
         require(message_body.len() <= MAX_MESSAGE_BODY_BYTES, "msg too long");
 
-        let message = Message {
-            version: VERSION,
-            nonce: count(),
-            origin_domain: LOCAL_DOMAIN,
-            sender: contract_id().into(),
+        let message = EncodedMessage::new(
+            VERSION,
+            count(), // nonce
+            LOCAL_DOMAIN,
+            msg_sender_b256(), // sender
             destination_domain,
             recipient,
-            body: message_body,
-        };
+            message_body,
+        );
 
-        // TODO: correctly encode and hash the message to get the correct message id.
-        // https://github.com/hyperlane-xyz/fuel-contracts/issues/2
-        let message_id = 0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb;
-
+        // Get the message's ID and insert it into the merkle tree.
+        let message_id = message.id();
         storage.merkle_tree.insert(message_id);
 
-        // TODO: investigate how to log dynamically sized data (because of the message body).
-        // https://github.com/hyperlane-xyz/fuel-contracts/issues/3
-        log(message);
+        // Log the message.
+        message.log();
 
         message_id
     }
@@ -96,4 +96,12 @@ fn count() -> u32 {
 #[storage(read)]
 fn root() -> b256 {
     storage.merkle_tree.root()
+}
+
+/// Gets the b256 representation of the msg_sender.
+fn msg_sender_b256() -> b256 {
+    match msg_sender().unwrap() {
+        Identity::Address(address) => address.into(),
+        Identity::ContractId(id) => id.into(),
+    }
 }
