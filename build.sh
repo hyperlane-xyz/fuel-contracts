@@ -1,4 +1,4 @@
-packages=( merkle merkle-test hyperlane-message hyperlane-message-test hyperlane-mailbox )
+packages=( merkle merkle-test bytes-extended hyperlane-message hyperlane-message-test hyperlane-mailbox )
 
 current_dir=$(pwd)
 
