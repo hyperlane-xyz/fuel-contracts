@@ -140,12 +140,10 @@ impl Bytes {
     pub fn write_packed_bytes(ref mut self, offset: u64, bytes_ptr: raw_ptr, byte_count: u64) {
         // Ensure that the written bytes will stay within the correct bounds.
         assert(offset + byte_count <= self.len);
-
+        // Get a pointer to the buffer at the offset.
         let write_ptr = self.buf.ptr().add_uint_offset(offset);
-
-        asm(to_ptr: write_ptr, from_ptr: bytes_ptr, byte_count: byte_count) {
-            mcp to_ptr from_ptr byte_count; // Copy `byte_count` bytes from `from_ptr` to `to_ptr`.
-        };
+        // Copy from the `bytes_ptr` into `write_ptr`.
+        bytes_ptr.copy_bytes_to(write_ptr, byte_count);
     }
 
     /// Gets a pointer to bytes within self at the specified offset.
@@ -154,7 +152,7 @@ impl Bytes {
     pub fn get_read_ptr(self, offset: u64, byte_count: u64) -> raw_ptr {
         // Ensure that the bytes to read are within the correct bounds.
         assert(offset + byte_count <= self.len);
-
+        // Get a pointer to buffer at the offset.
         self.buf.ptr().add_uint_offset(offset)
     }
 }
