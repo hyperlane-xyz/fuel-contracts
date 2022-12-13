@@ -116,6 +116,7 @@ impl Mailbox for Contract {
     }
 }
 
+/// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
 #[storage(read)]
 fn count() -> u32 {
     // Downcasting to u32 is implicit but generates a warning.
@@ -123,11 +124,13 @@ fn count() -> u32 {
     storage.merkle_tree.get_count()
 }
 
+/// Calculates and returns the merkle tree's current root.
 #[storage(read)]
 fn root() -> b256 {
     storage.merkle_tree.root()
 }
 
+/// Gets the b256 representation of the msg_sender.
 fn msg_sender_b256() -> b256 {
     match msg_sender().unwrap() {
         Identity::Address(address) => address.into(),
