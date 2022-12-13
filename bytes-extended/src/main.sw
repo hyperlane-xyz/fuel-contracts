@@ -16,7 +16,7 @@ const BYTES_PER_WORD: u64 = 8u64;
 /// value (i.e. ignore any left-padded zeroes if the type isn't a full
 /// word), and returns the pointer.
 fn get_non_reference_type_ptr(value: u64, byte_count: u64) -> raw_ptr {
-    let left_padded_byte_count = 8 - byte_count;
+    let left_padded_byte_count = BYTES_PER_WORD - byte_count;
     asm(value: value, left_padded_byte_count: left_padded_byte_count, tmp) {
         move tmp sp; // Copy the stack pointer (sp) register into the `tmp` register
         cfei i8; // Add 8 bytes (1 word) to the stack pointer, giving tmp a size of 8 bytes.
