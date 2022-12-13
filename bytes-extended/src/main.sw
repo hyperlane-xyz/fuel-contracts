@@ -68,7 +68,7 @@ impl b256 {
     /// Gets a b256 from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
         asm(ptr: ptr) {
-            ptr: b256
+            ptr: b256 // Return ptr as a b256.
         }
     }
 }
