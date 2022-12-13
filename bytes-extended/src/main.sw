@@ -1,0 +1,400 @@
+library bytes_extended;
+
+use std::{
+    bytes::Bytes,
+    constants::ZERO_B256,
+};
+
+const BITS_PER_BYTE: u64 = 8u64;
+const BYTES_PER_WORD: u64 = 8u64;
+
+/// Gets a pointer to a position in memory for a non-reference type.
+/// Does so by allocating a full word on the stack, copying the value
+/// into this word, moving the pointer to point to the contents of the
+/// value (i.e. ignore any left-padded zeroes if the type isn't a full
+/// word), and returns the pointer.
+fn get_non_reference_type_ptr(value: u64, byte_count: u64) -> raw_ptr {
+    let left_padded_byte_count = 8 - byte_count;
+    asm(value: value, left_padded_byte_count: left_padded_byte_count, tmp) {
+        move tmp sp; // Copy the stack pointer (sp) register into the `tmp` register
+        cfei i8; // Add 8 bytes (1 word) to the stack pointer, giving tmp a size of 8 bytes.
+        sw tmp value i0; // Store value into tmp. Value is a register 8 bytes in size.
+        add tmp tmp left_padded_byte_count; // Move tmp to ignore the left padded bytes
+        tmp: raw_ptr // Return the tmp pointer
+    }
+}
+
+/// Gets a non-reference type from a ptr pointing to the start of the value.
+/// Does so by allocating a full word on the stack, copying the byte(s) from
+/// the pointer to this word on the stack, loading the word from the stack,
+/// and bit shifting to recover the appropriate bytes.
+fn get_non_reference_type_from_packed_byte_ptr(ptr: raw_ptr, byte_count: u64) -> u64 {
+    let out = asm(ptr: ptr, byte_count: byte_count, tmp, out) {
+        move tmp sp; // Copy the stack pointer (sp) register into `tmp` register
+        cfei i8; // Add 8 bytes (1 word) to the stack pointer, giving tmp a size of 8 bytes.
+        mcp tmp ptr byte_count; // Copy the bytes at `ptr` into the first bytes of `tmp`
+        lw out tmp i0; // Load the word at `tmp` into `out`
+        out: u64 // Return `out`
+    };
+
+    out >> (BITS_PER_BYTE * (BYTES_PER_WORD - byte_count))
+}
+
+const B256_BYTE_COUNT: u64 = 32u64;
+
+impl b256 {
+    fn packed_bytes(self) -> raw_ptr {
+        __addr_of(self)
+    }
+
+    fn from_packed_bytes(ptr: raw_ptr) -> Self {
+        asm(ptr: ptr) {
+            ptr: b256
+        }
+    }
+}
+
+const U64_BYTE_COUNT: u64 = 8u64;
+
+impl u64 {
+    fn packed_bytes(self) -> raw_ptr {
+        get_non_reference_type_ptr(self, U64_BYTE_COUNT)
+    }
+
+    fn from_packed_bytes(ptr: raw_ptr) -> Self {
+        get_non_reference_type_from_packed_byte_ptr(ptr, U64_BYTE_COUNT)
+    }
+}
+
+const U32_BYTE_COUNT: u64 = 4u64;
+
+impl u32 {
+    fn packed_bytes(self) -> raw_ptr {
+        get_non_reference_type_ptr(self, U32_BYTE_COUNT)
+    }
+
+    fn from_packed_bytes(ptr: raw_ptr) -> Self {
+        get_non_reference_type_from_packed_byte_ptr(ptr, U32_BYTE_COUNT)
+    }
+}
+
+const U16_BYTE_COUNT: u64 = 2u64;
+
+impl u16 {
+    fn packed_bytes(self) -> raw_ptr {
+        get_non_reference_type_ptr(self, U16_BYTE_COUNT)
+    }
+
+    fn from_packed_bytes(ptr: raw_ptr) -> Self {
+        get_non_reference_type_from_packed_byte_ptr(ptr, U16_BYTE_COUNT)
+    }
+}
+
+impl Bytes {
+    /// Constructs a new, empty `Bytes` with the specified length and capacity.
+    ///
+    /// The Bytes will be able to hold exactly `length` bytes without
+    /// reallocating. If `length` is 0, the Bytes will not allocate.
+    pub fn with_length(length: u64) -> Self {
+        let mut _self = Bytes::with_capacity(length);
+        _self.len = length;
+        _self
+    }
+
+    pub fn write_packed_bytes(ref mut self, offset: u64, bytes_ptr: raw_ptr, byte_count: u64) {
+        // Ensure that the written bytes will stay within the correct bounds.
+        assert(offset + byte_count <= self.len);
+
+        let write_ptr = self.buf.ptr().add_uint_offset(offset);
+
+        asm(to_ptr: write_ptr, from_ptr: bytes_ptr, byte_count: byte_count) {
+            mcp to_ptr from_ptr byte_count;
+        };
+    }
+
+    pub fn get_read_ptr(self, offset: u64, byte_count: u64) -> raw_ptr {
+        // Ensure that the bytes to read are within the correct bounds.
+        assert(offset + byte_count <= self.len);
+
+        self.buf.ptr().add_uint_offset(offset)
+    }
+}
+
+impl Bytes {
+
+    // ===== b256 ====
+
+    pub fn write_b256(ref mut self, offset: u64, value: b256) {
+        self.write_packed_bytes(
+            offset,
+            value.packed_bytes(),
+            B256_BYTE_COUNT,
+        );
+    }
+
+    pub fn read_b256(self, offset: u64) -> b256 {
+        let read_ptr = self.get_read_ptr(
+            offset,
+            B256_BYTE_COUNT,
+        );
+
+        b256::from_packed_bytes(read_ptr)
+    }
+
+    // ===== u64 ====
+
+    pub fn write_u64(ref mut self, offset: u64, value: u64) {
+        self.write_packed_bytes(
+            offset,
+            value.packed_bytes(),
+            U64_BYTE_COUNT,
+        );
+    }
+
+    pub fn read_u64(self, offset: u64) -> u64 {
+        let read_ptr = self.get_read_ptr(
+            offset,
+            U64_BYTE_COUNT,
+        );
+
+        u64::from_packed_bytes(read_ptr)
+    }
+
+    // ===== u32 ====
+
+    pub fn write_u32(ref mut self, offset: u64, value: u32) {
+        self.write_packed_bytes(
+            offset,
+            value.packed_bytes(),
+            U32_BYTE_COUNT,
+        );
+    }
+
+    pub fn read_u32(self, offset: u64) -> u32 {
+        let read_ptr = self.get_read_ptr(
+            offset,
+            U32_BYTE_COUNT,
+        );
+
+        u32::from_packed_bytes(read_ptr)
+    }
+
+    // ===== u16 ====
+
+    pub fn write_u16(ref mut self, offset: u64, value: u16) {
+        self.write_packed_bytes(
+            offset,
+            value.packed_bytes(),
+            U16_BYTE_COUNT,
+        );
+    }
+
+    pub fn read_u16(self, offset: u64) -> u16 {
+        let read_ptr = self.get_read_ptr(
+            offset,
+            U16_BYTE_COUNT,
+        );
+
+        u16::from_packed_bytes(read_ptr)
+    }
+
+    // ===== u8 ====
+
+    pub fn write_u8(ref mut self, offset: u64, value: u8) {
+        self.set(offset, value);
+    }
+
+    pub fn read_u8(self, offset: u64) -> u8 {
+        self.get(offset).unwrap()
+    }
+
+    // ===== Bytes =====
+    
+    pub fn write_bytes(ref mut self, offset: u64, value: Bytes) {
+        self.write_packed_bytes(
+            offset,
+            value.buf.ptr(),
+            value.len(),
+        );
+    }
+
+    pub fn read_bytes(ref mut self, offset: u64, len: u64) -> Bytes {
+        let read_ptr = self.get_read_ptr(
+            offset,
+            len,
+        );
+
+        let mut bytes = Bytes::with_length(len);
+        bytes.write_packed_bytes(0u64, read_ptr, len);
+        bytes
+    }
+
+    /// Logs all bytes.
+    pub fn log(self) {
+        // See https://fuellabs.github.io/fuel-specs/master/vm/instruction_set.html#logd-log-data-event
+        asm(ptr: self.buf.ptr(), bytes: self.len) {
+            logd zero zero ptr bytes; // Log the next `bytes` number of bytes starting from `ptr`
+        };
+    }
+
+    /// Performs a keccak256 of all bytes.
+    /// Heavily inspired by the keccak256 implementation:
+    /// https://github.com/FuelLabs/sway/blob/79c0a5e4bb52b04f791e7413853a1c9337ab0c27/sway-lib-std/src/hash.sw#L38
+    pub fn keccak256(self) -> b256 {
+        let mut result_buffer: b256 = ZERO_B256;
+        // See https://fuellabs.github.io/fuel-specs/master/vm/instruction_set.html#k256-keccak-256
+        asm(hash: result_buffer, ptr: self.buf.ptr(), bytes: self.len) {
+            k256 hash ptr bytes; // Hash the next `bytes` number of bytes starting from `ptr` into `hash`
+            hash: b256 // Return the hash
+        }
+    }
+}
+
+fn write_and_read_b256(ref mut bytes: Bytes, offset: u64, value: b256) -> b256 {
+    bytes.write_b256(offset, value);
+    bytes.read_b256(offset)
+}
+
+#[test()]
+fn test_write_and_read_b256() {
+    let mut bytes = Bytes::with_length(64);
+
+    let value: b256 = 0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe;
+    // 0 byte offset
+    assert(value == write_and_read_b256(bytes, 0u64, value));
+
+    // 32 byte offset - tests word-aligned case and writing to the end of the Bytes
+    assert(value == write_and_read_b256(bytes, 32u64, value));
+
+    // 30 byte offset - tests non-word-aligned case and overwriting existing bytes
+    assert(value == write_and_read_b256(bytes, 30u64, value));
+}
+
+fn write_and_read_u64(ref mut bytes: Bytes, offset: u64, value: u64) -> u64 {
+    bytes.write_u64(offset, value);
+    bytes.read_u64(offset)
+}
+
+#[test()]
+fn test_write_and_read_u64() {
+    let mut bytes = Bytes::with_length(16);
+
+    let value: u64 = 0xabcdefab;
+    // 0 byte offset
+    assert(value == write_and_read_u64(bytes, 0u64, value));
+
+    // 8 byte offset - tests word-aligned case and writing to the end of the Bytes
+    assert(value == write_and_read_u64(bytes, 8u64, value));
+
+    // 6 byte offset - tests non-word-aligned case and overwriting existing bytes
+    assert(value == write_and_read_u64(bytes, 6u64, value));
+}
+
+fn write_and_read_u32(ref mut bytes: Bytes, offset: u64, value: u32) -> u32 {
+    bytes.write_u32(offset, value);
+    bytes.read_u32(offset)
+}
+
+#[test()]
+fn test_write_and_read_u32() {
+    let mut bytes = Bytes::with_length(16);
+
+    let value: u32 = 0xabcd;
+    // 0 byte offset
+    assert(value == write_and_read_u32(bytes, 0u64, value));
+
+    // 12 byte offset - tests word-aligned case and writing to the end of the Bytes
+    assert(value == write_and_read_u32(bytes, 12u64, value));
+
+    // 11 byte offset - tests non-word-aligned case and overwriting existing bytes
+    assert(value == write_and_read_u32(bytes, 11u64, value));
+}
+
+fn write_and_read_u16(ref mut bytes: Bytes, offset: u64, value: u16) -> u16 {
+    bytes.write_u16(offset, value);
+    bytes.read_u16(offset)
+}
+
+#[test()]
+fn test_write_and_read_u16() {
+    let mut bytes = Bytes::with_length(16);
+
+    let value: u16 = 0xab;
+    // 0 byte offset
+    assert(value == write_and_read_u16(bytes, 0u64, value));
+
+    // 14 byte offset - tests word-aligned case and writing to the end of the Bytes
+    assert(value == write_and_read_u16(bytes, 14u64, value));
+
+    // 13 byte offset - tests non-word-aligned case and overwriting existing bytes
+    assert(value == write_and_read_u16(bytes, 13u64, value));
+}
+
+fn write_and_read_u8(ref mut bytes: Bytes, offset: u64, value: u16) -> u8 {
+    bytes.write_u8(offset, value);
+    bytes.read_u8(offset)
+}
+
+#[test()]
+fn test_write_and_read_u8() {
+    let mut bytes = Bytes::with_length(16);
+
+    let value: u8 = 0xa;
+    // 0 byte offset
+    assert(value == write_and_read_u8(bytes, 0u64, value));
+
+    // 15 byte offset - tests word-aligned case and writing to the end of the Bytes
+    assert(value == write_and_read_u8(bytes, 15u64, value));
+
+    // 14 byte offset - tests non-word-aligned case
+    assert(value == write_and_read_u8(bytes, 14u64, value));
+
+    // 14 byte offset - tests overwriting existing byte
+    assert(69u8 == write_and_read_u8(bytes, 14u64, 69u8));
+}
+
+fn write_and_read_bytes(ref mut bytes: Bytes, offset: u64, value: Bytes) -> Bytes {
+    bytes.write_bytes(offset, value);
+    bytes.read_bytes(offset, value.len())
+}
+
+#[test()]
+fn test_write_and_read_bytes() {
+    let mut bytes = Bytes::with_length(64);
+
+    let mut value = Bytes::with_length(16);
+
+    // 0 byte offset
+    assert(value.keccak256() == write_and_read_bytes(bytes, 0u64, value).keccak256());
+
+    // 48 byte offset - tests word-aligned case and writing to the end of the Bytes
+    assert(value.keccak256() == write_and_read_bytes(bytes, 48u64, value).keccak256());
+
+    // 43 byte offset - tests word-aligned case and overwriting existing bytes
+    assert(value.keccak256() == write_and_read_bytes(bytes, 43u64, value).keccak256());
+}
+
+fn write_and_read_str(ref mut bytes: Bytes, offset: u64, value: str[30]) -> str[30] {
+    bytes.write_packed_bytes(0u64, __addr_of(value), 30);
+    let read_ptr = bytes.get_read_ptr(offset, 30);
+    asm(ptr: read_ptr) {
+        ptr: str[30] // convert the ptr to a str[30]
+    }
+}
+
+#[test()]
+fn test_write_and_read_str() {
+    let mut bytes = Bytes::with_length(64);
+
+    let value = "\x19Ethereum Signed Message:\n";
+    let value_len = 30u64;
+
+    assert(
+        std::hash::sha256(value) == std::hash::sha256(write_and_read_str(bytes, 0u64, value))
+    );
+}
+
+// All other tests are performed using Rust harness tests:
+// * Testing `log`
+// * More thorough testing of `keccak256`
+// * Testing boundary checks for reading and writing

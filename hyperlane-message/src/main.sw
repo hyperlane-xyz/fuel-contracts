@@ -75,6 +75,14 @@ const PREFIX_BYTES: u64 = 77u64;
 /// Equal to PREFIX_BYTES % BYTES_PER_WORD = 77 % 8 = 5
 const BODY_START_BYTE_IN_WORD: u64 = 5u64;
 
+
+const NONCE_BYTE_OFFSET: u64 = 1u8;
+const ORIGIN_BYTE_OFFSET: u64 = 5u8;
+const SENDER_BYTE_OFFSET: u64 = 9u8;
+const DESTINATION_BYTE_OFFSET: u64 = 41u8;
+const RECIPIENT_BYTE_OFFSET: u64 = 45u8;
+const BODY_BYTE_OFFSET: u64 = 77u8;
+
 impl EncodedMessage {
     pub fn new(
         version: u8,
@@ -153,6 +161,25 @@ impl EncodedMessage {
         // recipient_word0  [40:64] - 3 bytes (continued in next word)
         word = (sender_word3 << 56) | (destination << 24) | (recipient_word0 >> 40);
         buffer.write_word(5, word);
+
+        let write_start = add_uint_offset(buffer.ptr, 41);
+        // let read_end = add_uint_offset(read_start, 4);
+
+        // let mut buffer: u32 = 0u32;
+        
+        asm(write_start: write_start, destination: destination, tmp) {
+            move tmp sp; // Copy the stack pointer (sp) register into `tmp` register
+            cfei i8; // Create 8 bytes on the stack
+            sw tmp destination i0;
+
+            addi tmp tmp i4;
+            // movi tmp i68;
+            mcpi write_start tmp i4;
+            // lw out tmp i0;
+            // out: u32
+        };
+
+        // out >> 32
 
         // ========== word 6 ==========
         //
@@ -263,25 +290,68 @@ impl EncodedMessage {
     }
 
     /// Gets the message's destination domain.
-    pub fn destination(self) -> u32 {
+    pub fn destination(self) -> u64 {
         // The destination is in word 5 at bytes [1:5].
-        self.buffer.read_word(5u64) >> 24
+        // self.buffer.read_word(5u64) >> 24
+        let read_start = add_uint_offset(self.buffer.ptr, 41);
+        // let read_end = add_uint_offset(read_start, 4);
+
+        // let mut buffer: u32 = 0u32;
+        
+        let out = asm(read_start: read_start, tmp, out) {
+            move tmp sp; // Copy the stack pointer (sp) register into `tmp` register
+            cfei i4; // Create 4 bytes on the stack
+            // addi tmp tmp i4;
+            // movi tmp i68;
+            mcpi tmp read_start i4;
+            lw out tmp i0;
+            out: u64
+        };
+
+        out >> 32
+
+        // dest_buffer
+
+        // // dest_buffer
+        // let f: b256 = 0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb;
+        // std::logging::log(__addr_of(f));
+        // std::logging::log(124u64);
+
+        // 40u32
+
+        // self.buffer.read_word(5u64) >> 24
     }
 
     /// Gets the message's recipient.
     pub fn recipient(self) -> b256 {
-        let word5 = self.buffer.read_word(5u64);
-        let word6 = self.buffer.read_word(6u64);
-        let word7 = self.buffer.read_word(7u64);
-        let word8 = self.buffer.read_word(8u64);
-        let word9 = self.buffer.read_word(9u64);
+        let read_start = add_uint_offset(self.buffer.ptr, 45);
+        let out = asm(read_start: read_start, tmp, out) {
+            move tmp sp; // Copy the stack pointer (sp) register into `tmp` register
+            cfei i32; // Create 32 bytes on the stack
+            // addi tmp tmp i4;
+            // movi tmp i68;
+            mcpi tmp read_start i32;
+            // lw out tmp i0;
+            tmp: b256
+        };
 
-        compose(
-            (word5 << 40) | (word6 >> 24), // The last 3 bytes of word 5 and the 5 bytes of word 6
-            (word6 << 40) | (word7 >> 24), // The last 3 bytes of word 6 and the 5 bytes of word 7
-            (word7 << 40) | (word8 >> 24), // The last 3 bytes of word 7 and the 5 bytes of word 8
-            (word8 << 40) | (word9 >> 24), // The last 3 bytes of word 8 and the 5 bytes of word 9
-        )
+        std::logging::log(out);
+
+        out
+
+
+        // let word5 = self.buffer.read_word(5u64);
+        // let word6 = self.buffer.read_word(6u64);
+        // let word7 = self.buffer.read_word(7u64);
+        // let word8 = self.buffer.read_word(8u64);
+        // let word9 = self.buffer.read_word(9u64);
+
+        // compose(
+        //     (word5 << 40) | (word6 >> 24), // The last 3 bytes of word 5 and the 5 bytes of word 6
+        //     (word6 << 40) | (word7 >> 24), // The last 3 bytes of word 6 and the 5 bytes of word 7
+        //     (word7 << 40) | (word8 >> 24), // The last 3 bytes of word 7 and the 5 bytes of word 8
+        //     (word8 << 40) | (word9 >> 24), // The last 3 bytes of word 8 and the 5 bytes of word 9
+        // )
     }
 
     /// Gets the message's body.
@@ -353,5 +423,13 @@ fn compose(word_1: u64, word_2: u64, word_3: u64, word_4: u64) -> b256 {
         sw result w3 i2;
         sw result w4 i3;
         result: b256
+    }
+}
+
+/// Add a u64 offset to a raw_ptr
+pub fn add_uint_offset(ptr: raw_ptr, offset: u64) -> raw_ptr {
+    asm(ptr: ptr, offset: offset, new) {
+        add new ptr offset;
+        new: raw_ptr
     }
 }

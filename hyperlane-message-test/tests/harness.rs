@@ -56,7 +56,7 @@ fn test_message() -> HyperlaneAgentMessage {
             "0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba",
         )
         .unwrap(),
-        destination: 69u32,
+        destination: u32::MAX, // 69u32,
         recipient: H256::decode_hex(
             "0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe",
         )
@@ -227,11 +227,13 @@ async fn test_destination() {
     let destination = instance
         .methods()
         .destination(msg.into())
-        .simulate()
+        .call()
         .await
         .unwrap();
 
-    assert_eq!(destination.value, expected_destination);
+    println!("destination {:?}", destination);
+
+    assert_eq!(destination.value as u64, expected_destination as u64);
 }
 
 #[tokio::test]
@@ -247,6 +249,8 @@ async fn test_recipient() {
         .simulate()
         .await
         .unwrap();
+
+    println!("recipient {:?}", recipient);
 
     assert_eq!(bits256_to_h256(recipient.value), expected_recipient);
 }
