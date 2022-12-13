@@ -35,7 +35,7 @@ fn write_value_to_stack(value: u64, byte_count: u64) -> raw_ptr {
 }
 
 /// Reads a value that is `byte_count` bytes in length from `ptr`.
-/// Returns this value as a u64.
+/// Returns this value as a u64, left padded with zeroes if necessary.
 ///
 /// ### Arguments
 /// * `ptr` - A pointer to memory where the value begins. The `byte_count` bytes
@@ -430,6 +430,8 @@ fn test_write_and_read_bytes() {
     let mut bytes = Bytes::with_length(64);
 
     let mut value = Bytes::with_length(16);
+    value.write_u64(0u64, 0xabcdefabu64);
+    value.write_u64(8u64, 0xabcdefabu64);
 
     // 0 byte offset
     assert(value.keccak256() == write_and_read_bytes(bytes, 0u64, value).keccak256());

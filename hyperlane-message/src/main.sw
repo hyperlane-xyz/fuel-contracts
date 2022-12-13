@@ -30,6 +30,9 @@ pub struct Message {
 ///   destination: [41:45]
 ///   recipient:   [45:77]
 ///   body:        [77:??]
+///
+/// See https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/libs/Message.sol
+/// for the reference implementation.
 pub struct EncodedMessage {
     bytes: Bytes,
 }
