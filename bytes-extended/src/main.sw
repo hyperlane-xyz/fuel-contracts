@@ -5,7 +5,9 @@ use std::{
     constants::ZERO_B256,
 };
 
+/// The number of bits in a single byte.
 const BITS_PER_BYTE: u64 = 8u64;
+/// Fuel has 8 byte (64 bit) words.
 const BYTES_PER_WORD: u64 = 8u64;
 
 /// Gets a pointer to a position in memory for a non-reference type.
@@ -40,13 +42,16 @@ fn get_non_reference_type_from_packed_byte_ptr(ptr: raw_ptr, byte_count: u64) ->
     out >> (BITS_PER_BYTE * (BYTES_PER_WORD - byte_count))
 }
 
+/// The number of bytes in a b256.
 const B256_BYTE_COUNT: u64 = 32u64;
 
 impl b256 {
+    /// Returns a pointer to the b256's packed bytes.
     fn packed_bytes(self) -> raw_ptr {
         __addr_of(self)
     }
 
+    /// Gets a b256 from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
         asm(ptr: ptr) {
             ptr: b256
@@ -54,53 +59,68 @@ impl b256 {
     }
 }
 
+/// The number of bytes in a u64.
 const U64_BYTE_COUNT: u64 = 8u64;
 
 impl u64 {
+    /// Returns a pointer to the u64's packed bytes.
     fn packed_bytes(self) -> raw_ptr {
         get_non_reference_type_ptr(self, U64_BYTE_COUNT)
     }
 
+    /// Gets a u64 from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
         get_non_reference_type_from_packed_byte_ptr(ptr, U64_BYTE_COUNT)
     }
 }
 
+/// The number of bytes in a u32.
 const U32_BYTE_COUNT: u64 = 4u64;
 
 impl u32 {
+    /// Returns a pointer to the u32's packed bytes.
     fn packed_bytes(self) -> raw_ptr {
         get_non_reference_type_ptr(self, U32_BYTE_COUNT)
     }
 
+    /// Gets a u32 from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
         get_non_reference_type_from_packed_byte_ptr(ptr, U32_BYTE_COUNT)
     }
 }
 
+/// The number of bytes in a u16.
 const U16_BYTE_COUNT: u64 = 2u64;
 
 impl u16 {
+    /// Returns a pointer to the u16's packed bytes.
     fn packed_bytes(self) -> raw_ptr {
         get_non_reference_type_ptr(self, U16_BYTE_COUNT)
     }
 
+    /// Gets a u16 from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
         get_non_reference_type_from_packed_byte_ptr(ptr, U16_BYTE_COUNT)
     }
 }
 
 impl Bytes {
-    /// Constructs a new, empty `Bytes` with the specified length and capacity.
+    /// Constructs a new `Bytes` with the specified length and capacity.
     ///
-    /// The Bytes will be able to hold exactly `length` bytes without
-    /// reallocating. If `length` is 0, the Bytes will not allocate.
+    /// The Bytes will be able to hold exactly `length + 1` bytes without
+    /// reallocating. See inline comment for explanation.
     pub fn with_length(length: u64) -> Self {
-        let mut _self = Bytes::with_capacity(length);
+        // An extra byte is allocated due to a bug in the FuelVM that prevents logging the
+        // byte closest to the top of the heap. This can occur if this is
+        // is the first time heap allocation is occurring.
+        // See https://github.com/FuelLabs/fuel-vm/issues/282.
+        let mut _self = Bytes::with_capacity(length + 1);
         _self.len = length;
         _self
     }
 
+    /// Copies `byte_count` bytes from `bytes_ptr` into self at the specified offset.
+    /// Reverts if the bounds of self are violated.
     pub fn write_packed_bytes(ref mut self, offset: u64, bytes_ptr: raw_ptr, byte_count: u64) {
         // Ensure that the written bytes will stay within the correct bounds.
         assert(offset + byte_count <= self.len);
@@ -108,10 +128,13 @@ impl Bytes {
         let write_ptr = self.buf.ptr().add_uint_offset(offset);
 
         asm(to_ptr: write_ptr, from_ptr: bytes_ptr, byte_count: byte_count) {
-            mcp to_ptr from_ptr byte_count;
+            mcp to_ptr from_ptr byte_count; // Copy `byte_count` bytes from `from_ptr` to `to_ptr`.
         };
     }
 
+    /// Gets a pointer to bytes within self at the specified offset.
+    /// Reverts if the `byte_count`, which is the expected number of bytes
+    /// to read from the pointer, violates the bounds of self.
     pub fn get_read_ptr(self, offset: u64, byte_count: u64) -> raw_ptr {
         // Ensure that the bytes to read are within the correct bounds.
         assert(offset + byte_count <= self.len);
@@ -124,6 +147,8 @@ impl Bytes {
 
     // ===== b256 ====
 
+    /// Writes a b256 at the specified offset. Reverts if it violates the
+    /// bounds of self.
     pub fn write_b256(ref mut self, offset: u64, value: b256) {
         self.write_packed_bytes(
             offset,
@@ -132,6 +157,8 @@ impl Bytes {
         );
     }
 
+    /// Reads a b256 at the specified offset.
+    /// Reverts if it violates the bounds of self.
     pub fn read_b256(self, offset: u64) -> b256 {
         let read_ptr = self.get_read_ptr(
             offset,
@@ -143,6 +170,8 @@ impl Bytes {
 
     // ===== u64 ====
 
+    /// Writes a u64 at the specified offset. Reverts if it violates the
+    /// bounds of self.
     pub fn write_u64(ref mut self, offset: u64, value: u64) {
         self.write_packed_bytes(
             offset,
@@ -151,6 +180,8 @@ impl Bytes {
         );
     }
 
+    /// Reads a u64 at the specified offset.
+    /// Reverts if it violates the bounds of self.
     pub fn read_u64(self, offset: u64) -> u64 {
         let read_ptr = self.get_read_ptr(
             offset,
@@ -162,6 +193,8 @@ impl Bytes {
 
     // ===== u32 ====
 
+    /// Writes a u32 at the specified offset. Reverts if it violates the
+    /// bounds of self.
     pub fn write_u32(ref mut self, offset: u64, value: u32) {
         self.write_packed_bytes(
             offset,
@@ -170,6 +203,8 @@ impl Bytes {
         );
     }
 
+    /// Reads a u32 at the specified offset.
+    /// Reverts if it violates the bounds of self.
     pub fn read_u32(self, offset: u64) -> u32 {
         let read_ptr = self.get_read_ptr(
             offset,
@@ -181,6 +216,8 @@ impl Bytes {
 
     // ===== u16 ====
 
+    /// Writes a u16 at the specified offset. Reverts if it violates the
+    /// bounds of self.
     pub fn write_u16(ref mut self, offset: u64, value: u16) {
         self.write_packed_bytes(
             offset,
@@ -189,6 +226,8 @@ impl Bytes {
         );
     }
 
+    /// Reads a u16 at the specified offset.
+    /// Reverts if it violates the bounds of self.
     pub fn read_u16(self, offset: u64) -> u16 {
         let read_ptr = self.get_read_ptr(
             offset,
@@ -200,16 +239,22 @@ impl Bytes {
 
     // ===== u8 ====
 
+    /// Writes a u8 at the specified offset. Reverts if it violates the
+    /// bounds of self.
     pub fn write_u8(ref mut self, offset: u64, value: u8) {
         self.set(offset, value);
     }
 
+    /// Reads a u8 at the specified offset.
+    /// Reverts if it violates the bounds of self.
     pub fn read_u8(self, offset: u64) -> u8 {
         self.get(offset).unwrap()
     }
 
     // ===== Bytes =====
     
+    /// Writes Bytes at the specified offset. Reverts if it violates the
+    /// bounds of self.
     pub fn write_bytes(ref mut self, offset: u64, value: Bytes) {
         self.write_packed_bytes(
             offset,
@@ -218,6 +263,8 @@ impl Bytes {
         );
     }
 
+    /// Reads Bytes starting at the specified offset with the `len` number of bytes.
+    /// Reverts if it violates the bounds of self.
     pub fn read_bytes(ref mut self, offset: u64, len: u64) -> Bytes {
         let read_ptr = self.get_read_ptr(
             offset,
@@ -250,6 +297,12 @@ impl Bytes {
     }
 }
 
+// ==================================================
+// =====                                        =====
+// =====                  Tests                 =====
+// =====                                        =====
+// ==================================================
+
 fn write_and_read_b256(ref mut bytes: Bytes, offset: u64, value: b256) -> b256 {
     bytes.write_b256(offset, value);
     bytes.read_b256(offset)
@@ -279,7 +332,7 @@ fn write_and_read_u64(ref mut bytes: Bytes, offset: u64, value: u64) -> u64 {
 fn test_write_and_read_u64() {
     let mut bytes = Bytes::with_length(16);
 
-    let value: u64 = 0xabcdefab;
+    let value: u64 = 0xabcdefabu64;
     // 0 byte offset
     assert(value == write_and_read_u64(bytes, 0u64, value));
 
@@ -299,7 +352,7 @@ fn write_and_read_u32(ref mut bytes: Bytes, offset: u64, value: u32) -> u32 {
 fn test_write_and_read_u32() {
     let mut bytes = Bytes::with_length(16);
 
-    let value: u32 = 0xabcd;
+    let value: u32 = 0xabcdu32;
     // 0 byte offset
     assert(value == write_and_read_u32(bytes, 0u64, value));
 
@@ -319,7 +372,7 @@ fn write_and_read_u16(ref mut bytes: Bytes, offset: u64, value: u16) -> u16 {
 fn test_write_and_read_u16() {
     let mut bytes = Bytes::with_length(16);
 
-    let value: u16 = 0xab;
+    let value: u16 = 0xabu16;
     // 0 byte offset
     assert(value == write_and_read_u16(bytes, 0u64, value));
 
@@ -330,7 +383,7 @@ fn test_write_and_read_u16() {
     assert(value == write_and_read_u16(bytes, 13u64, value));
 }
 
-fn write_and_read_u8(ref mut bytes: Bytes, offset: u64, value: u16) -> u8 {
+fn write_and_read_u8(ref mut bytes: Bytes, offset: u64, value: u8) -> u8 {
     bytes.write_u8(offset, value);
     bytes.read_u8(offset)
 }
@@ -339,7 +392,7 @@ fn write_and_read_u8(ref mut bytes: Bytes, offset: u64, value: u16) -> u8 {
 fn test_write_and_read_u8() {
     let mut bytes = Bytes::with_length(16);
 
-    let value: u8 = 0xa;
+    let value: u8 = 0xau8;
     // 0 byte offset
     assert(value == write_and_read_u8(bytes, 0u64, value));
 
@@ -393,8 +446,3 @@ fn test_write_and_read_str() {
         std::hash::sha256(value) == std::hash::sha256(write_and_read_str(bytes, 0u64, value))
     );
 }
-
-// All other tests are performed using Rust harness tests:
-// * Testing `log`
-// * More thorough testing of `keccak256`
-// * Testing boundary checks for reading and writing

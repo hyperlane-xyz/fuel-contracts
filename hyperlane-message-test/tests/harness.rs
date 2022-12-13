@@ -14,9 +14,6 @@ use test_utils::{
 // Load abi from json
 abigen!(TestMessage, "out/debug/hyperlane-message-test-abi.json");
 
-// The number of bytes in a 64 bit word.
-const BYTES_PER_WORD: usize = 8;
-
 async fn get_contract_instance() -> (TestMessage, ContractId) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
@@ -231,8 +228,6 @@ async fn test_destination() {
         .await
         .unwrap();
 
-    println!("destination {:?}", destination);
-
     assert_eq!(destination.value as u64, expected_destination as u64);
 }
 
@@ -249,8 +244,6 @@ async fn test_recipient() {
         .simulate()
         .await
         .unwrap();
-
-    println!("recipient {:?}", recipient);
 
     assert_eq!(bits256_to_h256(recipient.value), expected_recipient);
 }
@@ -279,16 +272,8 @@ async fn test_body() {
         } else {
             panic!("Expected LogData receipt. Receipt: {:?}", body_log_receipt);
         };
-        // Recall that a Vec<u8> in Sway will store each u8 element in its
-        // own 64 bit word. The log data therefore logs the padded zeroes in
-        // each of these words. We only care about the rightmost byte for each
-        // word that's logged.
-        let body: Vec<u8> = body_log_data
-            .chunks(BYTES_PER_WORD)
-            .map(|buf| buf[BYTES_PER_WORD - 1])
-            .collect();
 
-        assert_eq!(body, expected_body);
+        assert_eq!(body_log_data, &expected_body);
     }
 }
 

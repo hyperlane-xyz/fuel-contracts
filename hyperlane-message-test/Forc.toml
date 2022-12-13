@@ -6,5 +6,3 @@ name = "hyperlane-message-test"
 
 [dependencies]
 hyperlane_message = { path = "../hyperlane-message" }
-std = { git = 'https://github.com/fuellabs/sway', branch = "master" }
-bytes_extended = { path = "../bytes-extended" }

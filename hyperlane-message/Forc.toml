@@ -5,3 +5,5 @@ license = "Apache-2.0"
 name = "hyperlane_message"
 
 [dependencies]
+bytes_extended = { path = "../bytes-extended" }
+std = { git = 'https://github.com/fuellabs/sway', branch = "master" }

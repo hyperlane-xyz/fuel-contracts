@@ -15,15 +15,17 @@ source = 'path+from-root-A5A9AFB187495FC2'
 name = 'hyperlane-message-test'
 source = 'member'
 dependencies = [
-    'bytes_extended',
     'hyperlane_message',
-    'std git+https://github.com/fuellabs/sway?branch=master#22a150537a464a9297dd3f2664b5ca4ad303c677',
+    'std git+https://github.com/fuellabs/sway?tag=v0.31.3#12ad8423811d566972dd75fbb954cdb95afde8d8',
 ]
 
 [[package]]
 name = 'hyperlane_message'
 source = 'path+from-root-6CA64B415D07732F'
-dependencies = ['std git+https://github.com/fuellabs/sway?tag=v0.31.3#12ad8423811d566972dd75fbb954cdb95afde8d8']
+dependencies = [
+    'bytes_extended',
+    'std git+https://github.com/fuellabs/sway?branch=master#22a150537a464a9297dd3f2664b5ca4ad303c677',
+]
 
 [[package]]
 name = 'std'
