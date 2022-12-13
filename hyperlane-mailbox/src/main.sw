@@ -34,25 +34,6 @@ storage {
     default_ism: ContractId = ZERO_ID
 }
 
-#[storage(read)]
-fn count() -> u32 {
-    // Downcasting to u32 is implicit but generates a warning.
-    // Consider changing the merkle tree to use u32 instead to avoid this altogether.
-    storage.merkle_tree.get_count()
-}
-
-#[storage(read)]
-fn root() -> b256 {
-    storage.merkle_tree.root()
-}
-
-fn msg_sender_b256() -> b256 {
-    match msg_sender().unwrap() {
-        Identity::Address(address) => address.into(),
-        Identity::ContractId(id) => id.into(),
-    }
-}
-
 impl Mailbox for Contract {
     /// Dispatches a message to the destination domain and recipient.
     /// Returns the message's ID.
@@ -110,7 +91,7 @@ impl Mailbox for Contract {
         let ism = abi(InterchainSecurityModule, ism_id.into());
         require(ism.verify(metadata, message), "!verify");
 
-        msg_recipient.handle(message.origin(), message.sender(), message.body());
+        msg_recipient.handle(message.origin(), message.sender(), message.body().into_vec_u8());
 
         log(id);
     }
@@ -132,5 +113,24 @@ impl Mailbox for Contract {
     #[storage(read)]
     fn latest_checkpoint() -> (b256, u32) {
         (root(), count() - 1u32)
+    }
+}
+
+#[storage(read)]
+fn count() -> u32 {
+    // Downcasting to u32 is implicit but generates a warning.
+    // Consider changing the merkle tree to use u32 instead to avoid this altogether.
+    storage.merkle_tree.get_count()
+}
+
+#[storage(read)]
+fn root() -> b256 {
+    storage.merkle_tree.root()
+}
+
+fn msg_sender_b256() -> b256 {
+    match msg_sender().unwrap() {
+        Identity::Address(address) => address.into(),
+        Identity::ContractId(id) => id.into(),
     }
 }
