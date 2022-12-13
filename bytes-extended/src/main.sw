@@ -107,13 +107,15 @@ impl u16 {
 impl Bytes {
     /// Constructs a new `Bytes` with the specified length and capacity.
     ///
-    /// The Bytes will be able to hold exactly `length + 1` bytes without
-    /// reallocating. See inline comment for explanation.
+    /// The Bytes will be able to hold exactly `length` bytes without
+    /// reallocating.
     pub fn with_length(length: u64) -> Self {
+        // TODO: remove the + 1 once fixed upstream in the VM.
         // An extra byte is allocated due to a bug in the FuelVM that prevents logging the
         // byte closest to the top of the heap. This can occur if this is
         // is the first time heap allocation is occurring.
-        // See https://github.com/FuelLabs/fuel-vm/issues/282.
+        // See https://github.com/FuelLabs/fuel-vm/issues/282 and the pending fix
+        // https://github.com/FuelLabs/fuel-vm/pull/287
         let mut _self = Bytes::with_capacity(length + 1);
         _self.len = length;
         _self
