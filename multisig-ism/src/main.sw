@@ -3,7 +3,14 @@ contract;
 dep interface;
 dep metadata;
 
-use std::{vm::evm::{evm_address::EvmAddress, ecr::ec_recover_evm_address}, logging::log};
+use std::{
+    vm::evm::{
+        evm_address::EvmAddress,
+        ecr::ec_recover_evm_address
+    },
+    logging::log,
+    constants::ZERO_B256
+};
 
 use hyperlane_message::EncodedMessage;
 
@@ -81,7 +88,10 @@ pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedM
     return true;
 }
 
+const ZERO_ADDRESS = EvmAddress::from(ZERO_B256);
+
 fn enroll_validator_without_commit(domain: u32, validator: EvmAddress) {
+    require(validator != ZERO_ADDRESS, "zero address");
     require(!is_enrolled(domain, validator), "enrolled");
     validators(domain).push(validator);
 }
