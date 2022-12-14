@@ -53,7 +53,7 @@ fn test_message() -> HyperlaneAgentMessage {
             "0xabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabbabba",
         )
         .unwrap(),
-        destination: u32::MAX, // 69u32,
+        destination: 69u32,
         recipient: H256::decode_hex(
             "0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe",
         )
