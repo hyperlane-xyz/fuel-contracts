@@ -1,11 +1,16 @@
+use ethers::{abi::AbiDecode, types::H256};
 use fuels::{
     prelude::*,
     tx::{ContractId, Receipt},
 };
+use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
+use test_utils::{bits256_to_h256, get_revert_string, h256_to_bits256};
 
 // Load abi from json
 abigen!(Mailbox, "out/debug/hyperlane-mailbox-abi.json");
 
+// At the moment, the origin domain is hardcoded in the Mailbox contract.
+const TEST_ORIGIN_DOMAIN: u32 = 0x6675656cu32;
 const TEST_DESTINATION_DOMAIN: u32 = 1234u32;
 const TEST_RECIPIENT: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
@@ -39,6 +44,21 @@ async fn get_contract_instance() -> (Mailbox, ContractId) {
     (instance, id.into())
 }
 
+// Gets the wallet address from the `Mailbox` instance, and
+// creates a test message with that address as the sender.
+fn test_message(mailbox: &Mailbox) -> HyperlaneAgentMessage {
+    let sender: Address = mailbox.get_wallet().address().into();
+    HyperlaneAgentMessage {
+        version: 0u8,
+        nonce: 0u32,
+        origin: TEST_ORIGIN_DOMAIN,
+        sender: H256::from_slice(sender.as_slice()),
+        destination: TEST_DESTINATION_DOMAIN,
+        recipient: H256::decode_hex(TEST_RECIPIENT).unwrap(),
+        body: vec![10u8; 100],
+    }
+}
+
 #[tokio::test]
 async fn test_dispatch_too_large_message() {
     let (mailbox, _id) = get_contract_instance().await;
@@ -61,34 +81,53 @@ async fn test_dispatch_too_large_message() {
 
 #[tokio::test]
 async fn test_dispatch_logs_message() {
-    // TODO
-    // https://github.com/hyperlane-xyz/fuel-contracts/issues/3
+    let (mailbox, _id) = get_contract_instance().await;
+
+    let message = test_message(&mailbox);
+
+    let dispatch_call = mailbox
+        .methods()
+        .dispatch(
+            message.destination,
+            h256_to_bits256(message.recipient),
+            message.body.clone(),
+        )
+        .call()
+        .await
+        .unwrap();
+
+    // The log is expected to be the second receipt
+    let log_receipt = &dispatch_call.receipts[1];
+    let log_data = if let Receipt::LogData { data, .. } = log_receipt {
+        data
+    } else {
+        panic!("Expected LogData receipt. Receipt: {:?}", log_receipt);
+    };
+
+    let recovered_message = HyperlaneAgentMessage::read_from(&mut log_data.as_slice()).unwrap();
+
+    // Assert equality of the message ID
+    assert_eq!(recovered_message.id(), message.id());
 }
 
 #[tokio::test]
 async fn test_dispatch_returns_id() {
     let (mailbox, _id) = get_contract_instance().await;
 
-    let message_body = vec![10u8; 100];
+    let message = test_message(&mailbox);
 
     let dispatch_call = mailbox
         .methods()
         .dispatch(
-            TEST_DESTINATION_DOMAIN,
-            Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
-            message_body,
+            message.destination,
+            h256_to_bits256(message.recipient),
+            message.body.clone(),
         )
         .call()
         .await
         .unwrap();
 
-    // TODO change when message IDs are calculated correctly
-    // https://github.com/hyperlane-xyz/fuel-contracts/issues/2
-    assert_eq!(
-        dispatch_call.value,
-        Bits256::from_hex_str("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
-            .unwrap(),
-    );
+    assert_eq!(bits256_to_h256(dispatch_call.value), message.id());
 }
 
 #[tokio::test]
@@ -110,7 +149,7 @@ async fn test_dispatch_inserts_into_tree() {
 
     let count = mailbox.methods().count().simulate().await.unwrap();
 
-    assert_eq!(count.value, 1u32,);
+    assert_eq!(count.value, 1u32);
 }
 
 #[tokio::test]
@@ -139,40 +178,5 @@ async fn test_latest_checkpoint() {
         .value;
 
     // The index is 0-indexed
-    assert_eq!(index, 0u32,);
-}
-
-// Given an Error from a call or simulation, returns the revert reason.
-// Panics if it's unable to find the revert reason.
-fn get_revert_string(call_error: Error) -> String {
-    let receipts = if let Error::RevertTransactionError(_, r) = call_error {
-        r
-    } else {
-        panic!(
-            "Error is not a RevertTransactionError. Error: {:?}",
-            call_error
-        );
-    };
-
-    // The receipts will be:
-    // [any prior receipts..., LogData with reason, Revert, ScriptResult]
-    // We want the LogData with the reason, which is utf-8 encoded as the `data`.
-    let revert_reason_receipt = &receipts[receipts.len() - 3];
-    let data = if let Receipt::LogData { data, .. } = revert_reason_receipt {
-        data
-    } else {
-        panic!(
-            "Expected LogData receipt. Receipt: {:?}",
-            revert_reason_receipt
-        );
-    };
-
-    // Null bytes `\0` will be padded to the end of the revert string, so we remove them.
-    let data: Vec<u8> = data
-        .into_iter()
-        .cloned()
-        .filter(|byte| *byte != b'\0')
-        .collect();
-
-    String::from_utf8(data).unwrap()
+    assert_eq!(index, 0u32);
 }

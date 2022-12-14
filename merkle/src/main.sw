@@ -142,8 +142,8 @@ impl StorageMerkleTree {
         let mut i = 0;
         while i < TREE_DEPTH {
             let ith_bit = (index >> i) & 0x01;
-            let next = self.get_branch(i);
             if ith_bit == 1 {
+                let next = self.get_branch(i);
                 current = keccak256((next, current));
             } else {
                 current = keccak256((current, ZERO_HASHES[i]));
