@@ -35,6 +35,8 @@ fn update_commitment(domain: u32) {
     storage.commitment.insert(domain, commitment(threshold, validators));
 }
 
+/// Returns true if the validator is on the multisig for the domain
+/// Currently O(n) but could be O(log(n)) with a set data structure
 #[storage(read)]
 fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
     let validators = storage.validators.get(domain);
