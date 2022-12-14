@@ -2,7 +2,7 @@ library interface;
 
 dep metadata;
 
-use std::{vm::evm::{evm_address::EvmAddress}};
+use std::vm::evm::evm_address::EvmAddress;
 
 use hyperlane_message::EncodedMessage;
 

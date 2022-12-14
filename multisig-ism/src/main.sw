@@ -47,6 +47,41 @@ fn validators(domain: u32) -> Vec<EvmAddress> {
     storage.validators.get(domain)
 }
 
+pub fn verify_merkle_proof(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
+    let calculated_root = StorageMerkleTree::branch_root(message.id(), metadata.proof, metadata.index);
+    return calculated_root == metadata.root;
+}
+
+pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
+    let origin = message.origin();
+    // Ensures the validator set encoded in the metadata matches what we have stored
+    require(metadata.commitment() == storage.commitment.get(origin), "!commitment");
+
+    let digest = metadata.checkpoint_digest(origin);
+
+    let validator_count = metadata.validators.len();
+    let mut validator_index = 0;
+    let mut signature_index = 0;
+
+    // Assumes that signatures are ordered by validator
+    while signature_index < metadata.threshold {
+        let signature = metadata.signatures.get(signature_index).unwrap();
+        let signer = ec_recover_evm_address(signature, digest).unwrap();
+
+        // Loop through remaining validators until we find a match
+        while validator_index < validator_count && signer != metadata.validators.get(validator_index).unwrap() {
+            ++validator_index;
+        }
+
+        // Fail if we didn't find a match
+        require(validator_index < validator_count, "!threshold");
+        ++validator_index;
+
+        ++signature_index;
+    }
+    return true;
+}
+
 impl MultisigIsm for Contract {
     #[storage(read)]
     fn threshold(domain: u32) -> u8 {
@@ -65,31 +100,8 @@ impl MultisigIsm for Contract {
 
     #[storage(read)]
     fn verify(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
-        let calculated_root = StorageMerkleTree::branch_root(message.id(), metadata.proof, metadata.index);
-        require(metadata.root == calculated_root, "!merkle");
-
-        let origin = message.origin();
-        require(metadata.commitment() == storage.commitment.get(origin), "!commitment");
-
-        require(metadata.threshold <= metadata.signatures.len(), "!threshold");
-
-        let digest = metadata.checkpoint_digest(origin);
-
-        let mut validator_index = 0;
-        let mut signature_index = 0;
-        while signature_index < metadata.threshold {
-            let signature = metadata.signatures.get(signature_index).unwrap(); // safe because of require above
-
-            let signer = ec_recover_evm_address(signature, digest);
-            if let Result::Ok(address) = signer {
-                require(metadata.signer_is_after_index(validator_index, address), "!signature");
-            } else {
-                revert(0);
-            }
-
-            validator_index += 1;
-            signature_index += 1;
-        }
+        require(verify_merkle_proof(metadata, message), "!merkle");
+        require(verify_validator_signatures(metadata, message), "!signatures");
         return true;
     }
 
@@ -103,14 +115,14 @@ impl MultisigIsm for Contract {
     #[storage(read, write)]
     fn enroll_validator(domain: u32, validator: EvmAddress) {
         require(!is_enrolled(domain, validator), "enrolled");
-        storage.validators.get(domain).push(validator);
+        validators(domain).push(validator);
         update_commitment(domain);
     }
 
     #[storage(read, write)]
     fn unenroll_validator(domain: u32, validator: EvmAddress) {
         require(is_enrolled(domain, validator), "!enrolled");
-        let mut validators = storage.validators.get(domain);
+        let mut validators = validators(domain);
         let mut i = 0;
         let len = validators.len();
         while i < len {

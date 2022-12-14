@@ -30,14 +30,6 @@ impl MultisigMetadata {
         commitment(self.threshold, self.validators)
     }
 
-    pub fn signer_is_after_index(self, ref mut index: u64, signer: EvmAddress) -> bool {
-        let count = self.validators.len();
-        while index < count && signer != self.validators.get(index).unwrap() {
-            index += 1;
-        }
-        return index < count;
-    }
-
     pub fn checkpoint_digest(self, origin: u32) -> b256 {
         let domain_hash = domain_hash(origin, self.mailbox);
         let checkpoint_hash = keccak256((domain_hash, self.root, self.index));
