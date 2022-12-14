@@ -14,7 +14,7 @@ Be extra sure you've installed `fuel-core`, which is the Fuel blockchain node th
 cargo install fuel-core
 ```
 
-Install all dependencies:
+Install all dependencies, running the following from this `deploy` directory:
 ```
 yarn
 ```
