@@ -5,4 +5,5 @@ license = "Apache-2.0"
 name = "bytes_extended"
 
 [dependencies]
-std = { git = 'https://github.com/fuellabs/sway', branch = "master" }
+# Temporary to get access to the upstream `Bytes` that has not yet been released.
+std = { git = "https://github.com/fuellabs/sway", branch = "master", com = "783044d87db960695a765f12ba025435b4408ef3" }

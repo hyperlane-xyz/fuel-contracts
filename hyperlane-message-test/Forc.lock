@@ -1,11 +1,11 @@
 [[package]]
 name = 'bytes_extended'
 source = 'path+from-root-6CA64B415D07732F'
-dependencies = ['std git+https://github.com/fuellabs/sway?branch=master#a036dc5a5b6c604f6374b040559ededd4161240e']
+dependencies = ['std git+https://github.com/fuellabs/sway?branch=master#783044d87db960695a765f12ba025435b4408ef3']
 
 [[package]]
 name = 'core'
-source = 'path+from-root-7952FB133DF065C2'
+source = 'path+from-root-000C75AAFDEE1BA6'
 
 [[package]]
 name = 'core'
@@ -24,13 +24,13 @@ name = 'hyperlane_message'
 source = 'path+from-root-6CA64B415D07732F'
 dependencies = [
     'bytes_extended',
-    'std git+https://github.com/fuellabs/sway?branch=master#a036dc5a5b6c604f6374b040559ededd4161240e',
+    'std git+https://github.com/fuellabs/sway?branch=master#783044d87db960695a765f12ba025435b4408ef3',
 ]
 
 [[package]]
 name = 'std'
-source = 'git+https://github.com/fuellabs/sway?branch=master#a036dc5a5b6c604f6374b040559ededd4161240e'
-dependencies = ['core path+from-root-7952FB133DF065C2']
+source = 'git+https://github.com/fuellabs/sway?branch=master#783044d87db960695a765f12ba025435b4408ef3'
+dependencies = ['core path+from-root-000C75AAFDEE1BA6']
 
 [[package]]
 name = 'std'
