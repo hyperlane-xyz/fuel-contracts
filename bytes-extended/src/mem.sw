@@ -42,7 +42,7 @@ impl CopyTypeWrapper {
         ptr.add_uint_offset(BYTES_PER_WORD - value_byte_count)
     }
 
-    /// Gets the value, implicitly downcasting from u64 to the desired type.
+    /// Gets the value, implicitly casting from u64 to the desired type.
     fn value<T>(self) -> T {
         self.value
     }
