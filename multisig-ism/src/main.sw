@@ -42,7 +42,6 @@ fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
     return false;
 }
 
-#[storage(read)]
 fn validators(domain: u32) -> Vec<EvmAddress> {
     storage.validators.get(domain)
 }
@@ -82,6 +81,17 @@ pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedM
     return true;
 }
 
+fn enroll_validator_without_commit(domain: u32, validator: EvmAddress) {
+    require(!is_enrolled(domain, validator), "enrolled");
+    validators(domain).push(validator);
+}
+
+fn set_threshold(domain: u32, threshold: u8) {
+    require(threshold > 0 && threshold <= validators(domain).len(), "!range");
+    storage.threshold.insert(domain, threshold);
+    update_commitment(domain);
+}
+
 impl MultisigIsm for Contract {
     #[storage(read)]
     fn threshold(domain: u32) -> u8 {
@@ -107,16 +117,47 @@ impl MultisigIsm for Contract {
 
     #[storage(read, write)]
     fn set_threshold(domain: u32, threshold: u8) {
-        require(threshold > 0 && threshold <= validators(domain).len(), "!range");
-        storage.threshold.insert(domain, threshold);
-        update_commitment(domain);
+        set_threshold(domain, threshold);
     }
 
     #[storage(read, write)]
     fn enroll_validator(domain: u32, validator: EvmAddress) {
-        require(!is_enrolled(domain, validator), "enrolled");
-        validators(domain).push(validator);
+        enroll_validator_without_commit(domain, validator);
         update_commitment(domain);
+    }
+
+    #[storage(read, write)]
+    fn enroll_validators(domains: Vec<u32>, validators: Vec<Vec<EvmAddress>>) {
+        let domain_len = domains.len();
+        require(domain_len == validators.len(), "!length");
+        let mut i = 0;
+        while i < domain_len {
+            let domain = domains.get(i).unwrap();
+            let domain_validators = validators.get(i).unwrap();
+
+            let mut j = 0;
+            let validator_len = domain_validators.len();
+            while j < validator_len {
+                let validator = domain_validators.get(j).unwrap();
+                enroll_validator_without_commit(domain, validator);
+                j += 1;
+            }
+
+            update_commitment(domain);
+            i += 1;
+        }
+    }
+
+    #[storage(read, write)]
+    fn set_thresholds(domains: Vec<u32>, thresholds: Vec<u32>) {
+        let domain_len = domains.len();
+        require(domain_len == thresholds.len(), "!length");
+
+        let mut i = 0;
+        while i < domain_len {
+            set_threshold(domains.get(i).unwrap(), thresholds.get(i).unwrap());
+            i += 1;
+        }
     }
 
     #[storage(read, write)]
