@@ -49,6 +49,7 @@ fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
     return false;
 }
 
+#[storage(read)]
 fn validators(domain: u32) -> Vec<EvmAddress> {
     storage.validators.get(domain)
 }
@@ -58,6 +59,7 @@ pub fn verify_merkle_proof(metadata: MultisigMetadata, message: EncodedMessage) 
     return calculated_root == metadata.root;
 }
 
+#[storage(read)]
 pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
     let origin = message.origin();
     // Ensures the validator set encoded in the metadata matches what we have stored
@@ -76,14 +78,13 @@ pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedM
 
         // Loop through remaining validators until we find a match
         while validator_index < validator_count && signer != metadata.validators.get(validator_index).unwrap() {
-            ++validator_index;
+            validator_index += 1;
         }
 
         // Fail if we didn't find a match
         require(validator_index < validator_count, "!threshold");
-        ++validator_index;
-
-        ++signature_index;
+        validator_index += 1;
+        signature_index += 1;
     }
     return true;
 }
@@ -159,7 +160,7 @@ impl MultisigIsm for Contract {
     }
 
     #[storage(read, write)]
-    fn set_thresholds(domains: Vec<u32>, thresholds: Vec<u32>) {
+    fn set_thresholds(domains: Vec<u32>, thresholds: Vec<u8>) {
         let domain_len = domains.len();
         require(domain_len == thresholds.len(), "!length");
 
@@ -178,7 +179,9 @@ impl MultisigIsm for Contract {
         let len = validators.len();
         while i < len {
             if validators.get(i).unwrap() == validator {
-                validators.remove(i);
+                // swap with last element and pop to avoid shifting
+                validators.swap(len - 1, i);
+                validators.pop();
                 break;
             }
             i += 1;
