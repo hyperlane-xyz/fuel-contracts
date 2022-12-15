@@ -70,6 +70,11 @@ impl Mailbox for Contract {
         message_id
     }
 
+    #[storage(write)]
+    fn set_default_ism(module: ContractId) {
+        storage.default_ism = module;
+    }
+
     #[storage(read, write)]
     fn process(metadata: Vec<u8>, message: EncodedMessage) {
         require(message.version() == VERSION, "!version");
@@ -82,7 +87,7 @@ impl Mailbox for Contract {
 
         let msg_recipient = abi(MessageRecipient, message.recipient());
 
-        let mut ism_id = msg_recipient.interchainSecurityModule();
+        let mut ism_id = msg_recipient.interchain_security_module();
         if (ism_id == ZERO_ID) {
             ism_id = storage.default_ism;
         }

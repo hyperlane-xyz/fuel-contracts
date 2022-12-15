@@ -17,6 +17,9 @@ abi Mailbox {
     #[storage(read, write)]
     fn process(metadata: Vec<u8>, message: EncodedMessage);
 
+    #[storage(write)]
+    fn set_default_ism(module: ContractId);
+
     /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
     #[storage(read)]
     fn count() -> u32;
@@ -31,15 +34,14 @@ abi Mailbox {
     fn latest_checkpoint() -> (b256, u32);
 }
 
-
 abi InterchainSecurityModule {
-    #[storage(read,write)]
+    #[storage(read, write)]
     fn verify(metadata: Vec<u8>, message: EncodedMessage) -> bool;
 }
 
 abi MessageRecipient {
-    #[storage(read,write)]
+    #[storage(read, write)]
     fn handle(origin: u32, sender: b256, message_body: Vec<u8>);
     #[storage(read)]
-    fn interchainSecurityModule() -> ContractId;
+    fn interchain_security_module() -> ContractId;
 }

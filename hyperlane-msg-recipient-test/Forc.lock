@@ -1,6 +1,6 @@
 [[package]]
 name = 'bytes_extended'
-source = 'path+from-root-7908E40C5BBA5E4E'
+source = 'path+from-root-7664820669C2867D'
 dependencies = ['std']
 
 [[package]]
@@ -8,8 +8,17 @@ name = 'core'
 source = 'path+from-root-211041F05ED22121'
 
 [[package]]
-name = 'hyperlane_interfaces'
+name = 'hyperlane-msg-recipient-test'
 source = 'member'
+dependencies = [
+    'hyperlane_interfaces',
+    'hyperlane_message',
+    'std',
+]
+
+[[package]]
+name = 'hyperlane_interfaces'
+source = 'path+from-root-7664820669C2867D'
 dependencies = [
     'hyperlane_message',
     'std',
@@ -17,7 +26,7 @@ dependencies = [
 
 [[package]]
 name = 'hyperlane_message'
-source = 'path+from-root-7908E40C5BBA5E4E'
+source = 'path+from-root-7664820669C2867D'
 dependencies = [
     'bytes_extended',
     'std',
