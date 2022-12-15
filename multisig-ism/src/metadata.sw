@@ -14,10 +14,7 @@ pub struct MultisigMetadata {
     validators: Vec<EvmAddress>,
 }
 
-// TODO: properly import
-const B256_BYTE_COUNT: u64 = 32u64;
-const U32_BYTE_COUNT: u64 = 4u64;
-const U8_BYTE_COUNT: u64 = 1u64;
+const U8_BYTE_COUNT = 1u64;
 const EVM_ADDRESS_BYTE_COUNT: u64 = 20u64;
 
 fn domain_hash(origin: u32, mailbox: b256) -> b256 {

@@ -57,7 +57,7 @@ fn read_value_from_memory(ptr: raw_ptr, byte_count: u64) -> u64 {
 }
 
 /// The number of bytes in a b256.
-const B256_BYTE_COUNT: u64 = 32u64;
+pub const B256_BYTE_COUNT: u64 = 32u64;
 
 impl b256 {
     /// Returns a pointer to the b256's packed bytes.
@@ -74,7 +74,7 @@ impl b256 {
 }
 
 /// The number of bytes in a u64.
-const U64_BYTE_COUNT: u64 = 8u64;
+pub const U64_BYTE_COUNT: u64 = 8u64;
 
 impl u64 {
     /// Returns a pointer to the u64's packed bytes.
@@ -89,7 +89,7 @@ impl u64 {
 }
 
 /// The number of bytes in a u32.
-const U32_BYTE_COUNT: u64 = 4u64;
+pub const U32_BYTE_COUNT: u64 = 4u64;
 
 impl u32 {
     /// Returns a pointer to the u32's packed bytes.
@@ -104,7 +104,7 @@ impl u32 {
 }
 
 /// The number of bytes in a u16.
-const U16_BYTE_COUNT: u64 = 2u64;
+pub const U16_BYTE_COUNT: u64 = 2u64;
 
 impl u16 {
     /// Returns a pointer to the u16's packed bytes.
@@ -137,13 +137,16 @@ impl Bytes {
 
     /// Copies `byte_count` bytes from `bytes_ptr` into self at the specified offset.
     /// Reverts if the bounds of self are violated.
-    pub fn write_packed_bytes(ref mut self, offset: u64, bytes_ptr: raw_ptr, byte_count: u64) {
+    /// Returns the new length of self.
+    pub fn write_packed_bytes(ref mut self, offset: u64, bytes_ptr: raw_ptr, byte_count: u64) -> u64 {
+        let result = offset + byte_count;
         // Ensure that the written bytes will stay within the correct bounds.
-        assert(offset + byte_count <= self.len);
+        assert(result <= self.len);
         // Get a pointer to the buffer at the offset.
         let write_ptr = self.buf.ptr().add_uint_offset(offset);
         // Copy from the `bytes_ptr` into `write_ptr`.
         bytes_ptr.copy_bytes_to(write_ptr, byte_count);
+        result
     }
 
     /// Gets a pointer to bytes within self at the specified offset.
@@ -163,7 +166,7 @@ impl Bytes {
 
     /// Writes a b256 at the specified offset. Reverts if it violates the
     /// bounds of self.
-    pub fn write_b256(ref mut self, offset: u64, value: b256) {
+    pub fn write_b256(ref mut self, offset: u64, value: b256) -> u64 {
         self.write_packed_bytes(
             offset,
             value.packed_bytes(),
@@ -186,7 +189,7 @@ impl Bytes {
 
     /// Writes a u64 at the specified offset. Reverts if it violates the
     /// bounds of self.
-    pub fn write_u64(ref mut self, offset: u64, value: u64) {
+    pub fn write_u64(ref mut self, offset: u64, value: u64) -> u64 {
         self.write_packed_bytes(
             offset,
             value.packed_bytes(),
@@ -209,7 +212,7 @@ impl Bytes {
 
     /// Writes a u32 at the specified offset. Reverts if it violates the
     /// bounds of self.
-    pub fn write_u32(ref mut self, offset: u64, value: u32) {
+    pub fn write_u32(ref mut self, offset: u64, value: u32) -> u64 {
         self.write_packed_bytes(
             offset,
             value.packed_bytes(),
@@ -232,7 +235,7 @@ impl Bytes {
 
     /// Writes a u16 at the specified offset. Reverts if it violates the
     /// bounds of self.
-    pub fn write_u16(ref mut self, offset: u64, value: u16) {
+    pub fn write_u16(ref mut self, offset: u64, value: u16) -> u64 {
         self.write_packed_bytes(
             offset,
             value.packed_bytes(),
@@ -255,8 +258,9 @@ impl Bytes {
 
     /// Writes a u8 at the specified offset. Reverts if it violates the
     /// bounds of self.
-    pub fn write_u8(ref mut self, offset: u64, value: u8) {
+    pub fn write_u8(ref mut self, offset: u64, value: u8) -> u64 {
         self.set(offset, value);
+        offset + 1
     }
 
     /// Reads a u8 at the specified offset.
@@ -269,7 +273,7 @@ impl Bytes {
     
     /// Writes Bytes at the specified offset. Reverts if it violates the
     /// bounds of self.
-    pub fn write_bytes(ref mut self, offset: u64, value: Bytes) {
+    pub fn write_bytes(ref mut self, offset: u64, value: Bytes) -> u64 {
         self.write_packed_bytes(
             offset,
             value.buf.ptr(),
@@ -316,18 +320,20 @@ impl Bytes {
     pub fn with_ethereum_prefix(hash: b256) -> Self {
         let prefix = "Ethereum Signed Message:";
         // 1 byte for 0x19, 24 bytes for the prefix, 1 byte for \n, 2 bytes for 32
-        let prefix_len = 1 + prefix.len() + 1 + 2;
-
+        let prefix_len = 1 + 24 + 1 + 2;
         let mut _self = Bytes::with_length(prefix_len + B256_BYTE_COUNT);
+
+        let mut offset = 0u64;
         // Write the 0x19
-        _self.write_u8(0u64, 0x19u8);
-        _self.write_packed_bytes(1u64, __addr_of(prefix), 24u64);
+        offset = _self.write_u8(offset, 0x19u8);
+        // Write the prefix
+        offset = _self.write_packed_bytes(offset, __addr_of(prefix), 24u64);
         // Write \n (0x0a is the utf-8 representation of \n)
-        _self.write_u8(25u64, 0x0au8);
+        offset = _self.write_u8(offset, 0x0au8);
         // Write 32
-        _self.write_u16(26u64, 32u16);
+        offset = _self.write_u16(offset, 32u16);
         // Write the hash
-        _self.write_b256(prefix_len, hash);
+        offset = _self.write_b256(offset, hash);
         _self
     }
 }
