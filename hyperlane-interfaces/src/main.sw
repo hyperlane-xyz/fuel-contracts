@@ -1,6 +1,6 @@
 library hyperlane_interfaces;
 
-use hyperlane_message::EncodedMessage;
+use hyperlane_message::Message;
 
 abi Mailbox {
     /// Dispatches a message to the destination domain and recipient.
@@ -15,7 +15,7 @@ abi Mailbox {
     fn dispatch(destination_domain: u32, recipient: b256, message_body: Vec<u8>) -> b256;
 
     #[storage(read, write)]
-    fn process(metadata: Vec<u8>, message: EncodedMessage);
+    fn process(metadata: Vec<u8>, message: Message);
 
     #[storage(write)]
     fn set_default_ism(module: ContractId);
@@ -36,7 +36,7 @@ abi Mailbox {
 
 abi InterchainSecurityModule {
     #[storage(read, write)]
-    fn verify(metadata: Vec<u8>, message: EncodedMessage) -> bool;
+    fn verify(metadata: Vec<u8>, message: Message) -> bool;
 }
 
 abi MessageRecipient {

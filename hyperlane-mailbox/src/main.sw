@@ -10,7 +10,7 @@ use std::{
 use merkle::StorageMerkleTree;
 
 use hyperlane_interfaces::{Mailbox, MessageRecipient, InterchainSecurityModule};
-use hyperlane_message::EncodedMessage;
+use hyperlane_message::{Message, EncodedMessage};
 
 // Sway doesn't allow pow in a const.
 // Equal to 2 KiB, or 2 * (2 ** 10).
@@ -76,7 +76,10 @@ impl Mailbox for Contract {
     }
 
     #[storage(read, write)]
-    fn process(metadata: Vec<u8>, message: EncodedMessage) {
+    fn process(metadata: Vec<u8>, _message: Message) {
+        // TODO: revert once abigen handles Bytes
+        let message = EncodedMessage::from(_message);
+        
         require(message.version() == VERSION, "!version");
         require(message.destination() == LOCAL_DOMAIN, "!destination");
 
@@ -93,7 +96,7 @@ impl Mailbox for Contract {
         }
 
         let ism = abi(InterchainSecurityModule, ism_id.into());
-        require(ism.verify(metadata, message), "!verify");
+        require(ism.verify(metadata, _message), "!verify");
 
         msg_recipient.handle(message.origin(), message.sender(), message.body().into_vec_u8());
 

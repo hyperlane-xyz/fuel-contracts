@@ -1,9 +1,0 @@
-[project]
-authors = ["Yorke Rhodes"]
-entry = "main.sw"
-license = "Apache-2.0"
-name = "hyperlane-mailbox-test"
-
-[dependencies]
-hyperlane_interfaces = { path = "../hyperlane-interfaces" }
-hyperlane_message = { path = "../hyperlane-message" }

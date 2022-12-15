@@ -1,7 +1,6 @@
 contract;
 
 use hyperlane_interfaces::MessageRecipient;
-use hyperlane_message::EncodedMessage;
 
 use std::logging::log;
 
