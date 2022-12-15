@@ -1,6 +1,8 @@
 library metadata;
 
-use std::{b512::B512, hash::keccak256, vm::evm::evm_address::EvmAddress};
+use std::{b512::B512, hash::keccak256, vm::evm::evm_address::EvmAddress, bytes::Bytes};
+
+use bytes_extended::*;
 
 pub struct MultisigMetadata {
     root: b256,
@@ -12,17 +14,49 @@ pub struct MultisigMetadata {
     validators: Vec<EvmAddress>,
 }
 
-// TODO: fix packing
-fn eth_hash(hash: b256) -> b256 {
-    return keccak256(("\x19Ethereum Signed Message:\n32", hash));
-}
-
+const U8_BYTE_COUNT = 1u64;
 fn domain_hash(origin: u32, mailbox: b256) -> b256 {
-    return keccak256((origin, mailbox, "HYPERLANE"));
+    let suffix = "HYPERLANE";
+    let suffix_len = 9;
+
+    let mut bytes = Bytes::with_length(U32_BYTE_COUNT + B256_BYTE_COUNT + suffix_len);
+
+    let mut offset = 0;
+    offset = bytes.write_u32(offset, origin);
+    offset = bytes.write_b256(offset, mailbox);
+    offset = bytes.write_packed_bytes(offset, __addr_of(suffix), suffix_len);
+
+    bytes.keccak256()
 }
 
 pub fn commitment(threshold: u8, validators: Vec<EvmAddress>) -> b256 {
-    return keccak256((threshold, validators));
+    let num_validators = validators.len();
+
+    let mut bytes = Bytes::with_length(U8_BYTE_COUNT + num_validators * EVM_ADDRESS_BYTE_COUNT);
+    let mut offset = 0;
+    offset = bytes.write_u8(offset, threshold);
+
+    let mut index = 0;
+    while index < num_validators {
+        let validator = validators.get(index).unwrap();
+        offset = bytes.write_evm_address(offset, validator);
+        index += 1;
+    }
+
+    bytes.keccak256()
+}
+
+pub fn checkpoint_hash(origin: u32, mailbox: b256, root: b256, index: u32) -> b256 {
+    let domain_hash = domain_hash(origin, mailbox);
+
+    let mut bytes = Bytes::with_length(B256_BYTE_COUNT + B256_BYTE_COUNT + U32_BYTE_COUNT);
+
+    let mut offset = 0;
+    offset = bytes.write_b256(offset, domain_hash);
+    offset = bytes.write_b256(offset, root);
+    offset = bytes.write_u32(offset, index);
+
+    bytes.keccak256()
 }
 
 impl MultisigMetadata {
@@ -31,8 +65,7 @@ impl MultisigMetadata {
     }
 
     pub fn checkpoint_digest(self, origin: u32) -> b256 {
-        let domain_hash = domain_hash(origin, self.mailbox);
-        let checkpoint_hash = keccak256((domain_hash, self.root, self.index));
-        return eth_hash(checkpoint_hash);
+        let _checkpoint_hash = checkpoint_hash(origin, self.mailbox, self.root, self.index);
+        Bytes::with_ethereum_prefix(_checkpoint_hash).keccak256()
     }
 }

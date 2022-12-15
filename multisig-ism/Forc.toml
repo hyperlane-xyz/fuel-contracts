@@ -7,3 +7,4 @@ name = "multisig-ism"
 [dependencies]
 merkle = { path = "../merkle" }
 hyperlane_message = { path = "../hyperlane-message" }
+bytes_extended = { path = "../bytes-extended" }

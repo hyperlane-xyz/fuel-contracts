@@ -20,7 +20,6 @@ use interface::MultisigIsm;
 
 use metadata::{MultisigMetadata, commitment};
 
-
 storage {
     // TODO: consider u32 => struct
     threshold: StorageMap<u32, u8> = StorageMap {},

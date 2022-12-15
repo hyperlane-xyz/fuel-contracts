@@ -24,6 +24,7 @@ dependencies = ['std']
 name = 'multisig-ism'
 source = 'member'
 dependencies = [
+    'bytes_extended',
     'hyperlane_message',
     'merkle',
     'std',
