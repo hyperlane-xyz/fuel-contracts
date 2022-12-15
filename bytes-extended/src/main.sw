@@ -43,7 +43,7 @@ fn write_value_to_stack(value: u64, byte_count: u64) -> raw_ptr {
 ///   starting at `ptr` are read.
 /// * `byte_count` - The number of bytes of the original value. E.g. if the value
 ///   being read is a u32, this should be 4 bytes.
-fn read_value_from_memory<T>(ptr: raw_ptr, byte_count: u64) -> T {
+fn read_value_from_memory(ptr: raw_ptr, byte_count: u64) -> u64 {
     // Allocate a whole word on the stack.
     let stack_word_ptr = alloc_stack_word();
     // Copy the `byte_count` bytes from `ptr` into `stack_word_ptr`.
@@ -52,7 +52,23 @@ fn read_value_from_memory<T>(ptr: raw_ptr, byte_count: u64) -> T {
     // right to be correctly read into a 4-byte u32.
     ptr.copy_bytes_to(stack_word_ptr, byte_count);
     // Get the word at stack_word_ptr.
-    let word = stack_word_ptr.read::<T>();
+    let word = stack_word_ptr.read::<u64>();
+    // Bit shift as neccesary.
+    word >> (BITS_PER_BYTE * (BYTES_PER_WORD - byte_count))
+}
+
+// TODO: leverage generics once traits are implemented 
+// https://fuellabs.github.io/sway/v0.32.1/book/advanced/generic_types.html?highlight=generic#trait-constraints
+fn read_bytes_from_memory(ptr: raw_ptr, byte_count: u64) -> b256 {
+    // Allocate a whole word on the stack.
+    let stack_word_ptr = alloc_stack_word();
+    // Copy the `byte_count` bytes from `ptr` into `stack_word_ptr`.
+    // Note if e.g. 4 bytes are read from `ptr`, these are copied into the
+    // first 4 bytes of `stack_word_ptr`. These bytes must be shifted to the
+    // right to be correctly read into a 4-byte u32.
+    ptr.copy_bytes_to(stack_word_ptr, byte_count);
+    // Get the word at stack_word_ptr.
+    let word = stack_word_ptr.read::<b256>();
     // Bit shift as neccesary.
     word >> (BITS_PER_BYTE * (BYTES_PER_WORD - byte_count))
 }
@@ -84,7 +100,7 @@ impl EvmAddress {
 
     /// Gets an EvmAddress from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        let value = read_value_from_memory<b256>(ptr);
+        let value: b256 = read_bytes_from_memory(ptr, EVM_ADDRESS_BYTE_COUNT);
         EvmAddress::from(value)
     }
 }
@@ -187,7 +203,7 @@ impl Bytes {
             offset,
             value.packed_bytes(),
             B256_BYTE_COUNT,
-        );
+        )
     }
 
     /// Reads a b256 at the specified offset.
@@ -210,7 +226,7 @@ impl Bytes {
             offset,
             value.packed_bytes(),
             EVM_ADDRESS_BYTE_COUNT,
-        );
+        )
     }
 
     /// Reads an EvmAddress at the specified offset.
@@ -232,7 +248,7 @@ impl Bytes {
             offset,
             value.packed_bytes(),
             U64_BYTE_COUNT,
-        );
+        )
     }
 
     /// Reads a u64 at the specified offset.
@@ -255,7 +271,7 @@ impl Bytes {
             offset,
             value.packed_bytes(),
             U32_BYTE_COUNT,
-        );
+        )
     }
 
     /// Reads a u32 at the specified offset.
@@ -278,7 +294,7 @@ impl Bytes {
             offset,
             value.packed_bytes(),
             U16_BYTE_COUNT,
-        );
+        )
     }
 
     /// Reads a u16 at the specified offset.
@@ -316,7 +332,7 @@ impl Bytes {
             offset,
             value.buf.ptr(),
             value.len(),
-        );
+        )
     }
 
     /// Reads Bytes starting at the specified offset with the `len` number of bytes.
