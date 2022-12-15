@@ -1,0 +1,21 @@
+[[package]]
+name = 'core'
+source = 'path+from-root-A5A9AFB187495FC2'
+
+[[package]]
+name = 'hyperlane_interfaces'
+source = 'member'
+dependencies = [
+    'hyperlane_message',
+    'std',
+]
+
+[[package]]
+name = 'hyperlane_message'
+source = 'path+from-root-7908E40C5BBA5E4E'
+dependencies = ['std']
+
+[[package]]
+name = 'std'
+source = 'git+https://github.com/fuellabs/sway?tag=v0.31.3#12ad8423811d566972dd75fbb954cdb95afde8d8'
+dependencies = ['core']

@@ -1,4 +1,4 @@
-library interface;
+library hyperlane_interfaces;
 
 use hyperlane_message::EncodedMessage;
 
@@ -31,14 +31,15 @@ abi Mailbox {
     fn latest_checkpoint() -> (b256, u32);
 }
 
+
+abi InterchainSecurityModule {
+    #[storage(read,write)]
+    fn verify(metadata: Vec<u8>, message: EncodedMessage) -> bool;
+}
+
 abi MessageRecipient {
     #[storage(read,write)]
     fn handle(origin: u32, sender: b256, message_body: Vec<u8>);
     #[storage(read)]
     fn interchainSecurityModule() -> ContractId;
-}
-
-abi InterchainSecurityModule {
-    #[storage(read)]
-    fn verify(metadata: Vec<u8>, message: EncodedMessage) -> bool;
 }
