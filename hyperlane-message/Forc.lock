@@ -5,7 +5,7 @@ dependencies = ['std']
 
 [[package]]
 name = 'core'
-source = 'path+from-root-0076623D65EB340A'
+source = 'path+from-root-211041F05ED22121'
 
 [[package]]
 name = 'hyperlane_message'
@@ -17,5 +17,5 @@ dependencies = [
 
 [[package]]
 name = 'std'
-source = 'git+https://github.com/fuellabs/sway?branch=master#22a150537a464a9297dd3f2664b5ca4ad303c677'
+source = 'git+https://github.com/fuellabs/sway?tag=v0.32.1#50c1b6c858c044acf88760cb7eb1b39d076f322d'
 dependencies = ['core']
