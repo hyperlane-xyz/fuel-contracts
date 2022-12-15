@@ -18,7 +18,7 @@ dependencies = [
 [[package]]
 name = 'merkle'
 source = 'path+from-root-7E53ADC53725AC82'
-dependencies = ['std git+https://github.com/fuellabs/sway?tag=v0.31.3#12ad8423811d566972dd75fbb954cdb95afde8d8']
+dependencies = ['std']
 
 [[package]]
 name = 'multisig-ism'
@@ -27,7 +27,7 @@ dependencies = [
     'bytes_extended',
     'hyperlane_message',
     'merkle',
-    'std git+https://github.com/fuellabs/sway?branch=master#949dfb98bd8ad0d89c5a59a33b391892e665a760',
+    'std',
 ]
 
 [[package]]
