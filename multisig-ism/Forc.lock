@@ -1,11 +1,19 @@
 [[package]]
+name = 'bytes_extended'
+source = 'path+from-root-7E53ADC53725AC82'
+dependencies = ['std']
+
+[[package]]
 name = 'core'
-source = 'path+from-root-A5A9AFB187495FC2'
+source = 'path+from-root-211041F05ED22121'
 
 [[package]]
 name = 'hyperlane_message'
 source = 'path+from-root-7E53ADC53725AC82'
-dependencies = ['std']
+dependencies = [
+    'bytes_extended',
+    'std',
+]
 
 [[package]]
 name = 'merkle'
@@ -23,5 +31,5 @@ dependencies = [
 
 [[package]]
 name = 'std'
-source = 'git+https://github.com/fuellabs/sway?tag=v0.31.3#12ad8423811d566972dd75fbb954cdb95afde8d8'
+source = 'git+https://github.com/fuellabs/sway?tag=v0.32.1#50c1b6c858c044acf88760cb7eb1b39d076f322d'
 dependencies = ['core']

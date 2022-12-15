@@ -91,14 +91,15 @@ pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedM
     return true;
 }
 
-const ZERO_ADDRESS = EvmAddress::from(ZERO_B256);
-
+#[storage(read,write)]
 fn enroll_validator_without_commit(domain: u32, validator: EvmAddress) {
+    let ZERO_ADDRESS = EvmAddress::from(ZERO_B256);
     require(validator != ZERO_ADDRESS, "zero address");
     require(!is_enrolled(domain, validator), "enrolled");
     validators(domain).push(validator);
 }
 
+#[storage(read,write)]
 fn set_threshold(domain: u32, threshold: u8) {
     require(threshold > 0 && threshold <= validators(domain).len(), "!range");
     storage.threshold.insert(domain, threshold);
