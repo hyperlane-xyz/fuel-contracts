@@ -312,12 +312,21 @@ impl Bytes {
 }
 
 impl Bytes {
+    /// Returns a new Bytes with "/x19Ethereum Signed Message:/n32" prepended to the hash.
     pub fn with_ethereum_prefix(hash: b256) -> Self {
-        let prefix = "\x19Ethereum Signed Message:\n32";
-        let prefix_len = 32;
-        // TODO: consider Bytes::from_string
+        let prefix = "Ethereum Signed Message:";
+        let prefix_len = 1 + prefix.len() + 1 + 2;
+
         let mut _self = Bytes::with_length(prefix_len + B256_BYTE_COUNT);
-        _self.write_packed_bytes(0u64, __addr_of(prefix), prefix_len);
+        // Write the 0x19
+        _self.write_u8(0u64, 0x19u8);
+        _self.write_packed_bytes(1u64, __addr_of(prefix), 24u64);
+        // Write \n (0x0a is the utf-8 representation of \n)
+        _self.write_u8(25u64, 0x0au8);
+        // Write 32
+        _self.write_u8(26u64, 0x03u8);
+        _self.write_u8(27u64, 0x02u8);
+        // Write the hash
         _self.write_b256(prefix_len, hash);
         _self
     }
