@@ -5,6 +5,7 @@ dep mem;
 use std::{
     bytes::Bytes,
     constants::ZERO_B256,
+    vm::evm::evm_address::EvmAddress
 };
 use mem::alloc_stack_word;
 
@@ -42,7 +43,7 @@ fn write_value_to_stack(value: u64, byte_count: u64) -> raw_ptr {
 ///   starting at `ptr` are read.
 /// * `byte_count` - The number of bytes of the original value. E.g. if the value
 ///   being read is a u32, this should be 4 bytes.
-fn read_value_from_memory(ptr: raw_ptr, byte_count: u64) -> u64 {
+fn read_value_from_memory<T>(ptr: raw_ptr, byte_count: u64) -> T {
     // Allocate a whole word on the stack.
     let stack_word_ptr = alloc_stack_word();
     // Copy the `byte_count` bytes from `ptr` into `stack_word_ptr`.
@@ -51,7 +52,7 @@ fn read_value_from_memory(ptr: raw_ptr, byte_count: u64) -> u64 {
     // right to be correctly read into a 4-byte u32.
     ptr.copy_bytes_to(stack_word_ptr, byte_count);
     // Get the word at stack_word_ptr.
-    let word = stack_word_ptr.read::<u64>();
+    let word = stack_word_ptr.read::<T>();
     // Bit shift as neccesary.
     word >> (BITS_PER_BYTE * (BYTES_PER_WORD - byte_count))
 }
@@ -70,6 +71,21 @@ impl b256 {
         asm(ptr: ptr) {
             ptr: b256 // Return ptr as a b256.
         }
+    }
+}
+
+pub const EVM_ADDRESS_BYTE_COUNT: u64 = 20u64;
+
+impl EvmAddress {
+    /// Returns a pointer to the EvmAddress's packed bytes.
+    fn packed_bytes(self) -> raw_ptr {
+        __addr_of(self).add_uint_offset(B256_BYTE_COUNT - EVM_ADDRESS_BYTE_COUNT)
+    }
+
+    /// Gets an EvmAddress from a pointer to packed bytes.
+    fn from_packed_bytes(ptr: raw_ptr) -> Self {
+        let value = read_value_from_memory<b256>(ptr);
+        EvmAddress::from(value)
     }
 }
 
@@ -183,6 +199,28 @@ impl Bytes {
         );
 
         b256::from_packed_bytes(read_ptr)
+    }
+
+    // ===== EvmAddress ====
+
+    /// Writes an EvmAddress at the specified offset. Reverts if it violates the
+    /// bounds of self.
+    pub fn write_evm_address(ref mut self, offset: u64, value: EvmAddress) -> u64 {
+        self.write_packed_bytes(
+            offset,
+            value.packed_bytes(),
+            EVM_ADDRESS_BYTE_COUNT,
+        );
+    }
+
+    /// Reads an EvmAddress at the specified offset.
+    pub fn read_evm_address(ref mut self, offset: u64) -> EvmAddress {
+        let read_ptr = self.get_read_ptr(
+            offset,
+            EVM_ADDRESS_BYTE_COUNT,
+        );
+
+        EvmAddress::from_packed_bytes(read_ptr)
     }
 
     // ===== u64 ====
@@ -334,6 +372,8 @@ impl Bytes {
         offset = _self.write_u16(offset, 32u16);
         // Write the hash
         offset = _self.write_b256(offset, hash);
+
+        assert(offset == _self.len);
         _self
     }
 }

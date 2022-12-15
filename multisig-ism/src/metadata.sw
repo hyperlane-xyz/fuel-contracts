@@ -15,17 +15,16 @@ pub struct MultisigMetadata {
 }
 
 const U8_BYTE_COUNT = 1u64;
-const EVM_ADDRESS_BYTE_COUNT: u64 = 20u64;
-
 fn domain_hash(origin: u32, mailbox: b256) -> b256 {
     let suffix = "HYPERLANE";
     let suffix_len = 9;
 
     let mut bytes = Bytes::with_length(U32_BYTE_COUNT + B256_BYTE_COUNT + suffix_len);
 
-    bytes.write_u32(0, origin);
-    bytes.write_b256(U32_BYTE_COUNT, mailbox);
-    bytes.write_packed_bytes(U32_BYTE_COUNT + B256_BYTE_COUNT, __addr_of(suffix), suffix_len);
+    let mut offset = 0;
+    offset = bytes.write_u32(offset, origin);
+    offset = bytes.write_b256(offset, mailbox);
+    offset = bytes.write_packed_bytes(offset, __addr_of(suffix), suffix_len);
 
     bytes.keccak256()
 }
@@ -34,15 +33,13 @@ pub fn commitment(threshold: u8, validators: Vec<EvmAddress>) -> b256 {
     let num_validators = validators.len();
 
     let mut bytes = Bytes::with_length(U8_BYTE_COUNT + num_validators * EVM_ADDRESS_BYTE_COUNT);
-    bytes.write_u8(0, threshold);
+    let mut offset = 0;
+    offset = bytes.write_u8(offset, threshold);
 
     let mut index = 0;
     while index < num_validators {
-        bytes.write_packed_bytes(
-            U8_BYTE_COUNT + index * EVM_ADDRESS_BYTE_COUNT,
-            __addr_of(validators.get(index).unwrap()),
-            EVM_ADDRESS_BYTE_COUNT
-        );
+        let validator = validators.get(index).unwrap();
+        offset = bytes.write_evm_address(offset, validator);
         index += 1;
     }
 
@@ -54,9 +51,10 @@ pub fn checkpoint_hash(origin: u32, mailbox: b256, root: b256, index: u32) -> b2
 
     let mut bytes = Bytes::with_length(B256_BYTE_COUNT + B256_BYTE_COUNT + U32_BYTE_COUNT);
 
-    bytes.write_b256(0, domain_hash);
-    bytes.write_b256(B256_BYTE_COUNT, root);
-    bytes.write_u32(B256_BYTE_COUNT + B256_BYTE_COUNT, index);
+    let mut offset = 0;
+    offset = bytes.write_b256(offset, domain_hash);
+    offset = bytes.write_b256(offset, root);
+    offset = bytes.write_u32(offset, index);
 
     bytes.keccak256()
 }
