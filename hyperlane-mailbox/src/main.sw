@@ -8,9 +8,16 @@ use std::{
     logging::log,
 };
 
-use interface::Mailbox;
 use merkle::StorageMerkleTree;
+use ownership::{
+    require_msg_sender,
+    log_ownership_transferred,
+    interface::Ownable,
+    StorageOwnerAttempt,
+};
 use hyperlane_message::EncodedMessage;
+
+use interface::Mailbox;
 
 // Sway doesn't allow pow in a const.
 // Equal to 2 KiB, or 2 * (2 ** 10).
@@ -21,9 +28,20 @@ const VERSION: u8 = 0;
 // Issue tracked here: https://github.com/hyperlane-xyz/fuel-contracts/issues/6
 // "fuel" in bytes
 const LOCAL_DOMAIN: u32 = 0x6675656cu32;
+// TODO: set this at compile / deploy time.
+// NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
+// PRIVATE KEY, which is the first default account when running fuel-client locally.
+const INITIAL_OWNER: Option<Identity> = Option::Some(
+    Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e))
+);
 
 storage {
-    // A merkle tree that includes outbound message IDs as leaves.
+    /// The owner of the contract.
+    owner: Option<Identity> = INITIAL_OWNER,
+    owner_attempt: StorageOwnerAttempt = StorageOwnerAttempt {
+        owner: INITIAL_OWNER,
+    },
+    /// A merkle tree that includes outbound message IDs as leaves.
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
 }
 
@@ -81,6 +99,22 @@ impl Mailbox for Contract {
     #[storage(read)]
     fn latest_checkpoint() -> (b256, u32) {
         (root(), count() - 1u32)
+    }
+}
+
+impl Ownable for Contract {
+    #[storage(read, write)]
+    fn owner() -> Option<Identity> {
+        storage.owner
+    }
+
+    #[storage(read, write)]
+    fn transfer_ownership(new_owner: Option<Identity>) {
+        let current_owner = storage.owner;
+        require_msg_sender(current_owner);
+
+        storage.owner = new_owner;
+        log_ownership_transferred(current_owner, new_owner);
     }
 }
 

@@ -1,10 +1,12 @@
+use std::str::FromStr;
+
 use ethers::{abi::AbiDecode, types::H256};
 use fuels::{
     prelude::*,
     tx::{ContractId, Receipt},
 };
 use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
-use test_utils::{bits256_to_h256, get_revert_string, h256_to_bits256};
+use test_utils::{bits256_to_h256, get_revert_string, h256_to_bits256, funded_wallet_with_private_key};
 
 // Load abi from json
 abigen!(Mailbox, "out/debug/hyperlane-mailbox-abi.json");
@@ -13,6 +15,9 @@ abigen!(Mailbox, "out/debug/hyperlane-mailbox-abi.json");
 const TEST_ORIGIN_DOMAIN: u32 = 0x6675656cu32;
 const TEST_DESTINATION_DOMAIN: u32 = 1234u32;
 const TEST_RECIPIENT: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+const INTIAL_OWNER_PRIVATE_KEY: &str = "0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c";
+const INITIAL_OWNER_ADDRESS: &str = "0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e";
 
 async fn get_contract_instance() -> (Mailbox, ContractId) {
     // Launch a local network and deploy the contract
@@ -180,3 +185,62 @@ async fn test_latest_checkpoint() {
     // The index is 0-indexed
     assert_eq!(index, 0u32);
 }
+
+#[tokio::test]
+async fn test_initial_owner() {
+    let (mailbox, _id) = get_contract_instance().await;
+
+    let expected_owner: Option<Identity> = Some(
+        Identity::Address(Address::from_str(INITIAL_OWNER_ADDRESS).unwrap())
+    );
+
+    let owner = mailbox
+        .methods()
+        .owner()
+        .simulate()
+        .await
+        .unwrap()
+        .value;
+    println!("owner {:?}", owner);
+    assert_eq!(owner, expected_owner);
+}
+
+#[tokio::test]
+async fn test_transfer_ownership_to_some() {
+    let (mailbox, _id) = get_contract_instance().await;
+
+    let current_owner: Option<Identity> = Some(
+        Identity::Address(Address::from_str(INITIAL_OWNER_ADDRESS).unwrap())
+    );
+    let expected_new_owner: Option<Identity> = Some(
+        Identity::Address(Address::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap())
+    );
+
+    let current_owner_wallet = funded_wallet_with_private_key(
+        &mailbox.get_wallet(),
+        INTIAL_OWNER_PRIVATE_KEY,
+    ).await.unwrap();
+
+    // From the current owner's wallet, transfer ownership
+    let transfer_ownership_call = mailbox
+        .with_wallet(current_owner_wallet)
+        .unwrap()
+        .methods()
+        .transfer_ownership(expected_new_owner.clone())
+        .tx_params(TxParameters::default())
+        .call()
+        .await
+        .unwrap();
+
+    println!("transfer_ownership_call {:?}", transfer_ownership_call);
+
+    let owner = mailbox
+        .methods()
+        .owner()
+        .simulate()
+        .await
+        .unwrap()
+        .value;
+    assert_eq!(owner, expected_new_owner);
+}
+

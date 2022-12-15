@@ -7,3 +7,4 @@ name = "hyperlane-mailbox"
 [dependencies]
 hyperlane_message = { path = "../hyperlane-message" }
 merkle = { path = "../merkle" }
+ownership = { path = "../ownership" }

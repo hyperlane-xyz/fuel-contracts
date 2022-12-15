@@ -1,5 +1,7 @@
+use std::str::FromStr;
+
 use ethers::types::H256;
-use fuels::{core::types::Bits256, tx::Receipt, types::errors::Error};
+use fuels::{core::types::Bits256, tx::{Receipt, AssetId}, types::errors::Error, signers::{WalletUnlocked, fuel_crypto::SecretKey}, prelude::{Provider, Bech32Address, TxParameters}};
 
 pub fn h256_to_bits256(h: H256) -> Bits256 {
     Bits256(h.0)
@@ -42,4 +44,21 @@ pub fn get_revert_string(call_error: Error) -> String {
         .collect();
 
     String::from_utf8(data).unwrap()
+}
+
+pub async fn funded_wallet_with_private_key(funder: &WalletUnlocked, private_key: &str) -> Result<WalletUnlocked, Error> {
+    let wallet = WalletUnlocked::new_from_private_key(
+        SecretKey::from_str(private_key).map_err(|e| Error::WalletError(format!("SecretKey error {:?}", e)))?,
+        Some(funder.get_provider()?.clone()),
+    );
+
+    fund_address(funder, wallet.address()).await?;
+
+    Ok(wallet)
+}
+
+async fn fund_address(from_wallet: &WalletUnlocked, to: &Bech32Address) -> Result<(), Error> {
+    let amount: u64 = 1;
+    from_wallet.transfer(to, amount, AssetId::BASE, TxParameters::default()).await?;
+    Ok(())
 }
