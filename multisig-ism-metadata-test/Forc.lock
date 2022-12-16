@@ -1,0 +1,29 @@
+[[package]]
+name = 'bytes_extended'
+source = 'path+from-root-3A407893F450D575'
+dependencies = ['std']
+
+[[package]]
+name = 'core'
+source = 'path+from-root-211041F05ED22121'
+
+[[package]]
+name = 'multisig-ism-metadata-test'
+source = 'member'
+dependencies = [
+    'multisig_ism_metadata',
+    'std',
+]
+
+[[package]]
+name = 'multisig_ism_metadata'
+source = 'path+from-root-3A407893F450D575'
+dependencies = [
+    'bytes_extended',
+    'std',
+]
+
+[[package]]
+name = 'std'
+source = 'git+https://github.com/fuellabs/sway?tag=v0.32.1#50c1b6c858c044acf88760cb7eb1b39d076f322d'
+dependencies = ['core']
