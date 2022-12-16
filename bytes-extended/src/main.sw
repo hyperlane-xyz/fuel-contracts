@@ -12,22 +12,6 @@ use mem::{
     get_value_from_ptr,
 };
 
-// TODO: leverage generics once traits are implemented 
-// https://fuellabs.github.io/sway/v0.32.1/book/advanced/generic_types.html?highlight=generic#trait-constraints
-fn read_bytes_from_memory(ptr: raw_ptr, byte_count: u64) -> b256 {
-    // Allocate a whole word on the stack.
-    let stack_word_ptr = alloc_stack_word();
-    // Copy the `byte_count` bytes from `ptr` into `stack_word_ptr`.
-    // Note if e.g. 4 bytes are read from `ptr`, these are copied into the
-    // first 4 bytes of `stack_word_ptr`. These bytes must be shifted to the
-    // right to be correctly read into a 4-byte u32.
-    ptr.copy_bytes_to(stack_word_ptr, byte_count);
-    // Get the word at stack_word_ptr.
-    let word = stack_word_ptr.read::<b256>();
-    // Bit shift as neccesary.
-    word >> (BITS_PER_BYTE * (BYTES_PER_WORD - byte_count))
-}
-
 /// The number of bytes in a b256.
 pub const B256_BYTE_COUNT: u64 = 32u64;
 
@@ -45,6 +29,9 @@ impl b256 {
     }
 }
 
+/// The EVM address will start 12 bytes into the underlying b256.
+const EVM_ADDRESS_B256_BYTE_OFFSET: u64 = 12u64;
+/// The number of bytes in an EVM address.
 pub const EVM_ADDRESS_BYTE_COUNT: u64 = 20u64;
 
 impl EvmAddress {
@@ -55,7 +42,14 @@ impl EvmAddress {
 
     /// Gets an EvmAddress from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        let value: b256 = read_bytes_from_memory(ptr, EVM_ADDRESS_BYTE_COUNT);
+        // The EvmAddress value will be written to this b256.
+        let value: b256 = ZERO_B256;
+        // Point to 12 bytes into the 32 byte b256, where the EVM address
+        // contents are expected to start.
+        let value_ptr = __addr_of(value).add_uint_offset(EVM_ADDRESS_B256_BYTE_OFFSET);
+        // Write the bytes from ptr into value_ptr.
+        ptr.copy_bytes_to(value_ptr, EVM_ADDRESS_BYTE_COUNT);
+        // Return the value.
         EvmAddress::from(value)
     }
 }
@@ -373,6 +367,30 @@ fn test_write_and_read_b256() {
 
     // 30 byte offset - tests non-word-aligned case and overwriting existing bytes
     assert(value == write_and_read_b256(bytes, 30u64, value));
+}
+
+fn write_and_read_evm_address(ref mut bytes: Bytes, offset: u64, value: EvmAddress) -> EvmAddress {
+    bytes.write_evm_address(offset, value);
+    bytes.read_evm_address(offset)
+}
+
+#[test()]
+fn test_write_and_read_evm_address() {
+    let mut bytes = Bytes::with_length(64);
+
+    let value: EvmAddress = EvmAddress::from(0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe);
+
+    // Sanity check that an EvmAddress this zeroes out the first 12 bytes of the b256
+    assert(value == EvmAddress::from(0x000000000000000000000000cafecafecafecafecafecafecafecafecafecafe));
+
+    // 0 byte offset
+    assert(value == write_and_read_evm_address(bytes, 0u64, value));
+
+    // 44 byte offset - tests word-aligned case and writing to the end of the Bytes
+    assert(value == write_and_read_evm_address(bytes, 44u64, value));
+
+    // 40 byte offset - tests non-word-aligned case and overwriting existing bytes
+    assert(value == write_and_read_evm_address(bytes, 40u64, value));
 }
 
 fn write_and_read_u64(ref mut bytes: Bytes, offset: u64, value: u64) -> u64 {
