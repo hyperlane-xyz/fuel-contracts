@@ -152,6 +152,7 @@ async fn test_commitment() {
         .unwrap()
         .value;
 
+    // Equivalent behavior of abi.encodePacked
     let mut chain = Keccak256::new().chain(&[TEST_THRESHOLD]);
     for validator in TEST_VALIDATORS.iter() {
         chain = chain.chain(validator.as_bytes());
