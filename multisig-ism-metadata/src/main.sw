@@ -1,6 +1,6 @@
 library metadata;
 
-use std::{b512::B512, hash::keccak256, vm::evm::evm_address::EvmAddress, bytes::Bytes};
+use std::{b512::B512, bytes::Bytes, hash::keccak256, vm::evm::evm_address::EvmAddress};
 
 use bytes_extended::*;
 

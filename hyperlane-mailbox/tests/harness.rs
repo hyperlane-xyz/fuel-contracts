@@ -1,9 +1,9 @@
-use ethers::{abi::AbiDecode, types::H256};
+use ethers::abi::AbiDecode;
 use fuels::{
     prelude::*,
     tx::{ContractId, Receipt},
 };
-use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
+use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage, H256};
 use test_utils::{bits256_to_h256, get_revert_string, h256_to_bits256};
 
 // Load abi from json

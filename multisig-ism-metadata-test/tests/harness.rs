@@ -1,21 +1,26 @@
 use fuels::{prelude::*, tx::ContractId};
-use hyperlane_core::{
-    Checkpoint,
-    H256,
-};
-use sha3::{
-    Digest,
-    Keccak256,
-};
-use ethers::utils::hash_message;
+use hyperlane_core::{utils::domain_hash, Checkpoint, H160, H256};
+use sha3::{Digest, Keccak256};
+use test_utils::{bits256_to_h256, h256_to_bits256};
 
 // Load abi from json
-abigen!(TestMultisigIsmMetadata, "out/debug/multisig-ism-metadata-test-abi.json");
+abigen!(
+    TestMultisigIsmMetadata,
+    "out/debug/multisig-ism-metadata-test-abi.json"
+);
 
 const TEST_MAILBOX_ADDRESS: H256 = H256::repeat_byte(0xau8);
 const TEST_MAILBOX_DOMAIN: u32 = 420u32;
 const TEST_CHECKPOINT_ROOT: H256 = H256::repeat_byte(0xbu8);
 const TEST_CHECKPOINT_INDEX: u32 = 69u32;
+const TEST_THRESHOLD: u8 = 4u8;
+const TEST_VALIDATORS: &[H160; 5] = &[
+    H160::repeat_byte(0x1u8),
+    H160::repeat_byte(0x2u8),
+    H160::repeat_byte(0x3u8),
+    H160::repeat_byte(0x4u8),
+    H160::repeat_byte(0x5u8),
+];
 
 async fn get_contract_instance() -> (TestMultisigIsmMetadata, ContractId) {
     // Launch a local network and deploy the contract
@@ -47,67 +52,7 @@ async fn get_contract_instance() -> (TestMultisigIsmMetadata, ContractId) {
     (instance, id.into())
 }
 
-fn get_test_metadata(checkpoint: &Checkpoint) -> MultisigMetadata {
-    MultisigMetadata {
-        root: Bits256(checkpoint.root.0),
-        index: checkpoint.index,
-        mailbox: Bits256(checkpoint.mailbox_address.0),
-        proof: [Bits256::from_hex_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap(); 32],
-        threshold: 4u8,
-        signatures: vec![],
-        validators: vec![],
-    }
-}
-
-/// Computes hash of domain concatenated with "HYPERLANE"
-fn get_domain_hash(address: H256, domain: u32) -> H256 {
-    H256::from_slice(
-        Keccak256::new()
-            .chain(domain.to_be_bytes())
-            .chain(address.as_ref())
-            .chain("HYPERLANE".as_bytes())
-            .finalize()
-            .as_slice(),
-    )
-}
-
-// TODO make signing_hash pub in hyperlane_core
-fn get_signing_hash(checkpoint: &Checkpoint) -> H256 {
-    // sign:
-    // domain_hash(mailbox_address, mailbox_domain) || root || index (as u32)
-    H256::from_slice(
-        Keccak256::new()
-            .chain(get_domain_hash(checkpoint.mailbox_address, checkpoint.mailbox_domain))
-            .chain(checkpoint.root)
-            .chain(checkpoint.index.to_be_bytes())
-            .finalize()
-            .as_slice(),
-    )
-}
-
-fn get_prepended_hash(checkpoint: &Checkpoint) -> H256 {
-    hash_message(get_signing_hash(checkpoint))
-}
-
-#[tokio::test]
-async fn test_domain_hash() {
-    let (instance, _id) = get_contract_instance().await;
-
-    let domain_hash = instance
-        .methods()
-        .domain_hash(TEST_MAILBOX_DOMAIN, Bits256(TEST_MAILBOX_ADDRESS.0))
-        .simulate()
-        .await
-        .unwrap()
-        .value;
-    
-    assert_eq!(H256(domain_hash.0), get_domain_hash(TEST_MAILBOX_ADDRESS, TEST_MAILBOX_DOMAIN));
-}
-
-#[tokio::test]
-async fn test_checkpoint_digest() {
-    let (instance, _id) = get_contract_instance().await;
-
+fn get_test_checkpoint_and_metadata() -> (Checkpoint, MultisigMetadata) {
     let checkpoint = Checkpoint {
         mailbox_address: TEST_MAILBOX_ADDRESS,
         mailbox_domain: TEST_MAILBOX_DOMAIN,
@@ -115,7 +60,69 @@ async fn test_checkpoint_digest() {
         index: TEST_CHECKPOINT_INDEX,
     };
 
-    let metadata = get_test_metadata(&checkpoint);
+    let dummy_proof_element =
+        Bits256::from_hex_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
+            .unwrap();
+    let metadata = MultisigMetadata {
+        root: h256_to_bits256(checkpoint.root),
+        index: checkpoint.index,
+        mailbox: h256_to_bits256(checkpoint.mailbox_address),
+        proof: [dummy_proof_element; 32],
+        threshold: TEST_THRESHOLD,
+        signatures: vec![], // Empty, no tests rely upon signatures
+        validators: TEST_VALIDATORS
+            .iter()
+            .map(|v| h256_to_bits256(H256::from(*v)).into())
+            .collect(),
+    };
+    (checkpoint, metadata)
+}
+
+#[tokio::test]
+async fn test_domain_hash() {
+    let (instance, _id) = get_contract_instance().await;
+
+    let domain_hash_received = instance
+        .methods()
+        .domain_hash(TEST_MAILBOX_DOMAIN, Bits256(TEST_MAILBOX_ADDRESS.0))
+        .simulate()
+        .await
+        .unwrap()
+        .value;
+
+    assert_eq!(
+        bits256_to_h256(domain_hash_received),
+        domain_hash(TEST_MAILBOX_ADDRESS, TEST_MAILBOX_DOMAIN)
+    );
+}
+
+#[tokio::test]
+async fn test_checkpoint_hash() {
+    let (instance, _id) = get_contract_instance().await;
+
+    let (checkpoint, _) = get_test_checkpoint_and_metadata();
+
+    let checkpoint_hash = instance
+        .methods()
+        .checkpoint_hash(
+            checkpoint.mailbox_domain,
+            h256_to_bits256(checkpoint.mailbox_address),
+            Bits256(checkpoint.root.0),
+            checkpoint.index,
+        )
+        .simulate()
+        .await
+        .unwrap()
+        .value;
+
+    assert_eq!(bits256_to_h256(checkpoint_hash), checkpoint.signing_hash());
+}
+
+#[tokio::test]
+async fn test_checkpoint_digest() {
+    let (instance, _id) = get_contract_instance().await;
+
+    let (checkpoint, metadata) = get_test_checkpoint_and_metadata();
 
     let checkpoint_digest = instance
         .methods()
@@ -124,7 +131,33 @@ async fn test_checkpoint_digest() {
         .await
         .unwrap()
         .value;
-    
-    assert_eq!(H256(checkpoint_digest.0), get_prepended_hash(&checkpoint));
+
+    assert_eq!(
+        bits256_to_h256(checkpoint_digest),
+        checkpoint.eth_signed_message_hash()
+    );
 }
 
+#[tokio::test]
+async fn test_commitment() {
+    let (instance, _id) = get_contract_instance().await;
+
+    let (_, metadata) = get_test_checkpoint_and_metadata();
+
+    let commitment = instance
+        .methods()
+        .commitment(metadata)
+        .simulate()
+        .await
+        .unwrap()
+        .value;
+
+    let mut chain = Keccak256::new().chain(&[TEST_THRESHOLD]);
+    for validator in TEST_VALIDATORS.iter() {
+        chain = chain.chain(validator.as_bytes());
+    }
+
+    let expected_commitment = H256::from_slice(chain.finalize().as_slice());
+
+    assert_eq!(bits256_to_h256(commitment), expected_commitment);
+}

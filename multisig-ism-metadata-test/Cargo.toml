@@ -7,10 +7,10 @@ authors = ["Trevor Porter <trkporter@ucdavis.edu>"]
 license = "Apache-2.0"
 
 [dev-dependencies]
-ethers = "*"
 fuels = { version = "0.32", features = ["fuel-core-lib"] }
-hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "ffe1073" }
+hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "ee075b1" }
 sha3 = "0.9.1"
+test-utils = { path = "../test-utils" }
 tokio = { version = "1.12", features = ["rt", "macros"] }
 
 [[test]]

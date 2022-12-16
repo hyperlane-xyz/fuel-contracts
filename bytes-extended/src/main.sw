@@ -333,8 +333,9 @@ impl Bytes {
         offset = _self.write_packed_bytes(offset, __addr_of(prefix), 24u64);
         // Write \n (0x0a is the utf-8 representation of \n)
         offset = _self.write_u8(offset, 0x0au8);
-        // Write 32
-        offset = _self.write_u16(offset, 32u16);
+        // Write "32" as a string.
+        let hash_len_str = "32";
+        offset = _self.write_packed_bytes(offset, __addr_of(hash_len_str), 2);
         // Write the hash
         offset = _self.write_b256(offset, hash);
 
