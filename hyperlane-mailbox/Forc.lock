@@ -13,6 +13,7 @@ source = 'member'
 dependencies = [
     'hyperlane_message',
     'merkle',
+    'ownership',
     'std',
 ]
 
@@ -26,6 +27,11 @@ dependencies = [
 
 [[package]]
 name = 'merkle'
+source = 'path+from-root-D26B060B9C691B9B'
+dependencies = ['std']
+
+[[package]]
+name = 'ownership'
 source = 'path+from-root-D26B060B9C691B9B'
 dependencies = ['std']
 
