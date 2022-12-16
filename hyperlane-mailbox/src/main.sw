@@ -13,7 +13,6 @@ use ownership::{
     require_msg_sender,
     log_ownership_transferred,
     interface::Ownable,
-    StorageOwnerAttempt,
 };
 use hyperlane_message::EncodedMessage;
 
@@ -38,9 +37,6 @@ const INITIAL_OWNER: Option<Identity> = Option::Some(
 storage {
     /// The owner of the contract.
     owner: Option<Identity> = INITIAL_OWNER,
-    owner_attempt: StorageOwnerAttempt = StorageOwnerAttempt {
-        owner: INITIAL_OWNER,
-    },
     /// A merkle tree that includes outbound message IDs as leaves.
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
 }
@@ -103,18 +99,21 @@ impl Mailbox for Contract {
 }
 
 impl Ownable for Contract {
-    #[storage(read, write)]
+    /// Gets the current owner.
+    #[storage(read)]
     fn owner() -> Option<Identity> {
         storage.owner
     }
 
+    /// Transfers ownership to `new_owner`.
+    /// Reverts if the msg_sender is not the current owner.
     #[storage(read, write)]
     fn transfer_ownership(new_owner: Option<Identity>) {
-        let current_owner = storage.owner;
-        require_msg_sender(current_owner);
+        let old_owner = storage.owner;
+        require_msg_sender(old_owner);
 
         storage.owner = new_owner;
-        log_ownership_transferred(current_owner, new_owner);
+        log_ownership_transferred(old_owner, new_owner);
     }
 }
 

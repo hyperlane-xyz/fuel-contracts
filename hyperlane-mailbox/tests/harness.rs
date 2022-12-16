@@ -205,35 +205,24 @@ async fn test_initial_owner() {
     assert_eq!(owner, expected_owner);
 }
 
-#[tokio::test]
-async fn test_transfer_ownership_to_some() {
-    let (mailbox, _id) = get_contract_instance().await;
-
-    let current_owner: Option<Identity> = Some(
-        Identity::Address(Address::from_str(INITIAL_OWNER_ADDRESS).unwrap())
-    );
-    let expected_new_owner: Option<Identity> = Some(
-        Identity::Address(Address::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap())
-    );
-
-    let current_owner_wallet = funded_wallet_with_private_key(
+async fn transfer_ownership_test_helper(mailbox: &Mailbox, initial_owner: Option<Identity>, new_owner: Option<Identity>) {
+    let initial_owner_wallet = funded_wallet_with_private_key(
         &mailbox.get_wallet(),
         INTIAL_OWNER_PRIVATE_KEY,
     ).await.unwrap();
 
     // From the current owner's wallet, transfer ownership
     let transfer_ownership_call = mailbox
-        .with_wallet(current_owner_wallet)
+        .with_wallet(initial_owner_wallet.clone())
         .unwrap()
         .methods()
-        .transfer_ownership(expected_new_owner.clone())
+        .transfer_ownership(new_owner.clone())
         .tx_params(TxParameters::default())
         .call()
         .await
         .unwrap();
 
-    println!("transfer_ownership_call {:?}", transfer_ownership_call);
-
+    // Ensure the owner is now the new owner
     let owner = mailbox
         .methods()
         .owner()
@@ -241,6 +230,68 @@ async fn test_transfer_ownership_to_some() {
         .await
         .unwrap()
         .value;
-    assert_eq!(owner, expected_new_owner);
+    assert_eq!(owner, new_owner);
+
+    // Ensure an event about the ownership transfer was logged
+    let ownership_transferred_events = transfer_ownership_call.get_logs_with_type::<OwnershipTransferredEvent>().unwrap();
+    assert_eq!(ownership_transferred_events, vec![
+        OwnershipTransferredEvent {
+            previous_owner: initial_owner,
+            new_owner: new_owner.clone(),
+        }
+    ]);
+
+    // Ensure the old owner can't transfer ownership anymore
+    let invalid_transfer_ownership_call = mailbox
+        .with_wallet(initial_owner_wallet)
+        .unwrap()
+        .methods()
+        .transfer_ownership(new_owner.clone())
+        .tx_params(TxParameters::default())
+        .call()
+        .await;
+    assert!(invalid_transfer_ownership_call.is_err());
+    assert_eq!(get_revert_string(invalid_transfer_ownership_call.err().unwrap()), "!owner");
 }
 
+#[tokio::test]
+async fn test_transfer_ownership_to_some() {
+    let (mailbox, _id) = get_contract_instance().await;
+
+    // The current owner before the transfer / old owner after the transfer
+    let initial_owner: Option<Identity> = Some(
+        Identity::Address(Address::from_str(INITIAL_OWNER_ADDRESS).unwrap())
+    );
+    let new_owner: Option<Identity> = Some(
+        Identity::Address(Address::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap())
+    );
+
+    transfer_ownership_test_helper(&mailbox, initial_owner, new_owner).await;
+}
+
+#[tokio::test]
+async fn test_transfer_ownership_to_none() {
+    let (mailbox, _id) = get_contract_instance().await;
+
+    // The current owner before the transfer / old owner after the transfer
+    let initial_owner: Option<Identity> = Some(
+        Identity::Address(Address::from_str(INITIAL_OWNER_ADDRESS).unwrap())
+    );
+    let new_owner: Option<Identity> = None;
+
+    transfer_ownership_test_helper(&mailbox, initial_owner, new_owner).await;
+}
+
+#[tokio::test]
+async fn test_transfer_ownership_reverts_if_not_owner() {
+    let (mailbox, _id) = get_contract_instance().await;
+    // The default wallet in Mailbox is not the owner
+    let invalid_transfer_ownership_call = mailbox
+        .methods()
+        .transfer_ownership(None)
+        .tx_params(TxParameters::default())
+        .call()
+        .await;
+    assert!(invalid_transfer_ownership_call.is_err());
+    assert_eq!(get_revert_string(invalid_transfer_ownership_call.err().unwrap()), "!owner");
+}

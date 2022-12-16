@@ -2,49 +2,25 @@ library owner;
 
 dep interface;
 
-use std::{
-    auth::msg_sender,
-    logging::log,
-    storage::{
-        get,
-        store,
-    },
-};
+use std::{auth::msg_sender, logging::log, storage::{get, store}};
 use interface::OwnershipTransferredEvent;
 
-pub struct StorageOwnerAttempt {
-    owner: Option<Identity>,
-}
-
-impl StorageOwnerAttempt {
-    #[storage(read)]
-    pub fn get_owner(self) -> Option<Identity> {
-        // self.owner
-
-        get(__get_storage_key())
-    }
-
-    #[storage(read, write)]
-    pub fn set_owner(ref mut self, new_owner: Option<Identity>) {
-        // self.owner = new_owner;
-
-        store(__get_storage_key(), new_owner);
-    }
-}
-
+/// Reverts if `owner` is None, or if the inner value is not equal to
+/// the msg_sender.
 pub fn require_msg_sender(owner: Option<Identity>) {
-    // Note that if owner is None, the unwrap() will cause a revert.
-    require(
-        owner.unwrap() == msg_sender().unwrap(),
-        "!owner"
-    );
+    // To still revert with the string "!owner", owner.is_some() is checked
+    // instead of reverting with owner.unwrap() if owner is None.
+    require(owner.is_some() && owner.unwrap() == msg_sender().unwrap(), "!owner");
 }
 
-pub fn log_ownership_transferred(previous_owner: Option<Identity>, new_owner: Option<Identity>) {
-    log(
-        OwnershipTransferredEvent {
-            previous_owner,
-            new_owner,
-        }
-    );
+/// Logs an OwnershipTransferredEvent indicating ownership was transferred from `previous_owner`
+/// to `new_owner`.
+pub fn log_ownership_transferred(
+    previous_owner: Option<Identity>,
+    new_owner: Option<Identity>,
+) {
+    log(OwnershipTransferredEvent {
+        previous_owner,
+        new_owner,
+    });
 }
