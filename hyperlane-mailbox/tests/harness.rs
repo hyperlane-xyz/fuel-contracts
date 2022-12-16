@@ -6,7 +6,9 @@ use fuels::{
     tx::{ContractId, Receipt},
 };
 use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
-use test_utils::{bits256_to_h256, get_revert_string, h256_to_bits256, funded_wallet_with_private_key};
+use test_utils::{
+    bits256_to_h256, funded_wallet_with_private_key, get_revert_string, h256_to_bits256,
+};
 
 // Load abi from json
 abigen!(Mailbox, "out/debug/hyperlane-mailbox-abi.json");
@@ -16,8 +18,10 @@ const TEST_ORIGIN_DOMAIN: u32 = 0x6675656cu32;
 const TEST_DESTINATION_DOMAIN: u32 = 1234u32;
 const TEST_RECIPIENT: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
-const INTIAL_OWNER_PRIVATE_KEY: &str = "0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c";
-const INITIAL_OWNER_ADDRESS: &str = "0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e";
+const INTIAL_OWNER_PRIVATE_KEY: &str =
+    "0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c";
+const INITIAL_OWNER_ADDRESS: &str =
+    "0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e";
 
 async fn get_contract_instance() -> (Mailbox, ContractId) {
     // Launch a local network and deploy the contract
@@ -190,26 +194,24 @@ async fn test_latest_checkpoint() {
 async fn test_initial_owner() {
     let (mailbox, _id) = get_contract_instance().await;
 
-    let expected_owner: Option<Identity> = Some(
-        Identity::Address(Address::from_str(INITIAL_OWNER_ADDRESS).unwrap())
-    );
+    let expected_owner: Option<Identity> = Some(Identity::Address(
+        Address::from_str(INITIAL_OWNER_ADDRESS).unwrap(),
+    ));
 
-    let owner = mailbox
-        .methods()
-        .owner()
-        .simulate()
-        .await
-        .unwrap()
-        .value;
+    let owner = mailbox.methods().owner().simulate().await.unwrap().value;
     println!("owner {:?}", owner);
     assert_eq!(owner, expected_owner);
 }
 
-async fn transfer_ownership_test_helper(mailbox: &Mailbox, initial_owner: Option<Identity>, new_owner: Option<Identity>) {
-    let initial_owner_wallet = funded_wallet_with_private_key(
-        &mailbox.get_wallet(),
-        INTIAL_OWNER_PRIVATE_KEY,
-    ).await.unwrap();
+async fn transfer_ownership_test_helper(
+    mailbox: &Mailbox,
+    initial_owner: Option<Identity>,
+    new_owner: Option<Identity>,
+) {
+    let initial_owner_wallet =
+        funded_wallet_with_private_key(&mailbox.get_wallet(), INTIAL_OWNER_PRIVATE_KEY)
+            .await
+            .unwrap();
 
     // From the current owner's wallet, transfer ownership
     let transfer_ownership_call = mailbox
@@ -223,23 +225,20 @@ async fn transfer_ownership_test_helper(mailbox: &Mailbox, initial_owner: Option
         .unwrap();
 
     // Ensure the owner is now the new owner
-    let owner = mailbox
-        .methods()
-        .owner()
-        .simulate()
-        .await
-        .unwrap()
-        .value;
+    let owner = mailbox.methods().owner().simulate().await.unwrap().value;
     assert_eq!(owner, new_owner);
 
     // Ensure an event about the ownership transfer was logged
-    let ownership_transferred_events = transfer_ownership_call.get_logs_with_type::<OwnershipTransferredEvent>().unwrap();
-    assert_eq!(ownership_transferred_events, vec![
-        OwnershipTransferredEvent {
+    let ownership_transferred_events = transfer_ownership_call
+        .get_logs_with_type::<OwnershipTransferredEvent>()
+        .unwrap();
+    assert_eq!(
+        ownership_transferred_events,
+        vec![OwnershipTransferredEvent {
             previous_owner: initial_owner,
             new_owner: new_owner.clone(),
-        }
-    ]);
+        }]
+    );
 
     // Ensure the old owner can't transfer ownership anymore
     let invalid_transfer_ownership_call = mailbox
@@ -251,7 +250,10 @@ async fn transfer_ownership_test_helper(mailbox: &Mailbox, initial_owner: Option
         .call()
         .await;
     assert!(invalid_transfer_ownership_call.is_err());
-    assert_eq!(get_revert_string(invalid_transfer_ownership_call.err().unwrap()), "!owner");
+    assert_eq!(
+        get_revert_string(invalid_transfer_ownership_call.err().unwrap()),
+        "!owner"
+    );
 }
 
 #[tokio::test]
@@ -259,12 +261,13 @@ async fn test_transfer_ownership_to_some() {
     let (mailbox, _id) = get_contract_instance().await;
 
     // The current owner before the transfer / old owner after the transfer
-    let initial_owner: Option<Identity> = Some(
-        Identity::Address(Address::from_str(INITIAL_OWNER_ADDRESS).unwrap())
-    );
-    let new_owner: Option<Identity> = Some(
-        Identity::Address(Address::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe").unwrap())
-    );
+    let initial_owner: Option<Identity> = Some(Identity::Address(
+        Address::from_str(INITIAL_OWNER_ADDRESS).unwrap(),
+    ));
+    let new_owner: Option<Identity> = Some(Identity::Address(
+        Address::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
+            .unwrap(),
+    ));
 
     transfer_ownership_test_helper(&mailbox, initial_owner, new_owner).await;
 }
@@ -274,9 +277,9 @@ async fn test_transfer_ownership_to_none() {
     let (mailbox, _id) = get_contract_instance().await;
 
     // The current owner before the transfer / old owner after the transfer
-    let initial_owner: Option<Identity> = Some(
-        Identity::Address(Address::from_str(INITIAL_OWNER_ADDRESS).unwrap())
-    );
+    let initial_owner: Option<Identity> = Some(Identity::Address(
+        Address::from_str(INITIAL_OWNER_ADDRESS).unwrap(),
+    ));
     let new_owner: Option<Identity> = None;
 
     transfer_ownership_test_helper(&mailbox, initial_owner, new_owner).await;
@@ -293,5 +296,8 @@ async fn test_transfer_ownership_reverts_if_not_owner() {
         .call()
         .await;
     assert!(invalid_transfer_ownership_call.is_err());
-    assert_eq!(get_revert_string(invalid_transfer_ownership_call.err().unwrap()), "!owner");
+    assert_eq!(
+        get_revert_string(invalid_transfer_ownership_call.err().unwrap()),
+        "!owner"
+    );
 }
