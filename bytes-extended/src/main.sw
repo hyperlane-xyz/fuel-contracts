@@ -381,7 +381,7 @@ fn test_write_and_read_evm_address() {
 
     let value: EvmAddress = EvmAddress::from(0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe);
 
-    // Sanity check that an EvmAddress this zeroes out the first 12 bytes of the b256
+    // Sanity check that an EvmAddress will zero out the first 12 bytes of the b256
     assert(value == EvmAddress::from(0x000000000000000000000000cafecafecafecafecafecafecafecafecafecafe));
 
     // 0 byte offset
