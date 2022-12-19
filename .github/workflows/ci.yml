@@ -1,0 +1,38 @@
+name: CI
+
+on: [push]
+
+jobs:
+  install:
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          command: install
+  cargo:
+    needs: install
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+  forc:
+    needs: install
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: forc fuel-core forc-fmt
+      - run: forc build
+      - run: forc test
+      - run: forc fmt -- --check
