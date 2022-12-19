@@ -279,6 +279,8 @@ impl Bytes {
 
     /// Reads Bytes starting at the specified offset with the `len` number of bytes.
     /// Does not copy any bytes, and instead points to the bytes within self.
+    /// Changing the contents of the returned bytes will affect self, so be cautious
+    /// of unintented consequences!
     /// Reverts if it violates the bounds of self.
     pub fn read_bytes(self, offset: u64, len: u64) -> Bytes {
         let read_ptr = self.get_read_ptr(
