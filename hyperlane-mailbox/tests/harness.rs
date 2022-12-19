@@ -7,11 +7,11 @@ use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
 use test_utils::{bits256_to_h256, get_revert_string, h256_to_bits256};
 
 // Load abi from json
-abigen!(Mailbox, "out/debug/hyperlane-mailbox-abi.json");
+abigen!(Mailbox, "hyperlane-mailbox/out/debug/hyperlane-mailbox-abi.json");
 use crate::mailbox_mod::Message as ContractMessage;
 
-abigen!(TestInterchainSecurityModule, "../hyperlane-ism-test/out/debug/hyperlane-ism-test-abi.json");
-abigen!(TestMessageRecipient, "../hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test-abi.json");
+abigen!(TestInterchainSecurityModule, "hyperlane-ism-test/out/debug/hyperlane-ism-test-abi.json");
+abigen!(TestMessageRecipient, "hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test-abi.json");
 
 // At the moment, the origin domain is hardcoded in the Mailbox contract.
 const TEST_ORIGIN_DOMAIN: u32 = 0x6675656cu32;

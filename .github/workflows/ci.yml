@@ -3,7 +3,7 @@ name: CI
 on: [push]
 
 jobs:
-  cargo:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -12,18 +12,35 @@ jobs:
           toolchain: stable
       - uses: actions-rs/cargo@v1
         with:
-          command: build
-      - uses: actions-rs/cargo@v1
+          command: install
+          args: forc fuel-core forc-fmt
+      - run: cargo build
+      - uses: actions/upload-artifact@v3
         with:
-          command: test
-  forc:
+          path: target/
+      - run: forc build
+      - uses: actions/upload-artifact@v3
+        with:
+          path: out/
+  cargo-test:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/cargo@v1
+      - uses: actions/download-artifact@v3
         with:
-          command: install
-          args: forc fuel-core forc-fmt
-      - run: forc build
+          path: target/
+      - name: test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+  forc-test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v3
+        with:
+          path: out/
       - run: forc test
       - run: forc fmt -- --check
