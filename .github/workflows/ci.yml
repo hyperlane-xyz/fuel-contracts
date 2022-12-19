@@ -12,16 +12,21 @@ jobs:
           toolchain: stable
       - uses: actions-rs/cargo@v1
         with:
-          command: install
-          args: forc fuel-core forc-fmt
+          run: |
+            curl --proto '=https' --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh -s -- --no-modify-path
+            export PATH="${HOME}/.fuelup/bin:${PATH}"
+            fuelup toolchain install latest
+
       - run: cargo build
-      - uses: actions/upload-artifact@v3
-        with:
-          path: target/
       - run: forc build
       - uses: actions/upload-artifact@v3
         with:
-          path: out/
+          path: |
+            target/
+            out/
+            $HOME/.cargo/
+            $HOME/.fuelup/
+
   cargo-test:
     needs: build
     runs-on: ubuntu-latest
@@ -34,6 +39,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
+
   forc-test:
     needs: build
     runs-on: ubuntu-latest
@@ -41,6 +47,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v3
         with:
-          path: out/
+          path: |
+            $HOME/.fuelup/
+            out/
       - run: forc test
       - run: forc fmt -- --check
