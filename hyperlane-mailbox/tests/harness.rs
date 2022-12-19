@@ -237,6 +237,8 @@ async fn test_process() {
         .call()
         .await;
 
+    println!("process_call {:?}", process_call);
+
     let res = match process_call {
         Ok(_response) => String::from("success"),
         Err(error) => get_revert_string(error)
