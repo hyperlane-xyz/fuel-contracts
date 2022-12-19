@@ -10,12 +10,10 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          run: |
-            curl --proto '=https' --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh -s -- --no-modify-path
-            export PATH="${HOME}/.fuelup/bin:${PATH}"
-            fuelup toolchain install latest
+      - run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh -s -- --no-modify-path
+          export PATH="${HOME}/.fuelup/bin:${PATH}"
+          fuelup toolchain install latest
 
       - run: cargo build
       - run: forc build
