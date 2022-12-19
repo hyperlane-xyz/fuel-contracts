@@ -3,19 +3,8 @@ name: CI
 on: [push]
 
 jobs:
-  install:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          command: install
   cargo:
     runs-on: ubuntu-latest
-    needs: install
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -29,7 +18,6 @@ jobs:
           command: test
   forc:
     runs-on: ubuntu-latest
-    needs: install
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/cargo@v1
