@@ -11,7 +11,7 @@ jobs:
       - name: install fuelup
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh -s -- --no-modify-path
-          export PATH="${HOME}/.fuelup/bin:${PATH}"
+          echo "${HOME}/.fuelup/bin" >> $GITHUB_PATH
           fuelup toolchain install latest
 
       - run: cargo build
