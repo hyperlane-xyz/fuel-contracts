@@ -6,10 +6,7 @@ use std::{
     bytes::Bytes,
     constants::ZERO_B256,
 };
-use mem::{
-    get_ptr_to_value,
-    get_value_from_ptr,
-};
+use mem::CopyTypeWrapper;
 
 /// The number of bytes in a b256.
 const B256_BYTE_COUNT: u64 = 32u64;
@@ -34,12 +31,12 @@ const U64_BYTE_COUNT: u64 = 8u64;
 impl u64 {
     /// Returns a pointer to the u64's packed bytes.
     fn packed_bytes(self) -> raw_ptr {
-        get_ptr_to_value(self, U64_BYTE_COUNT)
+        CopyTypeWrapper::ptr_to_value(self, U64_BYTE_COUNT)
     }
 
     /// Gets a u64 from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        get_value_from_ptr(ptr, U64_BYTE_COUNT)
+        CopyTypeWrapper::value_from_ptr(ptr, U64_BYTE_COUNT)
     }
 }
 
@@ -49,12 +46,12 @@ const U32_BYTE_COUNT: u64 = 4u64;
 impl u32 {
     /// Returns a pointer to the u32's packed bytes.
     fn packed_bytes(self) -> raw_ptr {
-        get_ptr_to_value(self, U32_BYTE_COUNT)
+        CopyTypeWrapper::ptr_to_value(self, U32_BYTE_COUNT)
     }
 
     /// Gets a u32 from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        get_value_from_ptr(ptr, U32_BYTE_COUNT)
+        CopyTypeWrapper::value_from_ptr(ptr, U32_BYTE_COUNT)
     }
 }
 
@@ -64,12 +61,12 @@ const U16_BYTE_COUNT: u64 = 2u64;
 impl u16 {
     /// Returns a pointer to the u16's packed bytes.
     fn packed_bytes(self) -> raw_ptr {
-        get_ptr_to_value(self, U16_BYTE_COUNT)
+        CopyTypeWrapper::ptr_to_value(self, U16_BYTE_COUNT)
     }
 
     /// Gets a u16 from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        get_value_from_ptr(ptr, U16_BYTE_COUNT)
+        CopyTypeWrapper::value_from_ptr(ptr, U16_BYTE_COUNT)
     }
 }
 
