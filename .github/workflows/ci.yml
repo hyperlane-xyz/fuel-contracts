@@ -4,7 +4,7 @@ on: [push]
 
 env:
   CARGO_TERM_COLOR: always
-  FUELUP: /opt/hostedtoolcache/FuelLabs/fuelup/latest/linux-x64/fuelup-0.15.1-x86_64-unknown-linux-gnu
+  FUELUP: /opt/hostedtoolcache/FuelLabs/fuelup/latest/linux-x64/fuelup-0.15.1-x86_64-unknown-linux-gnu/fuelup
   FORC: $HOME/.fuelup/bin/forc
 
 jobs:
@@ -17,7 +17,6 @@ jobs:
         uses: jaxxstorm/action-install-gh-release@v1.9.0
         with:
           repo: FuelLabs/fuelup
-      - run: ls -la $FUELUP
       - run: $FUELUP toolchain install latest
       - run: $FORC build
       - run: $FORC test
