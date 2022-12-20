@@ -230,15 +230,24 @@ impl Bytes {
     }
 
     /// Reads Bytes starting at the specified offset with the `len` number of bytes.
+    /// Does not copy any bytes, and instead points to the bytes within self.
+    /// Changing the contents of the returned bytes will affect self, so be cautious
+    /// of unintented consequences!
     /// Reverts if it violates the bounds of self.
-    pub fn read_bytes(ref mut self, offset: u64, len: u64) -> Bytes {
+    pub fn read_bytes(self, offset: u64, len: u64) -> Bytes {
         let read_ptr = self.get_read_ptr(
             offset,
             len,
         );
 
-        let mut bytes = Bytes::with_length(len);
-        bytes.write_packed_bytes(0u64, read_ptr, len);
+        // Create an empty Bytes
+        let mut bytes = Bytes::new();
+        // Manually set the RawBytes ptr to where we want to read from.
+        bytes.buf.ptr = read_ptr;
+        // Manually set the RawBytes cap to the number of bytes.
+        bytes.buf.cap = len;
+        // Manually set the len to the correct number of bytes.
+        bytes.len = len;
         bytes
     }
 
