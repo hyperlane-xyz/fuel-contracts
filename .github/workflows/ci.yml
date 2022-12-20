@@ -15,8 +15,8 @@ jobs:
         uses: jaxxstorm/action-install-gh-release@v1.9.0
         with:
           repo: FuelLabs/fuelup
-
-      - run: $HOME/.fuelup/bin/forc build
-      - run: $HOME/.fuelup/bin/forc test
+      - run: fuelup toolchain install latest
+      - run: forc build
+      - run: forc test
       - run: cargo build
       - run: cargo test
