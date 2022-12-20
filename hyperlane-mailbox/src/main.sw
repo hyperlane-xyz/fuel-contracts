@@ -75,6 +75,11 @@ impl Mailbox for Contract {
         storage.default_ism = module;
     }
 
+    #[storage(read)]
+    fn get_default_ism() -> ContractId {
+        storage.default_ism
+    }
+
     #[storage(read, write)]
     fn process(metadata: Vec<u8>, _message: Message) {
         // TODO: revert once abigen handles Bytes
@@ -87,9 +92,7 @@ impl Mailbox for Contract {
         require(storage.delivered.get(id) == false, "delivered");
         storage.delivered.insert(id, true);
 
-
         let msg_recipient = abi(MessageRecipient, message.recipient());
-
         let mut ism_id = msg_recipient.interchain_security_module();
         if (ism_id == ZERO_ID) {
             ism_id = storage.default_ism;

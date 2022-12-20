@@ -18,11 +18,11 @@ const TEST_ORIGIN_DOMAIN: u32 = 0x6675656cu32;
 const TEST_DESTINATION_DOMAIN: u32 = 1234u32;
 const TEST_RECIPIENT: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
-async fn get_contract_instance() -> (Mailbox, ContractId, ContractId) {
+async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
-            Some(2),             /* Single wallet */
+            Some(1),             /* Single wallet */
             Some(1),             /* Single coin (UTXO) */
             Some(1_000_000_000), /* Amount per coin */
         ),
@@ -30,11 +30,11 @@ async fn get_contract_instance() -> (Mailbox, ContractId, ContractId) {
         None,
     )
     .await;
-    let first_wallet = wallets.pop().unwrap();
+    let wallet = wallets.pop().unwrap();
 
-    let id = Contract::deploy(
+    let mailbox_id = Contract::deploy(
         "./out/debug/hyperlane-mailbox.bin",
-        &first_wallet,
+        &wallet,
         TxParameters::default(),
         StorageConfiguration::with_storage_path(Some(
             "./out/debug/hyperlane-mailbox-storage_slots.json".to_string(),
@@ -43,12 +43,11 @@ async fn get_contract_instance() -> (Mailbox, ContractId, ContractId) {
     .await
     .unwrap();
 
-    let instance = Mailbox::new(id.clone(), first_wallet);
+    let mailbox = Mailbox::new(mailbox_id.clone(), wallet.clone());
 
-    let second_wallet = wallets.pop().unwrap();
     let ism_id = Contract::deploy(
         "../hyperlane-ism-test/out/debug/hyperlane-ism-test.bin",
-        &second_wallet,
+        &wallet,
         TxParameters::default(),
         StorageConfiguration::with_storage_path(Some(
             "../hyperlane-ism-test/out/debug/hyperlane-ism-test-storage_slots.json".to_string(),
@@ -57,9 +56,9 @@ async fn get_contract_instance() -> (Mailbox, ContractId, ContractId) {
     .await
     .unwrap();
 
-    let msg_recipient_id = Contract::deploy(
+    let msg_recipient_id= Contract::deploy(
         "../hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test.bin",
-        &second_wallet,
+        &wallet,
         TxParameters::default(),
         StorageConfiguration::with_storage_path(Some(
             "../hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test-storage_slots.json".to_string(),
@@ -68,15 +67,18 @@ async fn get_contract_instance() -> (Mailbox, ContractId, ContractId) {
     .await
     .unwrap();
 
-    instance.methods().set_default_ism(ism_id.into()).call().await.unwrap();
+    let raw_ism_id: ContractId = ism_id.clone().into();
+    mailbox.methods().set_default_ism(raw_ism_id).call().await.unwrap();
 
+    let default_ism = mailbox.methods().get_default_ism().simulate().await.unwrap();
+    assert_eq!(default_ism.value, raw_ism_id);
 
-    (instance, id.into(), msg_recipient_id.into())
+    (mailbox, ism_id, msg_recipient_id)
 }
 
 // Gets the wallet address from the `Mailbox` instance, and
 // creates a test message with that address as the sender.
-fn test_message(mailbox: &Mailbox, recipient: ContractId) -> HyperlaneAgentMessage {
+fn test_message(mailbox: &Mailbox, recipient: Bech32ContractId) -> HyperlaneAgentMessage {
     let sender: Address = mailbox.get_wallet().address().into();
     HyperlaneAgentMessage {
         version: 0u8,
@@ -84,14 +86,14 @@ fn test_message(mailbox: &Mailbox, recipient: ContractId) -> HyperlaneAgentMessa
         origin: TEST_ORIGIN_DOMAIN,
         sender: H256::from(*sender),
         destination: TEST_DESTINATION_DOMAIN,
-        recipient: H256::from(*recipient),
+        recipient: H256::from(*recipient.hash()),
         body: vec![10u8; 100],
     }
 }
 
 #[tokio::test]
 async fn test_dispatch_too_large_message() {
-    let (mailbox, _id, _) = get_contract_instance().await;
+    let (mailbox, _, _) = get_contract_instance().await;
 
     let large_message_body = vec![0u8; 3000];
 
@@ -111,7 +113,7 @@ async fn test_dispatch_too_large_message() {
 
 #[tokio::test]
 async fn test_dispatch_logs_message() {
-    let (mailbox, _id, recipient) = get_contract_instance().await;
+    let (mailbox, _, recipient) = get_contract_instance().await;
 
     let message = test_message(&mailbox, recipient);
 
@@ -142,7 +144,7 @@ async fn test_dispatch_logs_message() {
 
 #[tokio::test]
 async fn test_dispatch_returns_id() {
-    let (mailbox, _id, recipient) = get_contract_instance().await;
+    let (mailbox, _, recipient) = get_contract_instance().await;
 
     let message = test_message(&mailbox, recipient);
 
@@ -162,7 +164,7 @@ async fn test_dispatch_returns_id() {
 
 #[tokio::test]
 async fn test_dispatch_inserts_into_tree() {
-    let (mailbox, _id, _) = get_contract_instance().await;
+    let (mailbox, _, _) = get_contract_instance().await;
 
     let message_body = vec![10u8; 100];
 
@@ -184,7 +186,7 @@ async fn test_dispatch_inserts_into_tree() {
 
 #[tokio::test]
 async fn test_latest_checkpoint() {
-    let (mailbox, _id, _) = get_contract_instance().await;
+    let (mailbox, _, _) = get_contract_instance().await;
 
     let message_body = vec![10u8; 100];
 
@@ -213,12 +215,12 @@ async fn test_latest_checkpoint() {
 
 #[tokio::test]
 async fn test_process() {
-    let (mailbox, _id, recipient) = get_contract_instance().await;
+    let (mailbox, ism_id, recipient_id) = get_contract_instance().await;
 
     let metadata = vec![5u8; 100];
     let message_body = vec![6u8; 100];
 
-    let agent_message = test_message(&mailbox, recipient);
+    let agent_message = test_message(&mailbox, recipient_id.clone());
 
     let process_call = mailbox
         .methods()
@@ -230,31 +232,20 @@ async fn test_process() {
                 origin: agent_message.origin,
                 sender: h256_to_bits256(agent_message.sender),
                 destination: TEST_ORIGIN_DOMAIN,
-                recipient: Bits256(*recipient),
+                recipient: Bits256(*recipient_id.hash()),
                 body: message_body
             }
         )
+        .set_contracts(&vec![ism_id, recipient_id])
+        .tx_params(TxParameters::new(None, Some(1_200_000), None))
         .call()
-        .await;
-
-    let res = match process_call {
-        Ok(_response) => String::from("success"),
-        Err(error) => get_revert_string(error)
-    };
-    println!("REVERT REASON: {}", res);
-
-    assert!(false);
-
-    // let log_receipt = &process_call.receipts[1];
-    // let log_data = if let Receipt::LogData { data, .. } = log_receipt {
-    //     data
-    // } else {
-    //     panic!("Expected LogData receipt. Receipt: {:?}", log_receipt);
-    // };
-
-    // let recovered_message = HyperlaneAgentMessage::read_from(&mut log_data.as_slice()).unwrap();
-
-    // // Assert equality of the message ID
-    // assert_eq!(recovered_message.id(), agent_message.id());
+        .await
+        .unwrap();
+    
+        
+    let message_id = &process_call.get_logs_with_type::<Bits256>().unwrap()[0];
+    
+    // Assert equality of the message ID
+    assert_eq!(agent_message.id(), bits256_to_h256(*message_id));
 
 }

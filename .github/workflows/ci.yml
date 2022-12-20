@@ -7,10 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - run: |
+      - uses: dtolnay/rust-toolchain@stable
+      - name: install fuelup
+        run: |
           curl --proto '=https' --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh -s -- --no-modify-path
           export PATH="${HOME}/.fuelup/bin:${PATH}"
           fuelup toolchain install latest

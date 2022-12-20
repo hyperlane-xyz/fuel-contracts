@@ -20,6 +20,9 @@ abi Mailbox {
     #[storage(write)]
     fn set_default_ism(module: ContractId);
 
+    #[storage(read)]
+    fn get_default_ism() -> ContractId;
+
     /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
     #[storage(read)]
     fn count() -> u32;
