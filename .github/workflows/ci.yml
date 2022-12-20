@@ -4,21 +4,18 @@ on: [push]
 
 env:
   CARGO_TERM_COLOR: always
-  FUELUP: /opt/hostedtoolcache/FuelLabs/fuelup/latest/linux-x64/fuelup-0.15.1-x86_64-unknown-linux-gnu/fuelup
-  FORC: $HOME/.fuelup/bin/forc
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
       - name: install fuelup
-        uses: jaxxstorm/action-install-gh-release@v1.9.0
-        with:
-          repo: FuelLabs/fuelup
-      - run: $FUELUP toolchain install latest
-      - run: $FORC build
-      - run: $FORC test
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh -s -- --no-modify-path
+          echo "$HOME/.fuelup/bin" >> $GITHUB_PATH
+      - run: forc build
+      - run: forc test
       - run: cargo build
       - run: cargo test
