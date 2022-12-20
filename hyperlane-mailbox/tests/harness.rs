@@ -14,8 +14,8 @@ abigen!(TestInterchainSecurityModule, "hyperlane-ism-test/out/debug/hyperlane-is
 abigen!(TestMessageRecipient, "hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test-abi.json");
 
 // At the moment, the origin domain is hardcoded in the Mailbox contract.
-const TEST_ORIGIN_DOMAIN: u32 = 0x6675656cu32;
-const TEST_DESTINATION_DOMAIN: u32 = 1234u32;
+const TEST_LOCAL_DOMAIN: u32 = 0x6675656cu32;
+const TEST_REMOTE_DOMAIN: u32 = 0x112233cu32;
 const TEST_RECIPIENT: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
 async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId) {
@@ -78,14 +78,14 @@ async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId
 
 // Gets the wallet address from the `Mailbox` instance, and
 // creates a test message with that address as the sender.
-fn test_message(mailbox: &Mailbox, recipient: Bech32ContractId) -> HyperlaneAgentMessage {
+fn test_message(mailbox: &Mailbox, recipient: Bech32ContractId, outbound: bool) -> HyperlaneAgentMessage {
     let sender: Address = mailbox.get_wallet().address().into();
     HyperlaneAgentMessage {
         version: 0u8,
         nonce: 0u32,
-        origin: TEST_ORIGIN_DOMAIN,
+        origin: if outbound { TEST_LOCAL_DOMAIN } else { TEST_REMOTE_DOMAIN },
         sender: H256::from(*sender),
-        destination: TEST_DESTINATION_DOMAIN,
+        destination: if outbound { TEST_REMOTE_DOMAIN } else { TEST_LOCAL_DOMAIN },
         recipient: H256::from(*recipient.hash()),
         body: vec![10u8; 100],
     }
@@ -100,7 +100,7 @@ async fn test_dispatch_too_large_message() {
     let dispatch_err = mailbox
         .methods()
         .dispatch(
-            TEST_DESTINATION_DOMAIN,
+            TEST_REMOTE_DOMAIN,
             Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
             large_message_body,
         )
@@ -115,7 +115,7 @@ async fn test_dispatch_too_large_message() {
 async fn test_dispatch_logs_message() {
     let (mailbox, _, recipient) = get_contract_instance().await;
 
-    let message = test_message(&mailbox, recipient);
+    let message = test_message(&mailbox, recipient, true);
 
     let dispatch_call = mailbox
         .methods()
@@ -146,7 +146,7 @@ async fn test_dispatch_logs_message() {
 async fn test_dispatch_returns_id() {
     let (mailbox, _, recipient) = get_contract_instance().await;
 
-    let message = test_message(&mailbox, recipient);
+    let message = test_message(&mailbox, recipient, true);
 
     let dispatch_call = mailbox
         .methods()
@@ -171,7 +171,7 @@ async fn test_dispatch_inserts_into_tree() {
     mailbox
         .methods()
         .dispatch(
-            TEST_DESTINATION_DOMAIN,
+            TEST_REMOTE_DOMAIN,
             Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
             message_body,
         )
@@ -193,7 +193,7 @@ async fn test_latest_checkpoint() {
     mailbox
         .methods()
         .dispatch(
-            TEST_DESTINATION_DOMAIN,
+            TEST_REMOTE_DOMAIN,
             Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
             message_body,
         )
@@ -220,21 +220,14 @@ async fn test_process() {
     let metadata = vec![5u8; 100];
     let message_body = vec![6u8; 100];
 
-    let agent_message = test_message(&mailbox, recipient_id.clone());
+    let agent_message = test_message(&mailbox, recipient_id.clone(), false);
+    let agent_message_id = agent_message.id();
 
     let process_call = mailbox
         .methods()
         .process(
             metadata,
-            ContractMessage {
-                version: agent_message.version,
-                nonce: agent_message.nonce,
-                origin: agent_message.origin,
-                sender: h256_to_bits256(agent_message.sender),
-                destination: TEST_ORIGIN_DOMAIN,
-                recipient: Bits256(*recipient_id.hash()),
-                body: message_body
-            }
+            agent_message.into(),
         )
         .set_contracts(&vec![ism_id, recipient_id])
         .tx_params(TxParameters::new(None, Some(1_200_000), None))
@@ -246,6 +239,20 @@ async fn test_process() {
     let message_id = &process_call.get_logs_with_type::<Bits256>().unwrap()[0];
     
     // Assert equality of the message ID
-    assert_eq!(agent_message.id(), bits256_to_h256(*message_id));
+    assert_eq!(agent_message_id, bits256_to_h256(*message_id));
 
+}
+
+impl From<HyperlaneAgentMessage> for ContractMessage {
+    fn from(agent_msg: HyperlaneAgentMessage) -> Self {
+        Self {
+            version: agent_msg.version,
+            nonce: agent_msg.nonce,
+            origin: agent_msg.origin,
+            sender: h256_to_bits256(agent_msg.sender),
+            destination: agent_msg.destination,
+            recipient: h256_to_bits256(agent_msg.recipient),
+            body: agent_msg.body,
+        }
+    }
 }
