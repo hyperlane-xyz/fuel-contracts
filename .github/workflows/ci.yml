@@ -16,7 +16,7 @@ jobs:
         with:
           repo: FuelLabs/fuelup
 
+      - run: $HOME/.fuelup/bin/forc build
+      - run: $HOME/.fuelup/bin/forc test
       - run: cargo build
-      - run: forc build
       - run: cargo test
-      - run: forc test
