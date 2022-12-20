@@ -18,7 +18,7 @@ const TEST_LOCAL_DOMAIN: u32 = 0x6675656cu32;
 const TEST_REMOTE_DOMAIN: u32 = 0x112233cu32;
 const TEST_RECIPIENT: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
-async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId) {
+async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId, WalletUnlocked) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -73,7 +73,7 @@ async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId
     let default_ism = mailbox.methods().get_default_ism().simulate().await.unwrap();
     assert_eq!(default_ism.value, raw_ism_id);
 
-    (mailbox, ism_id, msg_recipient_id)
+    (mailbox, ism_id, msg_recipient_id, wallet)
 }
 
 // Gets the wallet address from the `Mailbox` instance, and
@@ -93,7 +93,7 @@ fn test_message(mailbox: &Mailbox, recipient: Bech32ContractId, outbound: bool) 
 
 #[tokio::test]
 async fn test_dispatch_too_large_message() {
-    let (mailbox, _, _) = get_contract_instance().await;
+    let (mailbox, _, _, _) = get_contract_instance().await;
 
     let large_message_body = vec![0u8; 3000];
 
@@ -113,7 +113,7 @@ async fn test_dispatch_too_large_message() {
 
 #[tokio::test]
 async fn test_dispatch_logs_message() {
-    let (mailbox, _, recipient) = get_contract_instance().await;
+    let (mailbox, _, recipient, _) = get_contract_instance().await;
 
     let message = test_message(&mailbox, recipient, true);
 
@@ -144,7 +144,7 @@ async fn test_dispatch_logs_message() {
 
 #[tokio::test]
 async fn test_dispatch_returns_id() {
-    let (mailbox, _, recipient) = get_contract_instance().await;
+    let (mailbox, _, recipient, _) = get_contract_instance().await;
 
     let message = test_message(&mailbox, recipient, true);
 
@@ -164,7 +164,7 @@ async fn test_dispatch_returns_id() {
 
 #[tokio::test]
 async fn test_dispatch_inserts_into_tree() {
-    let (mailbox, _, _) = get_contract_instance().await;
+    let (mailbox, _, _, _) = get_contract_instance().await;
 
     let message_body = vec![10u8; 100];
 
@@ -186,7 +186,7 @@ async fn test_dispatch_inserts_into_tree() {
 
 #[tokio::test]
 async fn test_latest_checkpoint() {
-    let (mailbox, _, _) = get_contract_instance().await;
+    let (mailbox, _, _, _) = get_contract_instance().await;
 
     let message_body = vec![10u8; 100];
 
@@ -214,33 +214,107 @@ async fn test_latest_checkpoint() {
 }
 
 #[tokio::test]
-async fn test_process() {
-    let (mailbox, ism_id, recipient_id) = get_contract_instance().await;
+async fn test_process_id() {
+    let (mailbox, ism_id, recipient_id, _) = get_contract_instance().await;
 
     let metadata = vec![5u8; 100];
-    let message_body = vec![6u8; 100];
 
     let agent_message = test_message(&mailbox, recipient_id.clone(), false);
     let agent_message_id = agent_message.id();
 
+    let contract_inputs = vec![ism_id.clone(), recipient_id];
+
     let process_call = mailbox
         .methods()
         .process(
-            metadata,
-            agent_message.into(),
+            metadata.clone(),
+            agent_message.clone().into(),
         )
-        .set_contracts(&vec![ism_id, recipient_id])
+        .set_contracts(&contract_inputs)
         .tx_params(TxParameters::new(None, Some(1_200_000), None))
         .call()
         .await
         .unwrap();
-    
         
     let message_id = &process_call.get_logs_with_type::<Bits256>().unwrap()[0];
     
     // Assert equality of the message ID
     assert_eq!(agent_message_id, bits256_to_h256(*message_id));
+}
 
+#[tokio::test]
+async fn test_process_deliver_twice() {
+    let (mailbox, ism_id, recipient_id, _) = get_contract_instance().await;
+
+    let metadata = vec![5u8; 100];
+
+    let agent_message = test_message(&mailbox, recipient_id.clone(), false);
+    let agent_message_id = agent_message.id();
+
+    let contract_inputs = vec![ism_id.clone(), recipient_id];
+
+    mailbox
+        .methods()
+        .process(
+            metadata.clone(),
+            agent_message.clone().into(),
+        )
+        .set_contracts(&contract_inputs)
+        .tx_params(TxParameters::new(None, Some(1_200_000), None))
+        .call()
+        .await
+        .unwrap();
+
+    let delivered: bool = mailbox
+        .methods()
+        .delivered(h256_to_bits256(agent_message_id))
+        .simulate()
+        .await
+        .unwrap().value;
+    
+    assert!(delivered);
+    
+    let process_delivered_error = mailbox
+        .methods()
+        .process(
+            metadata.clone(),
+            agent_message.clone().into(),
+        )
+        .set_contracts(&contract_inputs)
+        .tx_params(TxParameters::new(None, Some(1_200_000), None))
+        .call()
+        .await
+        .unwrap_err();
+    
+    assert_eq!(get_revert_string(process_delivered_error), "delivered");
+}
+
+#[tokio::test]
+async fn test_process_module_reject() {
+    let (mailbox, ism_id, recipient_id, wallet) = get_contract_instance().await;
+
+    let metadata = vec![5u8; 100];
+
+    let agent_message = test_message(&mailbox, recipient_id.clone(), false);
+
+    let contract_inputs = vec![ism_id.clone(), recipient_id];
+
+    let test_ism = TestInterchainSecurityModule::new(ism_id, wallet);
+    test_ism.methods().set_accept(false).call().await.unwrap();
+
+    let process_module_error = mailbox
+        .methods()
+        .process(
+            metadata,
+            agent_message.into(),
+        )
+        .set_contracts(&contract_inputs)
+        .tx_params(TxParameters::new(None, Some(1_200_000), None))
+        .call()
+        .await
+        .unwrap_err();
+
+    assert_eq!(get_revert_string(process_module_error), "!module");
 }
 
 impl From<HyperlaneAgentMessage> for ContractMessage {

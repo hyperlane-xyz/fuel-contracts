@@ -17,6 +17,9 @@ abi Mailbox {
     #[storage(read, write)]
     fn process(metadata: Vec<u8>, message: Message);
 
+    #[storage(read)]
+    fn delivered(message_id: b256) -> bool;
+
     #[storage(write)]
     fn set_default_ism(module: ContractId);
 

@@ -80,6 +80,11 @@ impl Mailbox for Contract {
         storage.default_ism
     }
 
+    #[storage(read)]
+    fn delivered(message_id: b256) -> bool {
+        storage.delivered.get(message_id)
+    }
+
     #[storage(read, write)]
     fn process(metadata: Vec<u8>, _message: Message) {
         // TODO: revert once abigen handles Bytes
@@ -99,7 +104,7 @@ impl Mailbox for Contract {
         }
 
         let ism = abi(InterchainSecurityModule, ism_id.into());
-        require(ism.verify(metadata, _message), "!verify");
+        require(ism.verify(metadata, _message), "!module");
 
         msg_recipient.handle(message.origin(), message.sender(), message.body().into_vec_u8());
 
