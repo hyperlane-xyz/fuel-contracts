@@ -4,6 +4,8 @@ on: [push]
 
 env:
   CARGO_TERM_COLOR: always
+  FUELUP: /opt/hostedtoolcache/FuelLabs/fuelup/latest/linux-x64
+  FORC: $HOME/.fuelup/bin/forc
 
 jobs:
   build:
@@ -15,10 +17,8 @@ jobs:
         uses: jaxxstorm/action-install-gh-release@v1.9.0
         with:
           repo: FuelLabs/fuelup
-        run: |
-          fuelup toolchain install latest
-          forc build
-          forc test
-          cargo build
-          cargo test
-
+      - run: $FUELUP toolchain install latest
+      - run: $FORC build
+      - run: $FORC test
+      - run: cargo build
+      - run: cargo test
