@@ -21,8 +21,6 @@ pub fn get_revert_string(call_error: Error) -> String {
         );
     };
 
-    println!("Receipts: {:?}", receipts);
-
     // The receipts will be:
     // [any prior receipts..., LogData with reason, Revert, ScriptResult]
     // We want the LogData with the reason, which is utf-8 encoded as the `data`.

@@ -4,7 +4,6 @@ use std::{
     auth::msg_sender,
     call_frames::contract_id,
     logging::log,
-    constants::ZERO_B256,
 };
 
 use merkle::StorageMerkleTree;
@@ -70,6 +69,7 @@ impl Mailbox for Contract {
         message_id
     }
 
+    /// TODO: make ownable
     #[storage(write)]
     fn set_default_ism(module: ContractId) {
         storage.default_ism = module;

@@ -242,6 +242,34 @@ async fn test_process_id() {
     assert_eq!(agent_message_id, bits256_to_h256(*message_id));
 }
 
+
+#[tokio::test]
+async fn test_process_handle() {
+    let (mailbox, ism_id, recipient_id, wallet) = get_contract_instance().await;
+
+    let metadata = vec![5u8; 100];
+
+    let agent_message = test_message(&mailbox, recipient_id.clone(), false);
+
+    let contract_inputs = vec![ism_id.clone(), recipient_id.clone()];
+
+    mailbox
+        .methods()
+        .process(
+            metadata.clone(),
+            agent_message.clone().into(),
+        )
+        .set_contracts(&contract_inputs)
+        .tx_params(TxParameters::new(None, Some(1_200_000), None))
+        .call()
+        .await
+        .unwrap();
+        
+    let msg_recipient = TestMessageRecipient::new(recipient_id, wallet);
+    let handled = msg_recipient.methods().handled().simulate().await.unwrap();
+    assert!(handled.value);
+}
+
 #[tokio::test]
 async fn test_process_deliver_twice() {
     let (mailbox, ism_id, recipient_id, _) = get_contract_instance().await;
