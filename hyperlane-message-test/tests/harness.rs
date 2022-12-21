@@ -9,7 +9,7 @@ use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
 use test_utils::{bits256_to_h256, h256_to_bits256};
 
 // Load abi from json
-abigen!(TestMessage, "out/debug/hyperlane-message-test-abi.json");
+abigen!(TestMessage, "hyperlane-message-test/out/debug/hyperlane-message-test-abi.json");
 
 async fn get_contract_instance() -> (TestMessage, ContractId) {
     // Launch a local network and deploy the contract
