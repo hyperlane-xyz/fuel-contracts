@@ -12,7 +12,7 @@ use test_utils::{
 };
 
 // Load abi from json
-abigen!(TestMessage, "out/debug/hyperlane-message-test-abi.json");
+abigen!(TestMessage, "hyperlane-message-test/out/debug/hyperlane-message-test-abi.json");
 
 async fn get_contract_instance() -> (TestMessage, ContractId) {
     // Launch a local network and deploy the contract

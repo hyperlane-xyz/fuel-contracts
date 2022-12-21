@@ -1,0 +1,13 @@
+[workspace]
+
+members = [
+    "bytes-extended",
+    "hyperlane-interfaces",
+    "hyperlane-message",
+    "hyperlane-message-test",
+    "merkle",
+    "merkle-test",
+    "hyperlane-mailbox",
+    "hyperlane-ism-test",
+    "hyperlane-msg-recipient-test"
+]

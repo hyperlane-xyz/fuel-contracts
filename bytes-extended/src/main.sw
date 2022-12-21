@@ -6,55 +6,7 @@ use std::{
     bytes::Bytes,
     constants::ZERO_B256,
 };
-use mem::alloc_stack_word;
-
-/// The number of bits in a single byte.
-const BITS_PER_BYTE: u64 = 8u64;
-/// Fuel has 8 byte (64 bit) words.
-const BYTES_PER_WORD: u64 = 8u64;
-
-/// Writes a value that is `byte_count` bytes in length to the stack,
-/// and returns a pointer to the start of the value on the stack.
-///
-/// ### Arguments
-///
-/// * `value` - The value to write as a u64. If the value is originally smaller
-///   than 64 bits, this is expected to be left-padded with zeroes to fit into 64 bits.
-///   Implicitly casting from a smaller type to u64 performs this left-padding.
-/// * `byte_count` - The number of bytes of the original value. E.g. if the value
-///   being written is originally a u32, this should be 4 bytes.
-fn write_value_to_stack(value: u64, byte_count: u64) -> raw_ptr {
-    // Allocate a whole word on the stack.
-    let stack_word_ptr = alloc_stack_word();
-    // Write the value onto the stack.
-    stack_word_ptr.write::<u64>(value);
-    // Move the pointer forward to ignore any left padded zero bytes, and to point
-    // directly to the start of the value's contents.
-    let left_padding_byte_count = BYTES_PER_WORD - byte_count;
-    stack_word_ptr.add_uint_offset(left_padding_byte_count)
-}
-
-/// Reads a value that is `byte_count` bytes in length from `ptr`.
-/// Returns this value as a u64, left padded with zeroes if necessary.
-///
-/// ### Arguments
-/// * `ptr` - A pointer to memory where the value begins. The `byte_count` bytes
-///   starting at `ptr` are read.
-/// * `byte_count` - The number of bytes of the original value. E.g. if the value
-///   being read is a u32, this should be 4 bytes.
-fn read_value_from_memory(ptr: raw_ptr, byte_count: u64) -> u64 {
-    // Allocate a whole word on the stack.
-    let stack_word_ptr = alloc_stack_word();
-    // Copy the `byte_count` bytes from `ptr` into `stack_word_ptr`.
-    // Note if e.g. 4 bytes are read from `ptr`, these are copied into the
-    // first 4 bytes of `stack_word_ptr`. These bytes must be shifted to the
-    // right to be correctly read into a 4-byte u32.
-    ptr.copy_bytes_to(stack_word_ptr, byte_count);
-    // Get the word at stack_word_ptr.
-    let word = stack_word_ptr.read::<u64>();
-    // Bit shift as neccesary.
-    word >> (BITS_PER_BYTE * (BYTES_PER_WORD - byte_count))
-}
+use mem::CopyTypeWrapper;
 
 /// The number of bytes in a b256.
 const B256_BYTE_COUNT: u64 = 32u64;
@@ -79,12 +31,12 @@ const U64_BYTE_COUNT: u64 = 8u64;
 impl u64 {
     /// Returns a pointer to the u64's packed bytes.
     fn packed_bytes(self) -> raw_ptr {
-        write_value_to_stack(self, U64_BYTE_COUNT)
+        CopyTypeWrapper::ptr_to_value(self, U64_BYTE_COUNT)
     }
 
     /// Gets a u64 from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        read_value_from_memory(ptr, U64_BYTE_COUNT)
+        CopyTypeWrapper::value_from_ptr(ptr, U64_BYTE_COUNT)
     }
 }
 
@@ -94,12 +46,12 @@ const U32_BYTE_COUNT: u64 = 4u64;
 impl u32 {
     /// Returns a pointer to the u32's packed bytes.
     fn packed_bytes(self) -> raw_ptr {
-        write_value_to_stack(self, U32_BYTE_COUNT)
+        CopyTypeWrapper::ptr_to_value(self, U32_BYTE_COUNT)
     }
 
     /// Gets a u32 from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        read_value_from_memory(ptr, U32_BYTE_COUNT)
+        CopyTypeWrapper::value_from_ptr(ptr, U32_BYTE_COUNT)
     }
 }
 
@@ -109,12 +61,12 @@ const U16_BYTE_COUNT: u64 = 2u64;
 impl u16 {
     /// Returns a pointer to the u16's packed bytes.
     fn packed_bytes(self) -> raw_ptr {
-        write_value_to_stack(self, U16_BYTE_COUNT)
+        CopyTypeWrapper::ptr_to_value(self, U16_BYTE_COUNT)
     }
 
     /// Gets a u16 from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        read_value_from_memory(ptr, U16_BYTE_COUNT)
+        CopyTypeWrapper::value_from_ptr(ptr, U16_BYTE_COUNT)
     }
 }
 
@@ -278,15 +230,24 @@ impl Bytes {
     }
 
     /// Reads Bytes starting at the specified offset with the `len` number of bytes.
+    /// Does not copy any bytes, and instead points to the bytes within self.
+    /// Changing the contents of the returned bytes will affect self, so be cautious
+    /// of unintented consequences!
     /// Reverts if it violates the bounds of self.
-    pub fn read_bytes(ref mut self, offset: u64, len: u64) -> Bytes {
+    pub fn read_bytes(self, offset: u64, len: u64) -> Bytes {
         let read_ptr = self.get_read_ptr(
             offset,
             len,
         );
 
-        let mut bytes = Bytes::with_length(len);
-        bytes.write_packed_bytes(0u64, read_ptr, len);
+        // Create an empty Bytes
+        let mut bytes = Bytes::new();
+        // Manually set the RawBytes ptr to where we want to read from.
+        bytes.buf.ptr = read_ptr;
+        // Manually set the RawBytes cap to the number of bytes.
+        bytes.buf.cap = len;
+        // Manually set the len to the correct number of bytes.
+        bytes.len = len;
         bytes
     }
 

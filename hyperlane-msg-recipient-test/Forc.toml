@@ -1,11 +1,9 @@
 [project]
-authors = ["Trevor Porter", "Yorke Rhodes"]
+authors = ["Yorke Rhodes"]
 entry = "main.sw"
 license = "Apache-2.0"
-name = "hyperlane-mailbox"
+name = "hyperlane-msg-recipient-test"
 
 [dependencies]
 hyperlane_interfaces = { path = "../hyperlane-interfaces" }
 hyperlane_message = { path = "../hyperlane-message" }
-merkle = { path = "../merkle" }
-ownership = { path = "../ownership" }

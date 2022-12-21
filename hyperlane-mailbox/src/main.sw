@@ -1,7 +1,5 @@
 contract;
 
-dep interface;
-
 use std::{
     auth::msg_sender,
     call_frames::contract_id,
@@ -14,9 +12,9 @@ use ownership::{
     log_ownership_transferred,
     interface::Ownable,
 };
-use hyperlane_message::EncodedMessage;
 
-use interface::Mailbox;
+use hyperlane_interfaces::{Mailbox, MessageRecipient, InterchainSecurityModule};
+use hyperlane_message::{Message, EncodedMessage};
 
 // Sway doesn't allow pow in a const.
 // Equal to 2 KiB, or 2 * (2 ** 10).
@@ -34,11 +32,17 @@ const INITIAL_OWNER: Option<Identity> = Option::Some(
     Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e))
 );
 
+const ZERO_ID: ContractId = ContractId {
+    value: 0x0000000000000000000000000000000000000000000000000000000000000000,
+};
+
 storage {
     /// The owner of the contract.
     owner: Option<Identity> = INITIAL_OWNER,
     /// A merkle tree that includes outbound message IDs as leaves.
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
+    delivered: StorageMap<b256, bool> = StorageMap {},
+    default_ism: ContractId = ZERO_ID
 }
 
 impl Mailbox for Contract {
@@ -76,6 +80,48 @@ impl Mailbox for Contract {
         message.log();
 
         message_id
+    }
+
+    /// TODO: make ownable
+    #[storage(write)]
+    fn set_default_ism(module: ContractId) {
+        storage.default_ism = module;
+    }
+
+    #[storage(read)]
+    fn get_default_ism() -> ContractId {
+        storage.default_ism
+    }
+
+    #[storage(read)]
+    fn delivered(message_id: b256) -> bool {
+        storage.delivered.get(message_id)
+    }
+
+    #[storage(read, write)]
+    fn process(metadata: Vec<u8>, _message: Message) {
+        // TODO: revert once abigen handles Bytes
+        let message = EncodedMessage::from(_message);
+        
+        require(message.version() == VERSION, "!version");
+        require(message.destination() == LOCAL_DOMAIN, "!destination");
+
+        let id = message.id();
+        require(storage.delivered.get(id) == false, "delivered");
+        storage.delivered.insert(id, true);
+
+        let msg_recipient = abi(MessageRecipient, message.recipient());
+        let mut ism_id = msg_recipient.interchain_security_module();
+        if (ism_id == ZERO_ID) {
+            ism_id = storage.default_ism;
+        }
+
+        let ism = abi(InterchainSecurityModule, ism_id.into());
+        require(ism.verify(metadata, _message), "!module");
+
+        msg_recipient.handle(message.origin(), message.sender(), message.body().into_vec_u8());
+
+        log(id);
     }
 
     /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.

@@ -1,0 +1,8 @@
+[workspace]
+
+members = [
+    "hyperlane-mailbox",
+    "hyperlane-message-test",
+    "merkle-test",
+    "test-utils"
+]

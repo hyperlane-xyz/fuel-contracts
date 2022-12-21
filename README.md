@@ -6,18 +6,16 @@ Follow the Sway book's installation [instructions](https://fuellabs.github.io/sw
 
 ## Building and testing everything
 
-`forc` workspaces, which allow for nicer management of multiple packages, doesn't seem to be complete just yet. For now, scripts are supplied to build or test all packages.
-
-To build and format everything, run from the top level `fuel-contracts` directory:
+To build all packages:
 
 ```
-./build.sh
+forc build && cargo build
 ```
 
-To build and test everything, run from the top level `fuel-contracts` directory:
+To test all packages:
 
 ```
-./run_tests.sh
+forc test && cargo test
 ```
 
 ## How to work in this repo
