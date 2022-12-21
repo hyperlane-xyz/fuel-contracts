@@ -34,7 +34,7 @@ pub const EVM_ADDRESS_BYTE_COUNT: u64 = 20u64;
 impl EvmAddress {
     /// Returns a pointer to the EvmAddress's packed bytes.
     fn packed_bytes(self) -> raw_ptr {
-        __addr_of(self).add_uint_offset(B256_BYTE_COUNT - EVM_ADDRESS_BYTE_COUNT)
+        __addr_of(self).add_uint_offset(EVM_ADDRESS_B256_BYTE_OFFSET)
     }
 
     /// Gets an EvmAddress from a pointer to packed bytes.

@@ -60,16 +60,17 @@ fn get_test_checkpoint_and_metadata() -> (Checkpoint, MultisigMetadata) {
         index: TEST_CHECKPOINT_INDEX,
     };
 
-    let dummy_proof_element =
+    let dummy_b256 =
         Bits256::from_hex_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
             .unwrap();
+    let dummy_sig = B512::from((dummy_b256, dummy_b256));
     let metadata = MultisigMetadata {
         root: h256_to_bits256(checkpoint.root),
         index: checkpoint.index,
         mailbox: h256_to_bits256(checkpoint.mailbox_address),
-        proof: [dummy_proof_element; 32],
+        proof: [dummy_b256; 32],
         threshold: TEST_THRESHOLD,
-        signatures: vec![], // Empty, no tests rely upon signatures
+        signatures: vec![dummy_sig, dummy_sig, dummy_sig, dummy_sig],
         validators: TEST_VALIDATORS
             .iter()
             .map(|v| h256_to_bits256(H256::from(*v)).into())
