@@ -76,8 +76,13 @@ async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId
     .await
     .unwrap();
 
+    let initial_owner_wallet =
+        funded_wallet_with_private_key(&mailbox.get_wallet(), INTIAL_OWNER_PRIVATE_KEY)
+        .await
+        .unwrap();
+
     let raw_ism_id: ContractId = ism_id.clone().into();
-    mailbox.methods().set_default_ism(raw_ism_id).call().await.unwrap();
+    mailbox.with_wallet(initial_owner_wallet).unwrap().methods().set_default_ism(raw_ism_id).call().await.unwrap();
 
     let default_ism = mailbox.methods().get_default_ism().simulate().await.unwrap();
     assert_eq!(default_ism.value, raw_ism_id);
@@ -231,7 +236,6 @@ async fn test_initial_owner() {
     ));
 
     let owner = mailbox.methods().owner().simulate().await.unwrap().value;
-    println!("owner {:?}", owner);
     assert_eq!(owner, expected_owner);
 }
 
