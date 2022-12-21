@@ -6,10 +6,7 @@ use fuels::{
 };
 use hex::FromHex;
 use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
-use test_utils::{
-    bits256_to_h256,
-    h256_to_bits256,
-};
+use test_utils::{bits256_to_h256, h256_to_bits256};
 
 // Load abi from json
 abigen!(TestMessage, "out/debug/hyperlane-message-test-abi.json");
