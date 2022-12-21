@@ -82,9 +82,9 @@ impl Mailbox for Contract {
         message_id
     }
 
-    /// TODO: make ownable
     #[storage(write)]
     fn set_default_ism(module: ContractId) {
+        require_msg_sender(storage.owner);
         storage.default_ism = module;
     }
 
