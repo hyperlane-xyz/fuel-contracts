@@ -27,6 +27,7 @@ storage {
     commitment: StorageMap<u32, b256> = StorageMap {},
 }
 
+/// Updates storage commitment that is used to verify the validator set and threshold tuple.
 #[storage(read, write)]
 fn update_commitment(domain: u32) {
     let validators = storage.validators.get(domain);
@@ -50,16 +51,19 @@ fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
     return false;
 }
 
+/// Returns the validator set enrolled for the domain.
 #[storage(read)]
 fn validators(domain: u32) -> Vec<EvmAddress> {
     storage.validators.get(domain)
 }
 
+/// Returns true if the metadata merkle proof verifies the inclusion of the message in the root.
 pub fn verify_merkle_proof(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
     let calculated_root = StorageMerkleTree::branch_root(message.id(), metadata.proof, metadata.index);
     return calculated_root == metadata.root;
 }
 
+/// Returns true if a threshold of metadata signatures match the stored commitment.
 #[storage(read)]
 pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
     let origin = message.origin();
@@ -90,6 +94,7 @@ pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedM
     return true;
 }
 
+/// Enrolls a validator without updating the commitment.
 #[storage(read,write)]
 fn enroll_validator_without_commit(domain: u32, validator: EvmAddress) {
     let ZERO_ADDRESS = EvmAddress::from(ZERO_B256);
@@ -98,6 +103,7 @@ fn enroll_validator_without_commit(domain: u32, validator: EvmAddress) {
     validators(domain).push(validator);
 }
 
+/// Sets the threshold for the domain. Must be less than or equal to the number of validators.
 #[storage(read,write)]
 fn set_threshold(domain: u32, threshold: u8) {
     require(threshold > 0 && threshold <= validators(domain).len(), "!range");
@@ -106,21 +112,25 @@ fn set_threshold(domain: u32, threshold: u8) {
 }
 
 impl MultisigIsm for Contract {
+    /// Returns the threshold for the domain.
     #[storage(read)]
     fn threshold(domain: u32) -> u8 {
         storage.threshold.get(domain)
     }
 
+    /// Returns the validator set enrolled for the domain.
     #[storage(read)]
     fn validators(domain: u32) -> Vec<EvmAddress> {
         validators(domain)
     }
 
+    /// Returns true if the validator is enrolled for the domain.
     #[storage(read)]
     fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
         is_enrolled(domain, validator)
     }
 
+    /// Returns true if the merkle proof is verified and validator signatures provide quorum.
     #[storage(read)]
     fn verify(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
         require(verify_merkle_proof(metadata, message), "!merkle");
@@ -128,17 +138,22 @@ impl MultisigIsm for Contract {
         return true;
     }
 
+    /// Sets the threshold for the domain.
+    /// Must be less than or equal to the number of validators.
     #[storage(read, write)]
     fn set_threshold(domain: u32, threshold: u8) {
         set_threshold(domain, threshold);
     }
 
+    /// Enrolls a validator for the domain (and updates commitment).
+    /// Must not already be enrolled.
     #[storage(read, write)]
     fn enroll_validator(domain: u32, validator: EvmAddress) {
         enroll_validator_without_commit(domain, validator);
         update_commitment(domain);
     }
 
+    /// Batches validator enrollment for a list of domains.
     #[storage(read, write)]
     fn enroll_validators(domains: Vec<u32>, validators: Vec<Vec<EvmAddress>>) {
         let domain_len = domains.len();
@@ -161,6 +176,7 @@ impl MultisigIsm for Contract {
         }
     }
 
+    /// Batches threshold setting for a list of domains.
     #[storage(read, write)]
     fn set_thresholds(domains: Vec<u32>, thresholds: Vec<u8>) {
         let domain_len = domains.len();
@@ -173,6 +189,7 @@ impl MultisigIsm for Contract {
         }
     }
 
+    /// Unenrolls a validator for the domain (and updates commitment).
     #[storage(read, write)]
     fn unenroll_validator(domain: u32, validator: EvmAddress) {
         require(is_enrolled(domain, validator), "!enrolled");
