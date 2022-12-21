@@ -8,3 +8,4 @@ name = "hyperlane-mailbox"
 hyperlane_interfaces = { path = "../hyperlane-interfaces" }
 hyperlane_message = { path = "../hyperlane-message" }
 merkle = { path = "../merkle" }
+ownership = { path = "../ownership" }
