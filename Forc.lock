@@ -1,0 +1,78 @@
+[[package]]
+name = 'bytes_extended'
+source = 'member'
+dependencies = ['std']
+
+[[package]]
+name = 'core'
+source = 'path+from-root-E6BBD1A08F478960'
+
+[[package]]
+name = 'hyperlane-ism-test'
+source = 'member'
+dependencies = [
+    'hyperlane_interfaces',
+    'hyperlane_message',
+    'std',
+]
+
+[[package]]
+name = 'hyperlane-mailbox'
+source = 'member'
+dependencies = [
+    'hyperlane_interfaces',
+    'hyperlane_message',
+    'merkle',
+    'std',
+]
+
+[[package]]
+name = 'hyperlane-message-test'
+source = 'member'
+dependencies = [
+    'hyperlane_message',
+    'std',
+]
+
+[[package]]
+name = 'hyperlane-msg-recipient-test'
+source = 'member'
+dependencies = [
+    'hyperlane_interfaces',
+    'hyperlane_message',
+    'std',
+]
+
+[[package]]
+name = 'hyperlane_interfaces'
+source = 'member'
+dependencies = [
+    'hyperlane_message',
+    'std',
+]
+
+[[package]]
+name = 'hyperlane_message'
+source = 'member'
+dependencies = [
+    'bytes_extended',
+    'std',
+]
+
+[[package]]
+name = 'merkle'
+source = 'member'
+dependencies = ['std']
+
+[[package]]
+name = 'merkle-test'
+source = 'member'
+dependencies = [
+    'merkle',
+    'std',
+]
+
+[[package]]
+name = 'std'
+source = 'git+https://github.com/fuellabs/sway?tag=v0.32.2#b9996f13463c324e256014935c053c334b880ab5'
+dependencies = ['core']

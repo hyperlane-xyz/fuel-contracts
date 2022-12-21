@@ -1,0 +1,21 @@
+name: CI
+
+on: [push]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: install fuelup
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh -s -- --no-modify-path
+          echo "$HOME/.fuelup/bin" >> $GITHUB_PATH
+      - run: forc build
+      - run: forc test
+      - run: cargo build
+      - run: cargo test
