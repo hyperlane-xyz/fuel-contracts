@@ -19,6 +19,11 @@ Install all dependencies, running the following from this `deploy` directory:
 yarn
 ```
 
+And then build everything:
+```
+yarn build
+```
+
 ## Deploying contracts locally
 
 In one terminal, start the local node. This will run a `fuel-core` command to run a local node with pre-set keys that will expose a GraphQL endpoint at `http://localhost:4000`:
