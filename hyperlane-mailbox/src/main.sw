@@ -140,7 +140,7 @@ impl Mailbox for Contract {
     /// (root of merkle tree, index of the last element in the tree).
     #[storage(read)]
     fn latest_checkpoint() -> (b256, u32) {
-        (root(), count() - 1u32)
+        (root(), count())
     }
 }
 
