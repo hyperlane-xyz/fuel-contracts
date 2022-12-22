@@ -37,6 +37,8 @@ async function main() {
   console.log({
     mailbox: mailbox.id.toHexString(),
   });
+
+  console.log('Current latest checkpoint:', (await mailbox.functions.latest_checkpoint().simulate()).value);
 }
 
 main();
