@@ -55,12 +55,6 @@ fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
     return false;
 }
 
-/// Returns the validator set enrolled for the domain.
-#[storage(read)]
-fn validators(domain: u32) -> Vec<EvmAddress> {
-    storage.validators.to_vec(domain)
-}
-
 /// Returns true if the metadata merkle proof verifies the inclusion of the message in the root.
 pub fn verify_merkle_proof(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
     let calculated_root = StorageMerkleTree::branch_root(message.id(), metadata.proof, metadata.index);
@@ -104,13 +98,13 @@ fn enroll_validator_without_commit(domain: u32, validator: EvmAddress) {
     let ZERO_ADDRESS = EvmAddress::from(ZERO_B256);
     require(validator != ZERO_ADDRESS, "zero address");
     require(!is_enrolled(domain, validator), "enrolled");
-    validators(domain).push(validator);
+    storage.validators.push(domain, validator);
 }
 
 /// Sets the threshold for the domain. Must be less than or equal to the number of validators.
 #[storage(read,write)]
 fn set_threshold(domain: u32, threshold: u8) {
-    require(threshold > 0 && threshold <= validators(domain).len(), "!range");
+    require(threshold > 0 && threshold <= storage.validators.len(domain), "!range");
     storage.threshold.insert(domain, threshold);
     update_commitment(domain);
 }
@@ -125,7 +119,7 @@ impl MultisigIsm for Contract {
     /// Returns the validator set enrolled for the domain.
     #[storage(read)]
     fn validators(domain: u32) -> Vec<EvmAddress> {
-        validators(domain)
+        storage.validators.to_vec(domain)
     }
 
     /// Returns true if the validator is enrolled for the domain.
@@ -197,15 +191,15 @@ impl MultisigIsm for Contract {
     #[storage(read, write)]
     fn unenroll_validator(domain: u32, validator: EvmAddress) {
         require(is_enrolled(domain, validator), "!enrolled");
-        let mut validators = validators(domain);
+        let validators = storage.validators.to_vec(domain);
+        storage.validators.clear(domain);
+
         let mut i = 0;
         let len = validators.len();
         while i < len {
-            if validators.get(i).unwrap() == validator {
-                // swap with last element and pop to avoid shifting
-                validators.swap(len - 1, i);
-                validators.pop();
-                break;
+            let v = validators.get(i).unwrap();
+            if v != validator {
+                storage.validators.push(domain, v);
             }
             i += 1;
         }
