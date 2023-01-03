@@ -11,7 +11,7 @@ ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2022-12-05
 fuels = { version = "0.32", features = ["fuel-core-lib"] }
 hex = "0.4.3"
 hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "253e5f8" }
-test-utils = { path = "../test-utils" }
+test-utils = { path = "../../test-utils" }
 tokio = { version = "1.12", features = ["rt", "macros"] }
 
 [[test]]
