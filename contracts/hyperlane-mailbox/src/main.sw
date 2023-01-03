@@ -13,7 +13,7 @@ use ownership::{
     interface::Ownable,
 };
 
-use hyperlane_interfaces::{Mailbox, MessageRecipient, InterchainSecurityModule};
+use hyperlane_interfaces::{Mailbox, MessageRecipient, InterchainSecurityModule, ProcessEvent};
 use hyperlane_message::{Message, EncodedMessage};
 
 // Sway doesn't allow pow in a const.
@@ -25,6 +25,8 @@ const VERSION: u8 = 0;
 // Issue tracked here: https://github.com/hyperlane-xyz/fuel-contracts/issues/6
 // "fuel" in bytes
 const LOCAL_DOMAIN: u32 = 0x6675656cu32;
+// "hyp" in bytes
+const DISPATCHED_MESSAGE_LOG_ID: u64 = 0x687970u64;
 // TODO: set this at compile / deploy time.
 // NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
 // PRIVATE KEY, which is the first default account when running fuel-client locally.
@@ -77,7 +79,7 @@ impl Mailbox for Contract {
         storage.merkle_tree.insert(message_id);
 
         // Log the message.
-        message.log();
+        message.log_with_id(DISPATCHED_MESSAGE_LOG_ID);
 
         message_id
     }
@@ -121,7 +123,9 @@ impl Mailbox for Contract {
 
         msg_recipient.handle(message.origin(), message.sender(), message.body().into_vec_u8());
 
-        log(id);
+        log(ProcessEvent {
+            message_id: id,
+        });
     }
 
     /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
@@ -168,7 +172,11 @@ impl Mailbox for Contract {
         std::logging::log(message);
 
         // Log the message.
-        message.log();
+        message.log_with_id(DISPATCHED_MESSAGE_LOG_ID);
+
+        log(ProcessEvent {
+            message_id,
+        });
     }
 }
 

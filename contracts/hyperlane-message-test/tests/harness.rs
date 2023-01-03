@@ -115,16 +115,18 @@ async fn test_message_id() {
 }
 
 #[tokio::test]
-async fn test_message_log() {
+async fn test_message_log_with_id() {
     let (instance, _id) = get_contract_instance().await;
 
     let messages = test_messages_varying_bodies();
+
+    let expected_log_id = 1234u64;
 
     for msg in messages.into_iter() {
         let expected_id = msg.id();
         let log_tx = instance
             .methods()
-            .log(msg.into())
+            .log_with_id(msg.into(), expected_log_id)
             // If the body is very large, a lot of gas is used!
             .tx_params(TxParameters::new(None, Some(100_000_000), None))
             .call()
@@ -133,8 +135,8 @@ async fn test_message_log() {
 
         // The log is expected to be the second receipt
         let log_receipt = &log_tx.receipts[1];
-        let log_data = if let Receipt::LogData { data, .. } = log_receipt {
-            data
+        let (log_id, log_data) = if let Receipt::LogData { rb, data, .. } = log_receipt {
+            (rb, data)
         } else {
             panic!("Expected LogData receipt. Receipt: {:?}", log_receipt);
         };
@@ -143,6 +145,9 @@ async fn test_message_log() {
 
         // Assert equality of the message ID
         assert_eq!(recovered_message.id(), expected_id);
+
+        // Assert that the log ID is correct
+        assert_eq!(*log_id, expected_log_id);
     }
 }
 

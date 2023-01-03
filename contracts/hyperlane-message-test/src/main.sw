@@ -7,7 +7,7 @@ use std::logging::log;
 abi TestMessage {
     fn id(message: Message) -> b256;
 
-    fn log(message: Message);
+    fn log_with_id(message: Message, log_id: u64);
 
     fn version(message: Message) -> u8;
 
@@ -29,8 +29,8 @@ impl TestMessage for Contract {
         EncodedMessage::from(message).id()
     }
 
-    fn log(message: Message) {
-        EncodedMessage::from(message).log();
+    fn log_with_id(message: Message, log_id: u64) {
+        EncodedMessage::from(message).log_with_id(log_id);
     }
 
     fn version(message: Message) -> u8 {
@@ -61,6 +61,6 @@ impl TestMessage for Contract {
     /// Instead, we log the body and read that in our tests.
     fn log_body(message: Message) {
         let body = EncodedMessage::from(message).body();
-        body.log();
+        body.log_with_id(0u64);
     }
 }

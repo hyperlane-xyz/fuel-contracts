@@ -259,6 +259,16 @@ impl Bytes {
         };
     }
 
+    /// Logs all bytes.
+    /// `log_id` is a marker value to identify the logged data,
+    /// which is set to `rB` in the logd instruction.
+    pub fn log_with_id(self, log_id: u64) {
+        // See https://fuellabs.github.io/fuel-specs/master/vm/instruction_set.html#logd-log-data-event
+        asm(ptr: self.buf.ptr(), bytes: self.len, log_id: log_id) {
+            logd zero log_id ptr bytes; // Log the next `bytes` number of bytes starting from `ptr`
+        };
+    }
+
     /// Performs a keccak256 of all bytes.
     /// Heavily inspired by the keccak256 implementation:
     /// https://github.com/FuelLabs/sway/blob/79c0a5e4bb52b04f791e7413853a1c9337ab0c27/sway-lib-std/src/hash.sw#L38

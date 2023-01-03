@@ -79,8 +79,10 @@ impl EncodedMessage {
     }
 
     /// Logs the entire encoded packed message.
-    pub fn log(self) {
-        self.bytes.log();
+    /// `log_id` is a marker value to identify the logged data, which is
+    /// used as `rB` in the log.
+    pub fn log_with_id(self, log_id: u64) {
+        self.bytes.log_with_id(log_id);
     }
 
     /// Gets the message's version.

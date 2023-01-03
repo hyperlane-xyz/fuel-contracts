@@ -57,7 +57,7 @@ impl From<HyperlaneMessage> for DispatchedMessage {
 #[indexer(manifest = "indexer/mailbox/mailbox.manifest.yaml")]
 mod hello_world_index {
 
-    fn process_block(block_data: BlockData) {
+    fn index_block(block_data: BlockData) {
         // TODO don't do this at runtime so much
         // TODO make this easily configured?
         let mailbox_contract = ContractId::from_str(
@@ -94,5 +94,9 @@ mod hello_world_index {
                 }
             }
         }
+    }
+
+    fn index_process_event(process_event: ProcessEvent, _block_data: BlockData) {
+        Logger::info(&format!("Got process event {:?}", process_event));
     }
 }
