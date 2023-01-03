@@ -4,5 +4,6 @@ members = [
     "contracts/hyperlane-mailbox",
     "contracts/hyperlane-message-test",
     "contracts/merkle-test",
-    "test-utils"
+    "test-utils",
+    "indexer/mailbox"
 ]

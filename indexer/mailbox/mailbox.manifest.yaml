@@ -1,0 +1,8 @@
+namespace: hyperlane
+identifier: mailbox
+abi: /Users/trevor/fuel-indexer/examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
+start_block: 1
+graphql_schema: /Users/trevor/fuel-indexer/examples/hello-world/schema/hello_index.schema.graphql
+module:
+  # wasm: packages/fuel-indexer-tests/assets/hello_index.wasm
+  wasm: /Users/trevor/fuel-contracts/mailbox_indexer.wasm
