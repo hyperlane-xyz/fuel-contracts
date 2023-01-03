@@ -7,6 +7,11 @@ use std::{
 };
 
 use merkle::StorageMerkleTree;
+use ownership::{
+    require_msg_sender,
+    log_ownership_transferred,
+    interface::Ownable,
+};
 
 use hyperlane_interfaces::{Mailbox, MessageRecipient, InterchainSecurityModule};
 use hyperlane_message::{Message, EncodedMessage};
@@ -20,13 +25,21 @@ const VERSION: u8 = 0;
 // Issue tracked here: https://github.com/hyperlane-xyz/fuel-contracts/issues/6
 // "fuel" in bytes
 const LOCAL_DOMAIN: u32 = 0x6675656cu32;
+// TODO: set this at compile / deploy time.
+// NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
+// PRIVATE KEY, which is the first default account when running fuel-client locally.
+const INITIAL_OWNER: Option<Identity> = Option::Some(
+    Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e))
+);
 
 const ZERO_ID: ContractId = ContractId {
     value: 0x0000000000000000000000000000000000000000000000000000000000000000,
 };
 
 storage {
-    // A merkle tree that includes outbound message IDs as leaves.
+    /// The owner of the contract.
+    owner: Option<Identity> = INITIAL_OWNER,
+    /// A merkle tree that includes outbound message IDs as leaves.
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
     delivered: StorageMap<b256, bool> = StorageMap {},
     default_ism: ContractId = ZERO_ID
@@ -69,9 +82,9 @@ impl Mailbox for Contract {
         message_id
     }
 
-    /// TODO: make ownable
-    #[storage(write)]
+    #[storage(read,write)]
     fn set_default_ism(module: ContractId) {
+        require_msg_sender(storage.owner);
         storage.default_ism = module;
     }
 
@@ -128,6 +141,25 @@ impl Mailbox for Contract {
     #[storage(read)]
     fn latest_checkpoint() -> (b256, u32) {
         (root(), count() - 1u32)
+    }
+}
+
+impl Ownable for Contract {
+    /// Gets the current owner.
+    #[storage(read)]
+    fn owner() -> Option<Identity> {
+        storage.owner
+    }
+
+    /// Transfers ownership to `new_owner`.
+    /// Reverts if the msg_sender is not the current owner.
+    #[storage(read, write)]
+    fn transfer_ownership(new_owner: Option<Identity>) {
+        let old_owner = storage.owner;
+        require_msg_sender(old_owner);
+
+        storage.owner = new_owner;
+        log_ownership_transferred(old_owner, new_owner);
     }
 }
 
