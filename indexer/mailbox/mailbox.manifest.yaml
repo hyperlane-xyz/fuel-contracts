@@ -3,7 +3,7 @@ identifier: mailbox
 # Using our actual ABI breaks compilation because we have some interesting types :|
 #   error: Could not generate tokens for abi: ParseTokenStreamError("Invalid type: Could not resolve raw untyped ptr to any known type").
 # abi: contracts/hyperlane-mailbox/out/debug/hyperlane-mailbox-abi.json
-# abi: indexer/mailbox/src/abi-attempt.json
+abi: indexer/mailbox/src/abi-attempt.json
 start_block: 1
 # This also breaks compilation.... :|
 # contract_id: "0xe23141aae2561f4c23917f3092ff73eee676f70c6e2a34d41e3a498e7a081b14"
