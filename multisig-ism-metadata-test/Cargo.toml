@@ -7,7 +7,7 @@ authors = ["Trevor Porter <trevor@hyperlane.xyz>"]
 license = "Apache-2.0"
 
 [dev-dependencies]
-fuels = { version = "0.32", features = ["fuel-core-lib"] }
+fuels = { version = "0.33", features = ["fuel-core-lib"] }
 hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "ee075b1" }
 sha3 = "0.9.1"
 test-utils = { path = "../test-utils" }
