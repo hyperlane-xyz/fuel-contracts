@@ -169,8 +169,6 @@ impl Mailbox for Contract {
         let message_id = message.id();
         storage.merkle_tree.insert(message_id);
 
-        std::logging::log(message);
-
         // Log the message.
         message.log_with_id(DISPATCHED_MESSAGE_LOG_ID);
 

@@ -391,10 +391,10 @@ async fn test_process_id() {
         .await
         .unwrap();
 
-    let message_id = &process_call.get_logs_with_type::<Bits256>().unwrap()[0];
+    let process_event = &process_call.get_logs_with_type::<ProcessEvent>().unwrap()[0];
 
     // Assert equality of the message ID
-    assert_eq!(agent_message_id, bits256_to_h256(*message_id));
+    assert_eq!(agent_message_id, bits256_to_h256(process_event.message_id));
 }
 
 #[tokio::test]

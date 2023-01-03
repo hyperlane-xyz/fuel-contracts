@@ -1997,28 +1997,12 @@ checksum = "eceaec3c8c5bc2c9cdbd29e9025d413d7fee87a0c5f9bc1d5f9d781cbd363bec"
 dependencies = [
  "fuel-core",
  "fuel-gql-client",
- "fuels-abigen-macro 0.32.2",
- "fuels-contract 0.32.2",
+ "fuels-abigen-macro",
+ "fuels-contract",
  "fuels-core 0.32.2",
- "fuels-signers 0.32.2",
- "fuels-test-helpers 0.32.2",
+ "fuels-signers",
+ "fuels-test-helpers",
  "fuels-types 0.32.2",
-]
-
-[[package]]
-name = "fuels"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3110f3301c368eecb9c35fdc0c4ed7e8c9b73dc4b3855017bf6dd49a01656cc"
-dependencies = [
- "fuel-core",
- "fuel-gql-client",
- "fuels-abigen-macro 0.33.0",
- "fuels-contract 0.33.0",
- "fuels-core 0.33.0",
- "fuels-signers 0.33.0",
- "fuels-test-helpers 0.33.0",
- "fuels-types 0.33.0",
 ]
 
 [[package]]
@@ -2036,20 +2020,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuels-abigen-macro"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0eda4a42704c3e3c3e100d7604ac4a1a2dab26eb7bfd62031e6af93ce6f2a9ad"
-dependencies = [
- "Inflector",
- "fuels-core 0.33.0",
- "proc-macro2",
- "quote",
- "rand",
- "syn",
-]
-
-[[package]]
 name = "fuels-contract"
 version = "0.32.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2060,37 +2030,8 @@ dependencies = [
  "fuel-gql-client",
  "fuel-tx",
  "fuels-core 0.32.2",
- "fuels-signers 0.32.2",
+ "fuels-signers",
  "fuels-types 0.32.2",
- "futures",
- "hex",
- "itertools",
- "proc-macro2",
- "quote",
- "rand",
- "regex",
- "serde",
- "serde_json",
- "sha2 0.9.9",
- "strum 0.21.0",
- "strum_macros 0.21.1",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "fuels-contract"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33a8841208ab59958c0bac5118738cc3f6fa91d7bdef7751807344622008e803"
-dependencies = [
- "anyhow",
- "bytes",
- "fuel-gql-client",
- "fuel-tx",
- "fuels-core 0.33.0",
- "fuels-signers 0.33.0",
- "fuels-types 0.33.0",
  "futures",
  "hex",
  "itertools",
@@ -2162,33 +2103,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuels-core"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "147fc4f999eb2367467b09390d991811ca8d951ccc704246f3ddcea9e413a435"
-dependencies = [
- "Inflector",
- "anyhow",
- "fuel-tx",
- "fuel-types",
- "fuels-types 0.33.0",
- "hex",
- "itertools",
- "lazy_static",
- "proc-macro2",
- "quote",
- "rand",
- "regex",
- "serde",
- "serde_json",
- "sha2 0.9.9",
- "strum 0.21.0",
- "strum_macros 0.21.1",
- "syn",
- "thiserror",
-]
-
-[[package]]
 name = "fuels-signers"
 version = "0.32.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2214,31 +2128,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuels-signers"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18b2d832fbf4115a139981ad5a3823bc579505274faa1c74cdef1e90fc4a4b1d"
-dependencies = [
- "async-trait",
- "bytes",
- "chrono",
- "elliptic-curve 0.11.12",
- "eth-keystore 0.3.0",
- "fuel-crypto",
- "fuel-gql-client",
- "fuel-types",
- "fuels-core 0.33.0",
- "fuels-types 0.33.0",
- "hex",
- "itertools",
- "rand",
- "serde",
- "sha2 0.9.9",
- "thiserror",
- "tokio",
-]
-
-[[package]]
 name = "fuels-test-helpers"
 version = "0.32.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2250,37 +2139,10 @@ dependencies = [
  "fuel-core-interfaces",
  "fuel-gql-client",
  "fuel-types",
- "fuels-contract 0.32.2",
+ "fuels-contract",
  "fuels-core 0.32.2",
- "fuels-signers 0.32.2",
+ "fuels-signers",
  "fuels-types 0.32.2",
- "hex",
- "portpicker",
- "rand",
- "serde",
- "serde_json",
- "serde_with",
- "tempfile",
- "tokio",
- "which",
-]
-
-[[package]]
-name = "fuels-test-helpers"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9567d6ede64654fa8edf3a3be22d0e8a2d672648aacb17476c5b3f5ca70ca1e6"
-dependencies = [
- "anyhow",
- "fuel-chain-config",
- "fuel-core",
- "fuel-core-interfaces",
- "fuel-gql-client",
- "fuel-types",
- "fuels-contract 0.33.0",
- "fuels-core 0.33.0",
- "fuels-signers 0.33.0",
- "fuels-types 0.33.0",
  "hex",
  "portpicker",
  "rand",
@@ -2319,31 +2181,6 @@ name = "fuels-types"
 version = "0.32.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c6b7ec28dbf349bbc097e7e45ee711046088fe0365261f16105c842a4db354d"
-dependencies = [
- "anyhow",
- "bech32 0.9.1",
- "chrono",
- "fuel-chain-config",
- "fuel-gql-client",
- "fuel-tx",
- "hex",
- "itertools",
- "lazy_static",
- "proc-macro2",
- "regex",
- "serde",
- "serde_json",
- "strum 0.21.0",
- "strum_macros 0.21.1",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "fuels-types"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b44b707a20ce7b4fd7cd3451e672552e9851fd9024422d68a875f6b12ab184e5"
 dependencies = [
  "anyhow",
  "bech32 0.9.1",
@@ -2823,7 +2660,7 @@ name = "hyperlane-mailbox"
 version = "0.1.0"
 dependencies = [
  "ethers",
- "fuels 0.33.0",
+ "fuels",
  "hyperlane-core",
  "test-utils",
  "tokio",
@@ -2834,7 +2671,7 @@ name = "hyperlane-message-test"
 version = "0.1.0"
 dependencies = [
  "ethers",
- "fuels 0.32.2",
+ "fuels",
  "hex",
  "hyperlane-core",
  "test-utils",
@@ -3177,7 +3014,7 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 name = "merkle-test"
 version = "0.1.0"
 dependencies = [
- "fuels 0.32.2",
+ "fuels",
  "serde",
  "serde_json",
  "sha3 0.10.6",
@@ -4771,7 +4608,7 @@ name = "test-utils"
 version = "0.1.0"
 dependencies = [
  "ethers",
- "fuels 0.32.2",
+ "fuels",
 ]
 
 [[package]]
