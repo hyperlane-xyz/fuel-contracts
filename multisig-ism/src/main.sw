@@ -19,6 +19,9 @@ use interface::MultisigIsm;
 
 use multisig_ism_metadata::{MultisigMetadata, commitment};
 
+/// See https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/isms/MultisigIsm.sol
+/// for the reference implementation.
+
 storage {
     // TODO: consider u32 => struct
     threshold: StorageMap<u32, u8> = StorageMap {},

@@ -14,6 +14,9 @@ pub struct MultisigMetadata {
     validators: Vec<EvmAddress>,
 }
 
+/// See https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/libs/MultisigIsmMetadata.sol
+/// for the reference implementation.
+
 const U8_BYTE_COUNT = 1u64;
 
 pub fn domain_hash(origin: u32, mailbox: b256) -> b256 {
