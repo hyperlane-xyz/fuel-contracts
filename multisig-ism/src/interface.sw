@@ -14,8 +14,8 @@ abi MultisigIsm {
     fn threshold(domain: u32) -> u8;
     #[storage(read)]
     fn is_enrolled(domain: u32, validator: EvmAddress) -> bool;
-    #[storage(read)]
-    fn validators(domain: u32) -> Vec<EvmAddress>;
+    // #[storage(read)]
+    // fn validators(domain: u32) -> Vec<EvmAddress>;
 
     #[storage(read, write)]
     fn enroll_validator(domain: u32, validator: EvmAddress);

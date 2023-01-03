@@ -1496,16 +1496,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "eyre"
-version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c2b6b5a29c02cdc822728b7d7b8ae1bab3e3b05d44522770ddd49722eeac7eb"
-dependencies = [
- "indenter",
- "once_cell",
-]
-
-[[package]]
 name = "fake-simd"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2469,37 +2459,6 @@ dependencies = [
 [[package]]
 name = "hyperlane-core"
 version = "0.1.0"
-source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=253e5f8#253e5f81f26433bdb71969c9b44afb7d00cf2b52"
-dependencies = [
- "async-trait",
- "auto_impl 1.0.1",
- "bytes",
- "config",
- "ethers",
- "ethers-providers",
- "ethers-signers",
- "eyre",
- "hex",
- "lazy_static",
- "maplit",
- "num",
- "num-derive",
- "num-traits",
- "rocksdb",
- "serde",
- "serde_json",
- "sha3 0.9.1",
- "strum 0.24.1",
- "strum_macros 0.24.3",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-futures",
-]
-
-[[package]]
-name = "hyperlane-core"
-version = "0.1.0"
 source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=ee075b1#ee075b114f6c08057bbc5bc96cc85396e415f9c4"
 dependencies = [
  "async-trait",
@@ -2533,7 +2492,7 @@ version = "0.1.0"
 dependencies = [
  "ethers",
  "fuels",
- "hyperlane-core 0.1.0 (git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=253e5f8)",
+ "hyperlane-core",
  "test-utils",
  "tokio",
 ]
@@ -2545,7 +2504,18 @@ dependencies = [
  "ethers",
  "fuels",
  "hex",
- "hyperlane-core 0.1.0 (git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=ee075b1)",
+ "hyperlane-core",
+ "test-utils",
+ "tokio",
+]
+
+[[package]]
+name = "hyperlane-multisig-ism"
+version = "0.1.0"
+dependencies = [
+ "ethers",
+ "fuels",
+ "hyperlane-core",
  "test-utils",
  "tokio",
 ]
@@ -2627,12 +2597,6 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[package]]
-name = "indenter"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
 
 [[package]]
 name = "indexmap"
@@ -2827,12 +2791,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "maplit"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
-
-[[package]]
 name = "matchers"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2922,7 +2880,7 @@ name = "multisig-ism-metadata-test"
 version = "0.1.0"
 dependencies = [
  "fuels",
- "hyperlane-core 0.1.0 (git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=ee075b1)",
+ "hyperlane-core",
  "sha3 0.9.1",
  "test-utils",
  "tokio",

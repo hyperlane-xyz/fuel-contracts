@@ -1,9 +1,9 @@
 [package]
-name = "hyperlane-mailbox"
-description = "A Sway implementation of the Hyperlane Mailbox contract"
+name = "hyperlane-multisig-ism"
+description = "An implementation of the Hyperlane Multisig ISM."
 version = "0.1.0"
 edition = "2021"
-authors = ["Trevor Porter <trevor@hyperlane.xyz>", "Yorke Rhodes <yorke@hyperlane.xyz>"]
+authors = ["Yorke Rhodes <yorke@hyperlane.xyz>"]
 license = "Apache-2.0"
 
 [dev-dependencies]

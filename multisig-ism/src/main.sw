@@ -56,6 +56,7 @@ fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
 }
 
 /// Returns true if the metadata merkle proof verifies the inclusion of the message in the root.
+#[storage(read)]
 pub fn verify_merkle_proof(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
     let calculated_root = StorageMerkleTree::branch_root(message.id(), metadata.proof, metadata.index);
     return calculated_root == metadata.root;
@@ -117,10 +118,10 @@ impl MultisigIsm for Contract {
     }
 
     /// Returns the validator set enrolled for the domain.
-    #[storage(read)]
-    fn validators(domain: u32) -> Vec<EvmAddress> {
-        storage.validators.to_vec(domain)
-    }
+    // #[storage(read)]
+    // fn validators(domain: u32) -> Vec<EvmAddress> {
+    //     storage.validators.to_vec(domain)
+    // }
 
     /// Returns true if the validator is enrolled for the domain.
     #[storage(read)]

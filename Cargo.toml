@@ -2,6 +2,7 @@
 
 members = [
     "hyperlane-mailbox",
+    "multisig-ism",
     "hyperlane-message-test",
     "merkle-test",
     "test-utils",
