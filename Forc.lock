@@ -90,6 +90,7 @@ dependencies = [
     'merkle',
     'multisig_ism_metadata',
     'std',
+    'sway_libs',
 ]
 
 [[package]]
@@ -109,3 +110,8 @@ dependencies = ['std']
 name = 'std'
 source = 'git+https://github.com/fuellabs/sway?tag=v0.32.2#b9996f13463c324e256014935c053c334b880ab5'
 dependencies = ['core']
+
+[[package]]
+name = 'sway_libs'
+source = 'git+https://github.com/FuelLabs/sway-libs?branch=storagemapvec#a33e002639343d8ffae50e581368c1ec3dd42fd8'
+dependencies = ['std']

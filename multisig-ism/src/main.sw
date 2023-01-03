@@ -11,6 +11,8 @@ use std::{
     constants::ZERO_B256
 };
 
+use sway_libs::storagemapvec::StorageMapVec;
+
 use hyperlane_message::EncodedMessage;
 
 use merkle::StorageMerkleTree;
@@ -25,14 +27,14 @@ use multisig_ism_metadata::{MultisigMetadata, commitment};
 storage {
     // TODO: consider u32 => struct
     threshold: StorageMap<u32, u8> = StorageMap {},
-    validators: StorageMap<u32, Vec<EvmAddress>> = StorageMap {},
+    validators: StorageMapVec<u32, EvmAddress> = StorageMapVec {},
     commitment: StorageMap<u32, b256> = StorageMap {},
 }
 
 /// Updates storage commitment that is used to verify the validator set and threshold tuple.
 #[storage(read, write)]
 fn update_commitment(domain: u32) {
-    let validators = storage.validators.get(domain);
+    let validators = storage.validators.to_vec(domain);
     let threshold = storage.threshold.get(domain);
     storage.commitment.insert(domain, commitment(threshold, validators));
 }
@@ -41,7 +43,7 @@ fn update_commitment(domain: u32) {
 /// Currently O(n) but could be O(log(n)) with a set data structure
 #[storage(read)]
 fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
-    let validators = storage.validators.get(domain);
+    let validators = storage.validators.to_vec(domain);
     let mut i = 0;
     let len = validators.len();
     while i < len {
@@ -56,7 +58,7 @@ fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
 /// Returns the validator set enrolled for the domain.
 #[storage(read)]
 fn validators(domain: u32) -> Vec<EvmAddress> {
-    storage.validators.get(domain)
+    storage.validators.to_vec(domain)
 }
 
 /// Returns true if the metadata merkle proof verifies the inclusion of the message in the root.
