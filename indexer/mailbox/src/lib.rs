@@ -26,61 +26,73 @@
 //! cargo run --bin hello-bin
 //! ```
 
+mod encode;
+mod message;
+
 extern crate alloc;
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::prelude::*;
+use std::str::FromStr;
+
+use crate::{encode::Decode, message::HyperlaneMessage};
+
+impl From<HyperlaneMessage> for DispatchedMessage {
+    fn from(message: HyperlaneMessage) -> Self {
+        let message_id = Bytes32::from(message.id().to_fixed_bytes());
+
+        DispatchedMessage {
+            id: message.nonce as u64,
+            version: u32::from(message.version),
+            nonce: message.nonce,
+            origin: message.origin,
+            sender: Bytes32::from(message.sender.to_fixed_bytes()),
+            destination: message.destination,
+            recipient: Bytes32::from(message.recipient.to_fixed_bytes()),
+            body: message_id,
+            messageId: message_id,
+        }
+    }
+}
 
 #[indexer(manifest = "indexer/mailbox/mailbox.manifest.yaml")]
 mod hello_world_index {
 
-    fn index_logged_greeting(event: Greeting, block: BlockData) {
-        // Since all events require a u64 ID field, let's derive an ID using the
-        // name of the person in the Greeting
-        let greeter_id = first8_bytes_to_u64(&event.person.name.to_string());
+    fn process_block(block_data: BlockData) {
+        // TODO don't do this at runtime so much
+        // TODO make this easily configured?
+        let mailbox_contract = ContractId::from_str(
+            "0xa4a852a8cea261ca3ff60cb3f92dc7dedc93a452f579ca16099880741cd71de3",
+        )
+        .unwrap();
 
-        // Here we 'get or create' a Salutation based on the ID of the event
-        // emitted in the LogData receipt of our smart contract
-        let greeting = match Salutation::load(event.id) {
-            Some(mut g) => {
-                // If we found an event, let's use block height as a proxy for time
-                g.last_seen = block.height;
-                g
-            }
-            None => {
-                // If we did not already have this Saluation stored in the database. Here we
-                // show how you can use the Charfield type to store strings with length <= 255
-                let message =
-                    format!("{} 👋, my name is {}", &event.greeting, &event.person.name);
+        for tx in block_data.transactions.iter() {
+            for receipt in &tx.receipts {
+                if let Receipt::LogData { id, rb, data, .. } = receipt {
+                    Logger::info(&format!("Got a LogData: {:?}", receipt));
 
-                Salutation {
-                    id: event.id,
-                    message_hash: first32_bytes_to_bytes32(&message),
-                    message,
-                    greeter: greeter_id,
-                    first_seen: block.height,
-                    last_seen: block.height,
+                    // Ignore if the receipt isn't from the Mailbox
+                    if *id != mailbox_contract {
+                        continue;
+                    }
+
+                    // rb is zero when messages are logged.
+                    // TODO this is a weird filter, change this
+                    if *rb != 0u64 {
+                        continue;
+                    }
+
+                    let hyperlane_message = HyperlaneMessage::read_from(&mut data.as_slice());
+                    if hyperlane_message.is_err() {
+                        Logger::error("Message unable to be parsed");
+                        continue;
+                    }
+                    let hyperlane_message = hyperlane_message.unwrap();
+
+                    let message = DispatchedMessage::from(hyperlane_message);
+
+                    message.save();
                 }
             }
-        };
-
-        // Here we do the same with Greeter that we did for Saluation -- if we have an event
-        // already saved in the database, load it and update it. If we do not have this Greeter
-        // in the database then create one
-        let greeter = match Greeter::load(greeter_id) {
-            Some(mut g) => {
-                g.last_seen = block.height;
-                g
-            }
-            None => Greeter {
-                id: greeter_id,
-                first_seen: block.height,
-                name: event.person.name.to_string(),
-                last_seen: block.height,
-            },
-        };
-
-        // Both entity saves will occur in the same transaction
-        greeting.save();
-        greeter.save();
+        }
     }
 }

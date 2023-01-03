@@ -8,12 +8,15 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = { version = "=0.1.12", default-features = false }
-fuel-indexer-plugin = { version = "=0.1.12" }
-fuel-indexer-schema = { version = "=0.1.12", default-features = false }
-fuel-tx = "=0.23.1"
-fuels-core = "=0.30.0"
-fuels-types = "=0.30.0"
+fuel-indexer-macros = { version = "0.1.12", default-features = false }
+fuel-indexer-plugin = { version = "0.1.12" }
+fuel-indexer-schema = { version = "0.1.12", default-features = false }
+fuel-tx = "0.23.1"
+fuels-core = "0.30.0"
+fuels-types = "0.30.0"
 getrandom = { version = "0.2", features = ["js"] }
 instant = { version = "0.1", default-features = false }
+primitive-types = "0.12.1"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
+sha3 = "0.9.1"
+thiserror = "1.0"

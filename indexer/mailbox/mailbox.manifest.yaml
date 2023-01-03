@@ -1,8 +1,13 @@
 namespace: hyperlane
 identifier: mailbox
-abi: /Users/trevor/fuel-indexer/examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
+# Using our actual ABI breaks compilation because we have some interesting types :|
+#   error: Could not generate tokens for abi: ParseTokenStreamError("Invalid type: Could not resolve raw untyped ptr to any known type").
+# abi: contracts/hyperlane-mailbox/out/debug/hyperlane-mailbox-abi.json
 start_block: 1
-graphql_schema: /Users/trevor/fuel-indexer/examples/hello-world/schema/hello_index.schema.graphql
+# This also breaks compilation.... :|
+# contract_id: "0xe23141aae2561f4c23917f3092ff73eee676f70c6e2a34d41e3a498e7a081b14"
+# Relative to the root of the repo
+graphql_schema: indexer/mailbox/schema/mailbox.schema.graphql
 module:
-  # wasm: packages/fuel-indexer-tests/assets/hello_index.wasm
-  wasm: /Users/trevor/fuel-contracts/mailbox_indexer.wasm
+  # Relative to the root of the repo
+  wasm: target/wasm32-unknown-unknown/release/mailbox_indexer.wasm

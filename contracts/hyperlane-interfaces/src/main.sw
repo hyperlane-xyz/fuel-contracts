@@ -3,6 +3,9 @@ library hyperlane_interfaces;
 use hyperlane_message::Message;
 
 abi Mailbox {
+    #[storage(read, write)]
+    fn dispatch_dummy();
+
     /// Dispatches a message to the destination domain and recipient.
     /// Returns the message's ID.
     ///

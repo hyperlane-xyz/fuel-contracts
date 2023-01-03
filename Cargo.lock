@@ -2966,7 +2966,10 @@ dependencies = [
  "fuels-types 0.30.0",
  "getrandom",
  "instant",
+ "primitive-types",
  "serde",
+ "sha3 0.9.1",
+ "thiserror",
 ]
 
 [[package]]

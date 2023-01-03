@@ -3,24 +3,20 @@ schema {
 }
 
 type QueryRoot {
-    greeting: Greeting
-    greeter: Greeter
+    # This isn't documented, but it seems that the name of this and the type need to be the same (disregarding capitalization)
+    dispatchedmessage: DispatchedMessage!
 }
 
-# Calling this `Greeter` so as to not clash with `Person` in the contract
-type Greeter {
+type DispatchedMessage {
+    # The nonce as a u64
+    # See https://fuellabs.github.io/fuel-indexer/master/components/database/ids.html
     id: ID!
-    name: Charfield!
-    first_seen: UInt8!
-    last_seen: UInt8!
-}
-
-# Calling this `Salutation` so as to not clash with `Greeting` in the contract
-type Salutation {
-    id: ID!
-    message_hash: Bytes32!
-    message: Charfield!
-    greeter: Greeter!
-    first_seen: UInt8!
-    last_seen: UInt8!
+    version: UInt4!
+    nonce: UInt4!
+    origin: UInt4!
+    sender: Bytes32!
+    destination: UInt4!
+    recipient: Bytes32!
+    body: Bytes32!
+    messageId: Bytes32!
 }
