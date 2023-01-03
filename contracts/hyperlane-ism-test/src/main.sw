@@ -4,7 +4,7 @@ use hyperlane_interfaces::InterchainSecurityModule;
 use hyperlane_message::Message;
 
 storage {
-    accept: bool = true
+    accept: bool = true,
 }
 
 abi TestISM {

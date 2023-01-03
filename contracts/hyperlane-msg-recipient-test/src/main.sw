@@ -15,7 +15,7 @@ const ZERO_ID: ContractId = ContractId {
 
 storage {
     module: ContractId = ZERO_ID,
-    handled: bool = false
+    handled: bool = false,
 }
 
 impl MessageRecipient for Contract {
