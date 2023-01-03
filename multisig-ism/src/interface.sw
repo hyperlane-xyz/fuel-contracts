@@ -1,12 +1,10 @@
 library interface;
 
-dep metadata;
-
 use std::vm::evm::evm_address::EvmAddress;
 
 use hyperlane_message::EncodedMessage;
 
-use metadata::MultisigMetadata;
+use multisig_ism_metadata::MultisigMetadata;
 
 abi MultisigIsm {
     #[storage(read)]

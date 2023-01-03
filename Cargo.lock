@@ -2918,6 +2918,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "multisig-ism-metadata-test"
+version = "0.1.0"
+dependencies = [
+ "fuels",
+ "hyperlane-core 0.1.0 (git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=ee075b1)",
+ "sha3 0.9.1",
+ "test-utils",
+ "tokio",
+]
+
+[[package]]
 name = "native-tls"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -74,6 +74,33 @@ dependencies = [
 ]
 
 [[package]]
+name = 'multisig-ism-metadata-test'
+source = 'member'
+dependencies = [
+    'multisig_ism_metadata',
+    'std',
+]
+
+[[package]]
+name = 'multisig_ism'
+source = 'member'
+dependencies = [
+    'bytes_extended',
+    'hyperlane_message',
+    'merkle',
+    'multisig_ism_metadata',
+    'std',
+]
+
+[[package]]
+name = 'multisig_ism_metadata'
+source = 'member'
+dependencies = [
+    'bytes_extended',
+    'std',
+]
+
+[[package]]
 name = 'ownership'
 source = 'path+from-root-D26B060B9C691B9B'
 dependencies = ['std']

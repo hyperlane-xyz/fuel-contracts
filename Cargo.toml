@@ -4,5 +4,6 @@ members = [
     "hyperlane-mailbox",
     "hyperlane-message-test",
     "merkle-test",
-    "test-utils"
+    "test-utils",
+    "multisig-ism-metadata-test"
 ]

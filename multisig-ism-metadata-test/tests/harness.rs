@@ -6,7 +6,7 @@ use test_utils::{bits256_to_h256, h256_to_bits256};
 // Load abi from json
 abigen!(
     TestMultisigIsmMetadata,
-    "out/debug/multisig-ism-metadata-test-abi.json"
+    "multisig-ism-metadata-test/out/debug/multisig-ism-metadata-test-abi.json"
 );
 
 const TEST_MAILBOX_ADDRESS: H256 = H256::repeat_byte(0xau8);

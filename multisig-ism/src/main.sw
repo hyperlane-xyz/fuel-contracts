@@ -1,7 +1,6 @@
 contract;
 
 dep interface;
-dep metadata;
 
 use std::{
     vm::evm::{
@@ -18,7 +17,7 @@ use merkle::StorageMerkleTree;
 
 use interface::MultisigIsm;
 
-use metadata::{MultisigMetadata, commitment};
+use multisig_ism_metadata::{MultisigMetadata, commitment};
 
 storage {
     // TODO: consider u32 => struct

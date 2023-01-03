@@ -115,16 +115,16 @@ impl Bytes {
 
     /// Copies `byte_count` bytes from `bytes_ptr` into self at the specified offset.
     /// Reverts if the bounds of self are violated.
-    /// Returns the new length of self.
+    /// Returns the byte index after the last byte written.
     pub fn write_packed_bytes(ref mut self, offset: u64, bytes_ptr: raw_ptr, byte_count: u64) -> u64 {
-        let result = offset + byte_count;
+        let new_byte_offset = offset + byte_count;
         // Ensure that the written bytes will stay within the correct bounds.
-        assert(result <= self.len);
+        assert(new_byte_offset <= self.len);
         // Get a pointer to the buffer at the offset.
         let write_ptr = self.buf.ptr().add_uint_offset(offset);
         // Copy from the `bytes_ptr` into `write_ptr`.
         bytes_ptr.copy_bytes_to(write_ptr, byte_count);
-        result
+        new_byte_offset
     }
 
     /// Gets a pointer to bytes within self at the specified offset.
@@ -144,6 +144,7 @@ impl Bytes {
 
     /// Writes a b256 at the specified offset. Reverts if it violates the
     /// bounds of self.
+    /// Returns the byte index after the end of the b256.
     pub fn write_b256(ref mut self, offset: u64, value: b256) -> u64 {
         self.write_packed_bytes(
             offset,
@@ -167,6 +168,7 @@ impl Bytes {
 
     /// Writes an EvmAddress at the specified offset. Reverts if it violates the
     /// bounds of self.
+    /// Returns the byte index after the end of the address.
     pub fn write_evm_address(ref mut self, offset: u64, value: EvmAddress) -> u64 {
         self.write_packed_bytes(
             offset,
@@ -189,6 +191,7 @@ impl Bytes {
 
     /// Writes a u64 at the specified offset. Reverts if it violates the
     /// bounds of self.
+    /// Returns the byte index after the end of the u64.
     pub fn write_u64(ref mut self, offset: u64, value: u64) -> u64 {
         self.write_packed_bytes(
             offset,
@@ -212,6 +215,7 @@ impl Bytes {
 
     /// Writes a u32 at the specified offset. Reverts if it violates the
     /// bounds of self.
+    /// Returns the byte index after the end of the u32.
     pub fn write_u32(ref mut self, offset: u64, value: u32) -> u64 {
         self.write_packed_bytes(
             offset,
@@ -235,6 +239,7 @@ impl Bytes {
 
     /// Writes a u16 at the specified offset. Reverts if it violates the
     /// bounds of self.
+    /// Returns the byte index after the end of the u16.
     pub fn write_u16(ref mut self, offset: u64, value: u16) -> u64 {
         self.write_packed_bytes(
             offset,
@@ -258,6 +263,7 @@ impl Bytes {
 
     /// Writes a u8 at the specified offset. Reverts if it violates the
     /// bounds of self.
+    /// Returns the byte index after the end of the u8.
     pub fn write_u8(ref mut self, offset: u64, value: u8) -> u64 {
         self.set(offset, value);
         offset + 1
@@ -273,6 +279,7 @@ impl Bytes {
     
     /// Writes Bytes at the specified offset. Reverts if it violates the
     /// bounds of self.
+    /// Returns the byte index after the end of the bytes written.
     pub fn write_bytes(ref mut self, offset: u64, value: Bytes) -> u64 {
         self.write_packed_bytes(
             offset,
