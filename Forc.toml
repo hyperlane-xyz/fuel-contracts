@@ -9,5 +9,8 @@ members = [
     "merkle-test",
     "hyperlane-mailbox",
     "hyperlane-ism-test",
-    "hyperlane-msg-recipient-test"
+    "hyperlane-msg-recipient-test",
+    "multisig-ism",
+    "multisig-ism-metadata",
+    "multisig-ism-metadata-test"
 ]
