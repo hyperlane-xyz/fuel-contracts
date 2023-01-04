@@ -10,6 +10,7 @@ pub struct MultisigMetadata {
     mailbox: b256,
     proof: [b256; 32],
     threshold: u8,
+    // TODO: look into malleability of signatures
     signatures: Vec<B512>,
     validators: Vec<EvmAddress>,
 }

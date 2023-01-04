@@ -2,18 +2,20 @@ library interface;
 
 use std::vm::evm::evm_address::EvmAddress;
 
-use hyperlane_message::EncodedMessage;
+use hyperlane_message::Message;
 
 use multisig_ism_metadata::MultisigMetadata;
 
 abi MultisigIsm {
     #[storage(read)]
-    fn verify(metadata: MultisigMetadata, message: EncodedMessage) -> bool;
+    fn verify(metadata: MultisigMetadata, message: Message) -> bool;
 
     #[storage(read)]
     fn threshold(domain: u32) -> u8;
     #[storage(read)]
     fn is_enrolled(domain: u32, validator: EvmAddress) -> bool;
+
+    // TODO: add once vector return type is supported
     // #[storage(read)]
     // fn validators(domain: u32) -> Vec<EvmAddress>;
 

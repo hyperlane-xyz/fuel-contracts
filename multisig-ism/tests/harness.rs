@@ -18,11 +18,11 @@ async fn get_contract_instance() -> (MultisigIsm, ContractId) {
     let wallet = wallets.pop().unwrap();
 
     let id = Contract::deploy(
-        "./out/debug/hyperlane-multisig-ism.bin",
+        "./out/debug/multisig_ism.bin",
         &wallet,
         TxParameters::default(),
         StorageConfiguration::with_storage_path(Some(
-            "./out/debug/hyperlane-multisig-ism-storage_slots.json".to_string(),
+            "./out/debug/multisig_ism-storage_slots.json".to_string(),
         )),
     )
     .await

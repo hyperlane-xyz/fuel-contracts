@@ -13,7 +13,7 @@ use std::{
 
 use sway_libs::storagemapvec::StorageMapVec;
 
-use hyperlane_message::EncodedMessage;
+use hyperlane_message::{Message, EncodedMessage};
 
 use merkle::StorageMerkleTree;
 
@@ -110,7 +110,22 @@ fn set_threshold(domain: u32, threshold: u8) {
     update_commitment(domain);
 }
 
+// TODO: implement with generic ISM abi
+// impl InterchainSecurityModule for Contract {
+//     #[storage(read, write)]
+//     fn verify(metadata: Vec<u8>, message: EncodedMessage) -> bool {
+// }
+
 impl MultisigIsm for Contract {
+    #[storage(read)]
+    fn verify(metadata: MultisigMetadata, _message: Message) -> bool {
+        // TODO: revert once abigen handles Bytes
+        let message = EncodedMessage::from(_message);
+        require(verify_merkle_proof(metadata, message), "!merkle");
+        require(verify_validator_signatures(metadata, message), "!signatures");
+        return true;
+    }
+
     /// Returns the threshold for the domain.
     #[storage(read)]
     fn threshold(domain: u32) -> u8 {
@@ -127,14 +142,6 @@ impl MultisigIsm for Contract {
     #[storage(read)]
     fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
         is_enrolled(domain, validator)
-    }
-
-    /// Returns true if the merkle proof is verified and validator signatures provide quorum.
-    #[storage(read)]
-    fn verify(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
-        require(verify_merkle_proof(metadata, message), "!merkle");
-        require(verify_validator_signatures(metadata, message), "!signatures");
-        return true;
     }
 
     /// Sets the threshold for the domain.
@@ -191,6 +198,7 @@ impl MultisigIsm for Contract {
     /// Unenrolls a validator for the domain (and updates commitment).
     #[storage(read, write)]
     fn unenroll_validator(domain: u32, validator: EvmAddress) {
+        // TODO: check memory layout of storagemapvec
         require(is_enrolled(domain, validator), "!enrolled");
         let validators = storage.validators.to_vec(domain);
         storage.validators.clear(domain);
