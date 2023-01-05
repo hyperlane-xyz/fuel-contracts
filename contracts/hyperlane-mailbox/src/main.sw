@@ -151,7 +151,12 @@ impl Mailbox for Contract {
     fn dispatch_dummy() {
         let destination_domain = 4u32;
         let recipient: b256 = 0x0000000000000000000000000000000000000000000000000000000000000000;
-        let message_body: Vec<u8> = Vec::new();
+        let mut message_body: Vec<u8> = Vec::new();
+        message_body.push(0x4u8);
+        message_body.push(0xfu8);
+        message_body.push(0xfu8);
+        message_body.push(0x1u8);
+        message_body.push(0x0u8);
 
         require(message_body.len() <= MAX_MESSAGE_BODY_BYTES, "msg too long");
 

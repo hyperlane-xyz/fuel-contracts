@@ -2965,6 +2965,7 @@ dependencies = [
  "fuels-core 0.30.0",
  "fuels-types 0.30.0",
  "getrandom",
+ "hex",
  "instant",
  "primitive-types",
  "serde",

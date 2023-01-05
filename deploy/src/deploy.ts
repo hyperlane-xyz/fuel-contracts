@@ -39,7 +39,11 @@ async function main() {
   });
 
   try{
-    const dispatch = await mailbox.functions.dispatch_dummy().txParams({
+    const dispatch = await mailbox.functions.dispatch(
+      420,
+      '0x6900000000000000000000000000000000000000000000000000000000000069',
+      [1,2,3,5,6]
+    ).txParams({
       gasPrice: 0,
     }).call();
     console.log('Dispatched', dispatch);
