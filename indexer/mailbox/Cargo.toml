@@ -8,7 +8,9 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = { version = "0.1.12", default-features = false }
+# Temporary workaround for https://github.com/FuelLabs/fuel-indexer/issues/449
+# fuel-indexer-macros = { version = "0.1.12", default-features = false }
+fuel-indexer-macros = { git = "https://github.com/hyperlane-xyz/fuel-indexer", rev = "6123664", default-features = false }
 fuel-indexer-plugin = { version = "0.1.12" }
 fuel-indexer-schema = { version = "0.1.12", default-features = false }
 fuel-tx = "0.23.1"

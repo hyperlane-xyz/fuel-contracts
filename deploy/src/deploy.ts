@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { ContractFactory, Provider, Wallet } from 'fuels';
+import { Contract, ContractFactory, ContractUtils, Provider, Wallet, WalletUnlocked } from 'fuels';
 
 import { HyperlaneMailboxAbi__factory } from '../types/factories/HyperlaneMailboxAbi__factory';
 
@@ -20,6 +20,57 @@ async function main() {
   const provider = new Provider('http://127.0.0.1:4000/graphql');
   const wallet = Wallet.fromPrivateKey(PRIVATE_KEY, provider);
 
+  const mailbox = await deployOrGetMailbox(wallet);
+
+  // const bytecode = readFileSync(
+  //   '../contracts/hyperlane-mailbox/out/debug/hyperlane-mailbox.bin',
+  // );
+
+  // const factory = new ContractFactory(
+  //   bytecode,
+  //   HyperlaneMailboxAbi__factory.abi,
+  //   wallet,
+  // );
+
+  // const mailboxAddress = ContractUtils.getContractId(
+  //   bytecode,
+  //   CONTRACT_SALT,
+  //   ContractUtils.getContractStorageRoot([]),
+  // );
+
+  // console.log('Expected mailboxAddress', mailboxAddress);
+
+  // const mailbox = await factory.deployContract({
+  //   salt: CONTRACT_SALT,
+  // });
+
+  console.log('Deployed contracts:');
+  console.log({
+    mailbox: mailbox.id.toHexString(),
+  });
+
+  try{
+    const dispatchTx = await mailbox.functions.dispatch(
+      420,
+      '0x6900000000000000000000000000000000000000000000000000000000000069',
+      [1,2,3,5,6]
+    ).txParams({
+      gasPrice: 0,
+    });
+
+    const txRequest = await dispatchTx.getTransactionRequest();
+    const txResponse = await mailbox.wallet!.sendTransaction(txRequest);
+    const txResult = await txResponse.wait();
+    console.log('Dispatched', txResult);
+  } catch (e) {
+    console.log('err', e)
+  }
+
+  console.log('hmm?');
+  console.log('Current latest checkpoint:', (await mailbox.functions.latest_checkpoint().simulate()).value);
+}
+
+async function deployOrGetMailbox(wallet: WalletUnlocked): Promise<Contract> {
   const bytecode = readFileSync(
     '../contracts/hyperlane-mailbox/out/debug/hyperlane-mailbox.bin',
   );
@@ -29,29 +80,29 @@ async function main() {
     HyperlaneMailboxAbi__factory.abi,
     wallet,
   );
-  const mailbox = await factory.deployContract({
-    salt: CONTRACT_SALT,
-  });
 
-  console.log('Deployed contracts:');
-  console.log({
-    mailbox: mailbox.id.toHexString(),
-  });
+  const expectedMailboxContractId = ContractUtils.getContractId(
+    bytecode,
+    CONTRACT_SALT,
+    ContractUtils.getContractStorageRoot([]),
+  );
 
-  try{
-    const dispatch = await mailbox.functions.dispatch(
-      420,
-      '0x6900000000000000000000000000000000000000000000000000000000000069',
-      [1,2,3,5,6]
-    ).txParams({
-      gasPrice: 0,
-    }).call();
-    console.log('Dispatched', dispatch);
-  } catch (e) {
-    console.log('err', e)
+  const maybeDeployedContract = await wallet.provider.getContract(expectedMailboxContractId);
+
+  console.log('Expected expectedMailboxContractId', expectedMailboxContractId, maybeDeployedContract);
+
+  // If the contract's already been deployed, just get the existing one without deploying
+  if (maybeDeployedContract) {
+    return new Contract(
+      expectedMailboxContractId,
+      HyperlaneMailboxAbi__factory.abi,
+      wallet,
+    );
   }
 
-  console.log('Current latest checkpoint:', (await mailbox.functions.latest_checkpoint().simulate()).value);
+  return factory.deployContract({
+    salt: CONTRACT_SALT,
+  });
 }
 
 main();

@@ -3,7 +3,8 @@ schema {
 }
 
 type QueryRoot {
-    # This isn't documented, but it seems that the name of this and the type need to be the same (disregarding capitalization)
+    # This isn't documented, but it seems that the name of this
+    # and the type need to be the same (disregarding capitalization)
     dispatchedmessage: DispatchedMessage!
 }
 
@@ -20,9 +21,7 @@ type DispatchedMessage {
     recipient: Bytes32!
 
     # TODO: move to Blob once the indexer works with Blob.
-    # Blob is a more appropriate type as suggested by https://fuellabs.github.io/fuel-indexer/master/components/database/types.html#types
-    # However, the indexer doesn't seem to actually support Blob - the `indexer`
-    # macro says that Blob is undefined.
+    # See https://github.com/FuelLabs/fuel-indexer/issues/450
     body: Json!
     message_id: Bytes32!
 
@@ -32,6 +31,7 @@ type DispatchedMessage {
     # `logmetadata: LogMetadata!` will work, but querying the wrapper type
     # will only result in the IDs of the message / logmetadata being supplied,
     # and the other columns must be re-queried directly.
+    # See https://github.com/FuelLabs/fuel-indexer/issues/452
 
     contract_id: Address!
     block_number: UInt8!

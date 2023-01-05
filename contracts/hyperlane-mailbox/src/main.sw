@@ -146,41 +146,6 @@ impl Mailbox for Contract {
     fn latest_checkpoint() -> (b256, u32) {
         (root(), count() - 1u32)
     }
-
-    #[storage(read, write)]
-    fn dispatch_dummy() {
-        let destination_domain = 4u32;
-        let recipient: b256 = 0x0000000000000000000000000000000000000000000000000000000000000000;
-        let mut message_body: Vec<u8> = Vec::new();
-        message_body.push(0x4u8);
-        message_body.push(0xfu8);
-        message_body.push(0xfu8);
-        message_body.push(0x1u8);
-        message_body.push(0x0u8);
-
-        require(message_body.len() <= MAX_MESSAGE_BODY_BYTES, "msg too long");
-
-        let message = EncodedMessage::new(
-            VERSION,
-            count(), // nonce
-            LOCAL_DOMAIN,
-            msg_sender_b256(), // sender
-            destination_domain,
-            recipient,
-            message_body,
-        );
-
-        // Get the message's ID and insert it into the merkle tree.
-        let message_id = message.id();
-        storage.merkle_tree.insert(message_id);
-
-        // Log the message.
-        message.log_with_id(DISPATCHED_MESSAGE_LOG_ID);
-
-        log(ProcessEvent {
-            message_id,
-        });
-    }
 }
 
 impl Ownable for Contract {

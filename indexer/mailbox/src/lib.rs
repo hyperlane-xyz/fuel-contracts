@@ -76,27 +76,34 @@ impl DispatchedMessage {
     }
 }
 
-// "hyp" in bytes
+/// The log id (i.e. the value of rB in the LogData) of a dispatched message log.
+/// "hyp" in bytes
 const DISPATCHED_MESSAGE_LOG_ID: u64 = 0x687970u64;
 
+/// The contract ID of the Mailbox.
+/// See https://github.com/FuelLabs/fuel-indexer/issues/451 for a better configuration path.
+const MAILBOX_CONTRACT_ID: &str = "0xd57844b518747e95d9e70ad483d90914c7d85da663133cc79dac87ecf032a1ef";
+
 #[indexer(manifest = "indexer/mailbox/mailbox.manifest.yaml")]
-mod hello_world_index {
+mod mailbox_indexer {
 
     fn index_block(block_data: BlockData) {
-        // TODO don't do this at runtime so much
-        // TODO make this easily configured?
         let mailbox_contract = ContractId::from_str(
-            "0xac2c457778463c88710bb381680e540129853ae61bae42b38b23f690bcb7d29e",
+            MAILBOX_CONTRACT_ID,
         )
-        .unwrap();
-        let mut tx_index = 0;
+        .expect("Invalid Mailbox contract ID");
+
+        let mut transaction_index = 0;
         for tx in block_data.transactions.iter() {
-            Logger::info(&format!("Got tx with status {:?}", tx.status));
+
+            // Ignore transactions that aren't successful.
+            if !matches!(&tx.status, TransactionStatus::Success { .. }) {
+                continue;
+            }
+
             let mut receipt_index = 0;
             for receipt in &tx.receipts {
                 if let Receipt::LogData { id, rb, data, .. } = receipt {
-                    Logger::info(&format!("Got a LogData: {:?}", receipt));
-
                     // Ignore if the receipt isn't from the Mailbox
                     if *id != mailbox_contract {
                         continue;
@@ -109,30 +116,25 @@ mod hello_world_index {
                     }
  
                     let dispatched_message = DispatchedMessage::new(
-                        HyperlaneMessage::read_from(&mut data.as_slice()).unwrap(),
+                        HyperlaneMessage::read_from(&mut data.as_slice()).expect(
+                            "Malformed HyperlaneMessage log data"
+                        ),
                         LogMetadata {
                             contract_id: Address::new(mailbox_contract.into()),
                             block_number: block_data.height,
                             block_hash: block_data.id,
                             transaction_hash: tx.id,
-                            transaction_index: tx_index,
-                            receipt_index: receipt_index,
+                            transaction_index,
+                            receipt_index,
                         }
                     );
-                    Logger::info("Before saving");
                     dispatched_message.save();
-                    Logger::info("After saving");
                 }
 
                 receipt_index += 1;
             }
 
-            tx_index += 1;
+            transaction_index += 1;
         }
-        Logger::info("nice");
     }
-
-    // fn index_process_event(process_event: ProcessEvent, _block_data: BlockData) {
-    //     Logger::info(&format!("Got process event {:?}", process_event));
-    // }
 }
