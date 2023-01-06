@@ -10,6 +10,15 @@ use fuel_indexer_plugin::prelude::*;
 
 use crate::{encode::Decode, message::HyperlaneMessage};
 
+/// The log id (i.e. the value of rB in the LogData) of a dispatched message log.
+/// "hyp" in bytes
+const DISPATCHED_MESSAGE_LOG_ID: u64 = 0x687970u64;
+
+/// The contract ID of the Mailbox.
+/// See https://github.com/FuelLabs/fuel-indexer/issues/451 for a better configuration path.
+const MAILBOX_CONTRACT_ID: &str =
+    "0xbec347738bd1d037fbd6ad7a3370ae98ea0ff62a72d3f9c83ad78d01fbd7bcc1";
+
 struct LogMetadata {
     contract_id: Address,
     block_number: u64,
@@ -48,15 +57,6 @@ impl DispatchedMessage {
         }
     }
 }
-
-/// The log id (i.e. the value of rB in the LogData) of a dispatched message log.
-/// "hyp" in bytes
-const DISPATCHED_MESSAGE_LOG_ID: u64 = 0x687970u64;
-
-/// The contract ID of the Mailbox.
-/// See https://github.com/FuelLabs/fuel-indexer/issues/451 for a better configuration path.
-const MAILBOX_CONTRACT_ID: &str =
-    "0xcf9e1623683e2fde0470deec0429102869867f8cb1d1106c8c3561c9ab75ff91";
 
 #[indexer(manifest = "indexer/mailbox/mailbox.manifest.yaml")]
 mod mailbox_indexer {

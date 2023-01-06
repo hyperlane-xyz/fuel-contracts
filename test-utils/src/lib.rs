@@ -44,7 +44,7 @@ pub fn get_revert_string(call_error: Error) -> String {
 
     // Null bytes `\0` will be padded to the end of the revert string, so we remove them.
     let data: Vec<u8> = data
-        .into_iter()
+        .iter()
         .cloned()
         .filter(|byte| *byte != b'\0')
         .collect();
