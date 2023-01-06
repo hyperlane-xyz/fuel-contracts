@@ -13,7 +13,7 @@ use ownership::{
     interface::Ownable,
 };
 
-use hyperlane_interfaces::{Mailbox, MessageRecipient, InterchainSecurityModule, ProcessEvent};
+use hyperlane_interfaces::{Mailbox, MessageRecipient, InterchainSecurityModule};
 use hyperlane_message::{Message, EncodedMessage};
 
 // Sway doesn't allow pow in a const.
@@ -78,7 +78,7 @@ impl Mailbox for Contract {
         let message_id = message.id();
         storage.merkle_tree.insert(message_id);
 
-        // Log the message.
+        // Log the message with a log ID.
         message.log_with_id(DISPATCHED_MESSAGE_LOG_ID);
 
         message_id
@@ -123,9 +123,7 @@ impl Mailbox for Contract {
 
         msg_recipient.handle(message.origin(), message.sender(), message.body().into_vec_u8());
 
-        log(ProcessEvent {
-            message_id: id,
-        });
+        log(id);
     }
 
     /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.

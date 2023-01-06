@@ -6,7 +6,7 @@ identifier: mailbox
 start_block: 1
 # Specifying the contract ID also breaks compilation...
 # See https://github.com/FuelLabs/fuel-indexer/issues/451
-# contract_id: "0xe23141aae2561f4c23917f3092ff73eee676f70c6e2a34d41e3a498e7a081b14"
+# contract_id: "0x0000000000000000000000000000000000000000000000000000000000000000"
 graphql_schema: indexer/mailbox/schema/mailbox.schema.graphql
 module:
   wasm: target/wasm32-unknown-unknown/release/mailbox_indexer.wasm

@@ -20,9 +20,6 @@ set -e
 
 CARGO_WORKSPACE_ROOT_DIR=$(dirname -- $(cargo locate-project -q --workspace --message-format plain))
 
-echo "pwd" $(pwd)
-
-
 # Builds the wasm, and snips bad wasm.
 # See https://fuellabs.github.io/fuel-indexer/master/getting-started/application-dependencies/wasm-snip.html
 cargo build -p mailbox-indexer --release --target wasm32-unknown-unknown &&

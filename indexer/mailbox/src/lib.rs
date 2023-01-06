@@ -1,31 +1,3 @@
-//! A "Hello World" type of program for the Fuel Indexer service.
-//!
-//! Build this example's WASM module using the following command. Note that a
-//! wasm32-unknown-unknown target will be required.
-//!
-//! ```bash
-//! cargo build -p hello-index --release --target wasm32-unknown-unknown
-//! ```
-//!
-//! Start a local test Fuel node
-//!
-//! ```bash
-//! cargo run --bin fuel-node
-//! ```
-//!
-//! With your database backend set up, now start your fuel-indexer binary using the
-//! assets from this example:
-//!
-//! ```bash
-//! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello_index.manifest.yaml
-//! ```
-//!
-//! Now trigger an event.
-//!
-//! ```bash
-//! cargo run --bin hello-bin
-//! ```
-
 mod encode;
 mod message;
 
@@ -52,7 +24,9 @@ impl DispatchedMessage {
     fn new(message: HyperlaneMessage, log_metadata: LogMetadata) -> Self {
         let message_id = Bytes32::from(message.id().to_fixed_bytes());
         Self {
+            // See https://fuellabs.github.io/fuel-indexer/v0.1.12/components/database/ids.html
             id: message.nonce as u64,
+
             version: u32::from(message.version),
             nonce: message.nonce,
             origin: message.origin,
@@ -60,9 +34,11 @@ impl DispatchedMessage {
             destination: message.destination,
             recipient: Bytes32::from(message.recipient.to_fixed_bytes()),
             // Encode the message body as hex characters, and quote it.
+            // See https://github.com/FuelLabs/fuel-indexer/issues/450
             body: Json(format!("\"{}\"", hex::encode(message.body))),
-            message_id: message_id,
+            message_id,
 
+            // Log metadata
             contract_id: log_metadata.contract_id,
             block_number: log_metadata.block_number,
             block_hash: log_metadata.block_hash,

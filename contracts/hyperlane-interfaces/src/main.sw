@@ -84,7 +84,3 @@ abi MessageRecipient {
     #[storage(read)]
     fn interchain_security_module() -> ContractId;
 }
-
-pub struct ProcessEvent {
-    message_id: b256
-}

@@ -4,6 +4,11 @@ use primitive_types::H256;
 
 use crate::encode::{Decode, DecodeError, Encode};
 
+/// Copied from https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/rust/hyperlane-core/src/types/message.rs
+/// as a workaround due to dependencies of `hyperlane-core` that are not WASM-compatible.
+///
+/// Consider ripping these types out into their own crate.
+
 const HYPERLANE_MESSAGE_PREFIX_LEN: usize = 77;
 
 /// A Stamped message that has been committed at some nonce

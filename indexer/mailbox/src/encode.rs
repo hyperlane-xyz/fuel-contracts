@@ -1,5 +1,10 @@
 use primitive_types::H256;
 
+/// Copied from https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/rust/hyperlane-core/src/traits/encode.rs
+/// as a workaround due to dependencies of `hyperlane-core` that are not WASM-compatible.
+///
+/// Consider ripping these types out into their own crate.
+
 #[derive(Debug, thiserror::Error)]
 pub enum DecodeError {
     /// IO error from Read/Write usage
