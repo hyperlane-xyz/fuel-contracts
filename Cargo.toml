@@ -1,8 +1,9 @@
 [workspace]
 
 members = [
-    "hyperlane-mailbox",
-    "hyperlane-message-test",
-    "merkle-test",
-    "test-utils"
+    "contracts/hyperlane-mailbox",
+    "contracts/hyperlane-message-test",
+    "contracts/merkle-test",
+    "test-utils",
+    "indexer/mailbox"
 ]
