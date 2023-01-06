@@ -1,5 +1,12 @@
 import { readFileSync } from 'fs';
-import { Contract, ContractFactory, ContractUtils, Provider, Wallet, WalletUnlocked } from 'fuels';
+import {
+  Contract,
+  ContractFactory,
+  ContractUtils,
+  Provider,
+  Wallet,
+  WalletUnlocked,
+} from 'fuels';
 
 import { HyperlaneMailboxAbi__factory } from '../types/factories/HyperlaneMailboxAbi__factory';
 
@@ -16,58 +23,36 @@ const PRIVATE_KEY =
 const CONTRACT_SALT =
   '0x0000000000000000000000000000000000000000000000000000000000000000';
 
+// TODO: better command line arg support
+const SEND_MESSAGE = process.argv[2] === 'send-message';
+
+// Deploys the mailbox if it's not been deployed already.
+// Sends a dummy message if the first param to the command is `send-message`.
 async function main() {
   const provider = new Provider('http://127.0.0.1:4000/graphql');
   const wallet = Wallet.fromPrivateKey(PRIVATE_KEY, provider);
 
   const mailbox = await deployOrGetMailbox(wallet);
 
-  // const bytecode = readFileSync(
-  //   '../contracts/hyperlane-mailbox/out/debug/hyperlane-mailbox.bin',
-  // );
-
-  // const factory = new ContractFactory(
-  //   bytecode,
-  //   HyperlaneMailboxAbi__factory.abi,
-  //   wallet,
-  // );
-
-  // const mailboxAddress = ContractUtils.getContractId(
-  //   bytecode,
-  //   CONTRACT_SALT,
-  //   ContractUtils.getContractStorageRoot([]),
-  // );
-
-  // console.log('Expected mailboxAddress', mailboxAddress);
-
-  // const mailbox = await factory.deployContract({
-  //   salt: CONTRACT_SALT,
-  // });
-
-  console.log('Deployed contracts:');
+  console.log('Contract ID:');
   console.log({
     mailbox: mailbox.id.toHexString(),
   });
 
-  try{
-    const dispatchTx = await mailbox.functions.dispatch(
-      420,
-      '0x6900000000000000000000000000000000000000000000000000000000000069',
-      [1,2,3,5,6]
-    ).txParams({
-      gasPrice: 0,
-    });
-
-    const txRequest = await dispatchTx.getTransactionRequest();
-    const txResponse = await mailbox.wallet!.sendTransaction(txRequest);
-    const txResult = await txResponse.wait();
-    console.log('Dispatched', txResult);
-  } catch (e) {
-    console.log('err', e)
+  if (SEND_MESSAGE) {
+    await dispatchMessage(mailbox);
   }
 
-  console.log('hmm?');
-  console.log('Current latest checkpoint:', (await mailbox.functions.latest_checkpoint().simulate()).value);
+  try {
+    console.log(
+      'Current latest checkpoint:',
+      (await mailbox.functions.latest_checkpoint().simulate()).value,
+    );
+  } catch (err) {
+    console.log(
+      'Error getting latest checkpoint - this is expected if no messages have been sent yet',
+    );
+  }
 }
 
 async function deployOrGetMailbox(wallet: WalletUnlocked): Promise<Contract> {
@@ -87,12 +72,13 @@ async function deployOrGetMailbox(wallet: WalletUnlocked): Promise<Contract> {
     ContractUtils.getContractStorageRoot([]),
   );
 
-  const maybeDeployedContract = await wallet.provider.getContract(expectedMailboxContractId);
-
-  console.log('Expected expectedMailboxContractId', expectedMailboxContractId, maybeDeployedContract);
+  const maybeDeployedContract = await wallet.provider.getContract(
+    expectedMailboxContractId,
+  );
 
   // If the contract's already been deployed, just get the existing one without deploying
   if (maybeDeployedContract) {
+    console.log('Contract already deployed');
     return new Contract(
       expectedMailboxContractId,
       HyperlaneMailboxAbi__factory.abi,
@@ -100,9 +86,28 @@ async function deployOrGetMailbox(wallet: WalletUnlocked): Promise<Contract> {
     );
   }
 
+  console.log('Deploying contract...');
   return factory.deployContract({
     salt: CONTRACT_SALT,
   });
 }
 
-main();
+async function dispatchMessage(mailbox: Contract) {
+  const dispatchTx = mailbox.functions.dispatch(
+    420,
+    '0x6900000000000000000000000000000000000000000000000000000000000069',
+    // TODO: it seems like fuels-ts may not be accurately
+    // encoding this array into Vec<u8>, we should investigate
+    [1, 2, 3, 5, 6],
+  );
+
+  // To avoid issues with fuels-ts trying to decode logs that it's unable to yet,
+  // send the transaction request rather than using `dispatchTx.call()`.
+
+  const txRequest = await dispatchTx.getTransactionRequest();
+  const txResponse = await mailbox.wallet!.sendTransaction(txRequest);
+
+  console.log('Dispatched message', await txResponse.wait());
+}
+
+main().catch((err) => console.error('Error:', err));

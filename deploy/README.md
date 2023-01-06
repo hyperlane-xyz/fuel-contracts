@@ -32,13 +32,18 @@ In one terminal, start the local node. This will run a `fuel-core` command to ru
 yarn local-node
 ```
 
-In another terminal, build and deploy the Mailbox:
+In another terminal, build and deploy the Mailbox. This is idempotent if just deploying the mailbox.
 
 ```
 yarn deploy
 ```
 
 This will output the contract ID of the deployed contracts. Contract IDs are deterministic but change if there are any changes to the contract's bytecode. Keep this in mind!
+
+You can optionally deploy the Mailbox (if it's already deployed, it won't deploy again) and send a dummy message by running:
+```
+yarn deploy-and-send-message
+```
 
 ## Prettier
 

@@ -21,12 +21,11 @@ impl CopyTypeWrapper {
         Self { value: 0u64 }
     }
 
-    /// Creates a new CopyTypeWrapper from `value` that can
-    /// be implicitly upcasted into u64.
+    /// Creates a new CopyTypeWrapper from `value`.
     /// Note that the value property of the struct is a u64,
-    /// so the stored value will be left-padded with zeroes to
-    /// fit within 64 bits.
-    fn with_value<T>(value: T) -> Self {
+    /// so any smaller types will be implicitly upcasted and left-padded
+    /// with zeroes to fit within 64 bits.
+    fn with_value(value: u64) -> Self {
         Self { value }
     }
 

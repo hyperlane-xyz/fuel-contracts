@@ -49,10 +49,7 @@ struct LogMetadata {
 }
 
 impl DispatchedMessage {
-    fn new(
-        message: HyperlaneMessage,
-        log_metadata: LogMetadata,
-    ) -> Self {
+    fn new(message: HyperlaneMessage, log_metadata: LogMetadata) -> Self {
         let message_id = Bytes32::from(message.id().to_fixed_bytes());
         Self {
             id: message.nonce as u64,
@@ -82,20 +79,18 @@ const DISPATCHED_MESSAGE_LOG_ID: u64 = 0x687970u64;
 
 /// The contract ID of the Mailbox.
 /// See https://github.com/FuelLabs/fuel-indexer/issues/451 for a better configuration path.
-const MAILBOX_CONTRACT_ID: &str = "0xd57844b518747e95d9e70ad483d90914c7d85da663133cc79dac87ecf032a1ef";
+const MAILBOX_CONTRACT_ID: &str =
+    "0xcf9e1623683e2fde0470deec0429102869867f8cb1d1106c8c3561c9ab75ff91";
 
 #[indexer(manifest = "indexer/mailbox/mailbox.manifest.yaml")]
 mod mailbox_indexer {
 
     fn index_block(block_data: BlockData) {
-        let mailbox_contract = ContractId::from_str(
-            MAILBOX_CONTRACT_ID,
-        )
-        .expect("Invalid Mailbox contract ID");
+        let mailbox_contract =
+            ContractId::from_str(MAILBOX_CONTRACT_ID).expect("Invalid Mailbox contract ID");
 
         let mut transaction_index = 0;
         for tx in block_data.transactions.iter() {
-
             // Ignore transactions that aren't successful.
             if !matches!(&tx.status, TransactionStatus::Success { .. }) {
                 continue;
@@ -114,11 +109,10 @@ mod mailbox_indexer {
                     if *rb != DISPATCHED_MESSAGE_LOG_ID {
                         continue;
                     }
- 
+
                     let dispatched_message = DispatchedMessage::new(
-                        HyperlaneMessage::read_from(&mut data.as_slice()).expect(
-                            "Malformed HyperlaneMessage log data"
-                        ),
+                        HyperlaneMessage::read_from(&mut data.as_slice())
+                            .expect("Malformed HyperlaneMessage log data"),
                         LogMetadata {
                             contract_id: Address::new(mailbox_contract.into()),
                             block_number: block_data.height,
@@ -126,7 +120,7 @@ mod mailbox_indexer {
                             transaction_hash: tx.id,
                             transaction_index,
                             receipt_index,
-                        }
+                        },
                     );
                     dispatched_message.save();
                 }
