@@ -1766,17 +1766,7 @@ dependencies = [
 [[package]]
 name = "fuel-indexer-database-types"
 version = "0.1.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90ecefc1ef5f4884bb2b322085f0f57582bdb8e9ef0d00c11467ade2bb4dec45"
-dependencies = [
- "serde",
- "strum 0.24.1",
-]
-
-[[package]]
-name = "fuel-indexer-database-types"
-version = "0.1.12"
-source = "git+https://github.com/hyperlane-xyz/fuel-indexer?rev=6123664#6123664c373521b75b5482d047c67c274d36ee5d"
+source = "git+https://github.com/FuelLabs/fuel-indexer?rev=7f434e7#7f434e72a3ddd91c7fb95ea842a661bdcb9b7bab"
 dependencies = [
  "serde",
  "strum 0.24.1",
@@ -1785,30 +1775,11 @@ dependencies = [
 [[package]]
 name = "fuel-indexer-lib"
 version = "0.1.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b93d9c004f923cb20f016e878c2883dacf1677b86023bdc75b3cb27fc3c98ff"
+source = "git+https://github.com/FuelLabs/fuel-indexer?rev=7f434e7#7f434e72a3ddd91c7fb95ea842a661bdcb9b7bab"
 dependencies = [
  "anyhow",
  "clap",
- "fuel-indexer-types 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "http",
- "serde",
- "serde_yaml",
- "sha2 0.9.9",
- "strum 0.24.1",
- "thiserror",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "fuel-indexer-lib"
-version = "0.1.12"
-source = "git+https://github.com/hyperlane-xyz/fuel-indexer?rev=6123664#6123664c373521b75b5482d047c67c274d36ee5d"
-dependencies = [
- "anyhow",
- "clap",
- "fuel-indexer-types 0.1.12 (git+https://github.com/hyperlane-xyz/fuel-indexer?rev=6123664)",
+ "fuel-indexer-types",
  "http",
  "serde",
  "serde_yaml",
@@ -1822,12 +1793,12 @@ dependencies = [
 [[package]]
 name = "fuel-indexer-macros"
 version = "0.1.12"
-source = "git+https://github.com/hyperlane-xyz/fuel-indexer?rev=6123664#6123664c373521b75b5482d047c67c274d36ee5d"
+source = "git+https://github.com/FuelLabs/fuel-indexer?rev=7f434e7#7f434e72a3ddd91c7fb95ea842a661bdcb9b7bab"
 dependencies = [
- "fuel-indexer-database-types 0.1.12 (git+https://github.com/hyperlane-xyz/fuel-indexer?rev=6123664)",
- "fuel-indexer-lib 0.1.12 (git+https://github.com/hyperlane-xyz/fuel-indexer?rev=6123664)",
- "fuel-indexer-schema 0.1.12 (git+https://github.com/hyperlane-xyz/fuel-indexer?rev=6123664)",
- "fuel-indexer-types 0.1.12 (git+https://github.com/hyperlane-xyz/fuel-indexer?rev=6123664)",
+ "fuel-indexer-database-types",
+ "fuel-indexer-lib",
+ "fuel-indexer-schema",
+ "fuel-indexer-types",
  "fuel-tx",
  "fuels-core 0.30.0",
  "fuels-types 0.30.0",
@@ -1845,44 +1816,23 @@ dependencies = [
 [[package]]
 name = "fuel-indexer-plugin"
 version = "0.1.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f029854df6006993e7e17580c13095300585f2f170338ed9369caadfbd5b965"
+source = "git+https://github.com/FuelLabs/fuel-indexer?rev=7f434e7#7f434e72a3ddd91c7fb95ea842a661bdcb9b7bab"
 dependencies = [
- "fuel-indexer-lib 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "fuel-indexer-schema 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "fuel-indexer-types 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuel-indexer-lib",
+ "fuel-indexer-schema",
+ "fuel-indexer-types",
 ]
 
 [[package]]
 name = "fuel-indexer-schema"
 version = "0.1.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebdde9233ec36d079e78ceee07c4a110dccd9bd075ca3711f4dcb80776711207"
+source = "git+https://github.com/FuelLabs/fuel-indexer?rev=7f434e7#7f434e72a3ddd91c7fb95ea842a661bdcb9b7bab"
 dependencies = [
  "bincode",
  "chrono",
- "fuel-indexer-database-types 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "fuel-indexer-lib 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "fuel-indexer-types 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "fuel-tx",
- "fuel-types",
- "fuels-core 0.30.0",
- "graphql-parser 0.3.0",
- "serde",
- "sha2 0.9.9",
- "strum 0.24.1",
-]
-
-[[package]]
-name = "fuel-indexer-schema"
-version = "0.1.12"
-source = "git+https://github.com/hyperlane-xyz/fuel-indexer?rev=6123664#6123664c373521b75b5482d047c67c274d36ee5d"
-dependencies = [
- "bincode",
- "chrono",
- "fuel-indexer-database-types 0.1.12 (git+https://github.com/hyperlane-xyz/fuel-indexer?rev=6123664)",
- "fuel-indexer-lib 0.1.12 (git+https://github.com/hyperlane-xyz/fuel-indexer?rev=6123664)",
- "fuel-indexer-types 0.1.12 (git+https://github.com/hyperlane-xyz/fuel-indexer?rev=6123664)",
+ "fuel-indexer-database-types",
+ "fuel-indexer-lib",
+ "fuel-indexer-types",
  "fuel-tx",
  "fuel-types",
  "fuels-core 0.30.0",
@@ -1895,22 +1845,7 @@ dependencies = [
 [[package]]
 name = "fuel-indexer-types"
 version = "0.1.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8629b86ff6926d7eeb89e4202b8c840df794d6b6e60b7137a7a492ea8a3a9ad6"
-dependencies = [
- "chrono",
- "fuel-tx",
- "fuel-types",
- "fuels-core 0.30.0",
- "fuels-types 0.30.0",
- "serde",
- "sha2 0.9.9",
-]
-
-[[package]]
-name = "fuel-indexer-types"
-version = "0.1.12"
-source = "git+https://github.com/hyperlane-xyz/fuel-indexer?rev=6123664#6123664c373521b75b5482d047c67c274d36ee5d"
+source = "git+https://github.com/FuelLabs/fuel-indexer?rev=7f434e7#7f434e72a3ddd91c7fb95ea842a661bdcb9b7bab"
 dependencies = [
  "chrono",
  "fuel-tx",
@@ -3019,7 +2954,7 @@ version = "0.0.0"
 dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
- "fuel-indexer-schema 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuel-indexer-schema",
  "fuel-tx",
  "fuels-core 0.30.0",
  "fuels-types 0.30.0",

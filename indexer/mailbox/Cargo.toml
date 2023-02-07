@@ -10,9 +10,9 @@ crate-type = ['cdylib']
 [dependencies]
 # Temporary workaround for https://github.com/FuelLabs/fuel-indexer/issues/449
 # fuel-indexer-macros = { version = "0.1.12", default-features = false }
-fuel-indexer-macros = { git = "https://github.com/hyperlane-xyz/fuel-indexer", rev = "6123664", default-features = false }
-fuel-indexer-plugin = { version = "0.1.12" }
-fuel-indexer-schema = { version = "0.1.12", default-features = false }
+fuel-indexer-macros = { git = "https://github.com/FuelLabs/fuel-indexer", rev = "7f434e7", default-features = false }
+fuel-indexer-plugin = { git = "https://github.com/FuelLabs/fuel-indexer", rev = "7f434e7" }
+fuel-indexer-schema = { git = "https://github.com/FuelLabs/fuel-indexer", rev = "7f434e7", default-features = false }
 fuel-tx = "0.23.1"
 fuels-core = "0.30.0"
 fuels-types = "0.30.0"
