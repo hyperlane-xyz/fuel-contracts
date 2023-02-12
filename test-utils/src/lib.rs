@@ -2,11 +2,10 @@ use std::str::FromStr;
 
 use ethers::types::H256;
 use fuels::{
-    core::types::Bits256,
+    types::{Bits256, errors::Error},
     prelude::{Bech32Address, TxParameters},
     signers::{fuel_crypto::SecretKey, WalletUnlocked},
     tx::{AssetId, Receipt},
-    types::errors::Error,
 };
 
 pub fn h256_to_bits256(h: H256) -> Bits256 {

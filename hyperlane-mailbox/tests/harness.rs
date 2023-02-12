@@ -3,19 +3,42 @@ use std::str::FromStr;
 use ethers::types::H256;
 use fuels::{
     prelude::*,
-    tx::{ContractId, Receipt},
+    tx::{ContractId, Receipt}, types::{Bits256, Identity},
 };
 use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
 use test_utils::{
     bits256_to_h256, funded_wallet_with_private_key, get_revert_string, h256_to_bits256,
 };
 
-// Load abi from json
-abigen!(Mailbox, "hyperlane-mailbox/out/debug/hyperlane-mailbox-abi.json");
-use crate::mailbox_mod::Message as ContractMessage;
+mod mailbox_contract {
+    use fuels::prelude::abigen;
 
-abigen!(TestInterchainSecurityModule, "hyperlane-ism-test/out/debug/hyperlane-ism-test-abi.json");
-abigen!(TestMessageRecipient, "hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test-abi.json");
+    // Load abi from json
+    abigen!(Contract(
+        name = "Mailbox",
+        abi = "hyperlane-mailbox/out/debug/hyperlane-mailbox-abi.json"
+    ));
+}
+
+use crate::mailbox_contract::{
+    Message as ContractMessage,
+    Mailbox,
+    OwnershipTransferredEvent,
+};
+
+mod test_interchain_security_module_contract {
+    use fuels::prelude::abigen;
+    abigen!(Contract(
+        name = "TestInterchainSecurityModule",
+        abi = "hyperlane-ism-test/out/debug/hyperlane-ism-test-abi.json"
+    ));
+}
+use crate::test_interchain_security_module_contract::TestInterchainSecurityModule;
+
+abigen!(Contract(
+    name = "TestMessageRecipient",
+    abi = "hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test-abi.json"
+));
 
 // At the moment, the origin domain is hardcoded in the Mailbox contract.
 const TEST_LOCAL_DOMAIN: u32 = 0x6675656cu32;
@@ -77,7 +100,7 @@ async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId
     .unwrap();
 
     let initial_owner_wallet =
-        funded_wallet_with_private_key(&mailbox.get_wallet(), INTIAL_OWNER_PRIVATE_KEY)
+        funded_wallet_with_private_key(&mailbox.wallet(), INTIAL_OWNER_PRIVATE_KEY)
         .await
         .unwrap();
 
@@ -93,7 +116,7 @@ async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId
 // Gets the wallet address from the `Mailbox` instance, and
 // creates a test message with that address as the sender.
 fn test_message(mailbox: &Mailbox, recipient: Bech32ContractId, outbound: bool) -> HyperlaneAgentMessage {
-    let sender: Address = mailbox.get_wallet().address().into();
+    let sender: Address = mailbox.wallet().address().into();
     HyperlaneAgentMessage {
         version: 0u8,
         nonce: 0u32,
@@ -245,7 +268,7 @@ async fn transfer_ownership_test_helper(
     new_owner: Option<Identity>,
 ) {
     let initial_owner_wallet =
-        funded_wallet_with_private_key(&mailbox.get_wallet(), INTIAL_OWNER_PRIVATE_KEY)
+        funded_wallet_with_private_key(&mailbox.wallet(), INTIAL_OWNER_PRIVATE_KEY)
             .await
             .unwrap();
 
@@ -353,7 +376,7 @@ async fn test_process_id() {
             metadata.clone(),
             agent_message.clone().into(),
         )
-        .set_contracts(&contract_inputs)
+        .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::new(None, Some(1_200_000), None))
         .call()
         .await
@@ -381,7 +404,7 @@ async fn test_process_handle() {
             metadata.clone(),
             agent_message.clone().into(),
         )
-        .set_contracts(&contract_inputs)
+        .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::new(None, Some(1_200_000), None))
         .call()
         .await
@@ -409,7 +432,7 @@ async fn test_process_deliver_twice() {
             metadata.clone(),
             agent_message.clone().into(),
         )
-        .set_contracts(&contract_inputs)
+        .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::new(None, Some(1_200_000), None))
         .call()
         .await
@@ -430,7 +453,7 @@ async fn test_process_deliver_twice() {
             metadata.clone(),
             agent_message.clone().into(),
         )
-        .set_contracts(&contract_inputs)
+        .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::new(None, Some(1_200_000), None))
         .call()
         .await
@@ -458,7 +481,7 @@ async fn test_process_module_reject() {
             metadata,
             agent_message.into(),
         )
-        .set_contracts(&contract_inputs)
+        .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::new(None, Some(1_200_000), None))
         .call()
         .await

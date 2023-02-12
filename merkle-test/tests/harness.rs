@@ -4,7 +4,10 @@ use sha3::{Digest, Keccak256};
 use std::{fs::File, io::Read};
 
 // Load abi from json
-abigen!(TestStorageMerkleTree, "merkle-test/out/debug/merkle-test-abi.json");
+abigen!(Contract(
+    name = "TestStorageMerkleTree",
+    abi = "merkle-test/out/debug/merkle-test-abi.json"
+));
 
 async fn get_contract_instance() -> (TestStorageMerkleTree, ContractId) {
     // Launch a local network and deploy the contract

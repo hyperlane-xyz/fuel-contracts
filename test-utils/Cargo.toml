@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2022-12-05-01", default-features = false, features = ['legacy'] }
-fuels = { version = "0.33", features = ["fuel-core-lib"] }
+fuels = { version = "0.36", features = ["fuel-core-lib"] }
