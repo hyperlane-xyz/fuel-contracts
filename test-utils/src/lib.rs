@@ -19,8 +19,8 @@ pub fn bits256_to_h256(b: Bits256) -> H256 {
 // Given an Error from a call or simulation, returns the revert reason.
 // Panics if it's unable to find the revert reason.
 pub fn get_revert_string(call_error: Error) -> String {
-    let receipts = if let Error::RevertTransactionError(_, r) = call_error {
-        r
+    let receipts = if let Error::RevertTransactionError{ receipts, .. } = call_error {
+        receipts
     } else {
         panic!(
             "Error is not a RevertTransactionError. Error: {:?}",
