@@ -7,6 +7,7 @@ use fuels::{
     signers::{fuel_crypto::SecretKey, WalletUnlocked},
     tx::{AssetId, Receipt},
 };
+use serde::{de::Deserializer, Deserialize};
 
 pub fn h256_to_bits256(h: H256) -> Bits256 {
     Bits256(h.0)
@@ -64,6 +65,32 @@ pub async fn funded_wallet_with_private_key(
     fund_address(funder, wallet.address()).await?;
 
     Ok(wallet)
+}
+
+/// Kludge to deserialize into Bits256
+pub fn deserialize_bits_256<'de, D>(deserializer: D) -> Result<Bits256, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let buf = String::deserialize(deserializer)?;
+
+    Bits256::from_hex_str(&buf).map_err(serde::de::Error::custom)
+}
+
+/// Kludge to deserialize into Vec<Bits256>
+pub fn deserialize_vec_bits_256<'de, D>(deserializer: D) -> Result<Vec<Bits256>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let strs = Vec::<String>::deserialize(deserializer)?;
+
+    let mut vec = Vec::with_capacity(strs.len());
+
+    for s in strs.iter() {
+        vec.push(Bits256::from_hex_str(s).map_err(serde::de::Error::custom)?);
+    }
+
+    Ok(vec)
 }
 
 async fn fund_address(from_wallet: &WalletUnlocked, to: &Bech32Address) -> Result<(), Error> {
