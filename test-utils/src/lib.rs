@@ -2,10 +2,10 @@ use std::str::FromStr;
 
 use ethers::types::H256;
 use fuels::{
-    types::{Bits256, errors::Error},
     prelude::{Bech32Address, TxParameters},
     signers::{fuel_crypto::SecretKey, WalletUnlocked},
     tx::{AssetId, Receipt},
+    types::{errors::Error, Bits256},
 };
 use serde::{de::Deserializer, Deserialize};
 
@@ -20,7 +20,7 @@ pub fn bits256_to_h256(b: Bits256) -> H256 {
 // Given an Error from a call or simulation, returns the revert reason.
 // Panics if it's unable to find the revert reason.
 pub fn get_revert_string(call_error: Error) -> String {
-    let receipts = if let Error::RevertTransactionError{ receipts, .. } = call_error {
+    let receipts = if let Error::RevertTransactionError { receipts, .. } = call_error {
         receipts
     } else {
         panic!(

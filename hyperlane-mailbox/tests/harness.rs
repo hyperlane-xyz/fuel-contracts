@@ -3,7 +3,8 @@ use std::str::FromStr;
 use ethers::types::H256;
 use fuels::{
     prelude::*,
-    tx::{ContractId, Receipt}, types::{Bits256, Identity},
+    tx::{ContractId, Receipt},
+    types::{Bits256, Identity},
 };
 use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
 use test_utils::{
@@ -20,11 +21,7 @@ mod mailbox_contract {
     ));
 }
 
-use crate::mailbox_contract::{
-    Message as ContractMessage,
-    Mailbox,
-    OwnershipTransferredEvent,
-};
+use crate::mailbox_contract::{Mailbox, Message as ContractMessage, OwnershipTransferredEvent};
 
 mod test_interchain_security_module_contract {
     use fuels::prelude::abigen;
@@ -101,13 +98,25 @@ async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId
 
     let initial_owner_wallet =
         funded_wallet_with_private_key(&mailbox.wallet(), INTIAL_OWNER_PRIVATE_KEY)
+            .await
+            .unwrap();
+
+    let raw_ism_id: ContractId = ism_id.clone().into();
+    mailbox
+        .with_wallet(initial_owner_wallet)
+        .unwrap()
+        .methods()
+        .set_default_ism(raw_ism_id)
+        .call()
         .await
         .unwrap();
 
-    let raw_ism_id: ContractId = ism_id.clone().into();
-    mailbox.with_wallet(initial_owner_wallet).unwrap().methods().set_default_ism(raw_ism_id).call().await.unwrap();
-
-    let default_ism = mailbox.methods().get_default_ism().simulate().await.unwrap();
+    let default_ism = mailbox
+        .methods()
+        .get_default_ism()
+        .simulate()
+        .await
+        .unwrap();
     assert_eq!(default_ism.value, raw_ism_id);
 
     (mailbox, ism_id, msg_recipient_id, wallet)
@@ -115,14 +124,26 @@ async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId
 
 // Gets the wallet address from the `Mailbox` instance, and
 // creates a test message with that address as the sender.
-fn test_message(mailbox: &Mailbox, recipient: Bech32ContractId, outbound: bool) -> HyperlaneAgentMessage {
+fn test_message(
+    mailbox: &Mailbox,
+    recipient: Bech32ContractId,
+    outbound: bool,
+) -> HyperlaneAgentMessage {
     let sender: Address = mailbox.wallet().address().into();
     HyperlaneAgentMessage {
         version: 0u8,
         nonce: 0u32,
-        origin: if outbound { TEST_LOCAL_DOMAIN } else { TEST_REMOTE_DOMAIN },
+        origin: if outbound {
+            TEST_LOCAL_DOMAIN
+        } else {
+            TEST_REMOTE_DOMAIN
+        },
         sender: H256::from(*sender),
-        destination: if outbound { TEST_REMOTE_DOMAIN } else { TEST_LOCAL_DOMAIN },
+        destination: if outbound {
+            TEST_REMOTE_DOMAIN
+        } else {
+            TEST_LOCAL_DOMAIN
+        },
         recipient: H256::from(*recipient.hash()),
         body: vec![10u8; 100],
     }
@@ -279,7 +300,9 @@ async fn transfer_ownership_test_helper(
         .methods()
         .transfer_ownership(new_owner.clone())
         .tx_params(TxParameters::default())
-        .call().await.unwrap();
+        .call()
+        .await
+        .unwrap();
 
     // Ensure the owner is now the new owner
     let owner = mailbox.methods().owner().simulate().await.unwrap().value;
@@ -372,22 +395,19 @@ async fn test_process_id() {
 
     let process_call = mailbox
         .methods()
-        .process(
-            metadata.clone(),
-            agent_message.clone().into(),
-        )
+        .process(metadata.clone(), agent_message.clone().into())
         .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::new(None, Some(1_200_000), None))
         .call()
         .await
         .unwrap();
-        
+
     let message_id = &process_call.get_logs_with_type::<Bits256>().unwrap()[0];
-    
+
     // Assert equality of the message ID
     assert_eq!(agent_message_id, bits256_to_h256(*message_id));
 }
-    
+
 #[tokio::test]
 async fn test_process_handle() {
     let (mailbox, ism_id, recipient_id, wallet) = get_contract_instance().await;
@@ -400,21 +420,18 @@ async fn test_process_handle() {
 
     mailbox
         .methods()
-        .process(
-            metadata.clone(),
-            agent_message.clone().into(),
-        )
+        .process(metadata.clone(), agent_message.clone().into())
         .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::new(None, Some(1_200_000), None))
         .call()
         .await
         .unwrap();
-        
+
     let msg_recipient = TestMessageRecipient::new(recipient_id, wallet);
     let handled = msg_recipient.methods().handled().simulate().await.unwrap();
     assert!(handled.value);
 }
-    
+
 #[tokio::test]
 async fn test_process_deliver_twice() {
     let (mailbox, ism_id, recipient_id, _) = get_contract_instance().await;
@@ -428,10 +445,7 @@ async fn test_process_deliver_twice() {
 
     mailbox
         .methods()
-        .process(
-            metadata.clone(),
-            agent_message.clone().into(),
-        )
+        .process(metadata.clone(), agent_message.clone().into())
         .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::new(None, Some(1_200_000), None))
         .call()
@@ -443,22 +457,20 @@ async fn test_process_deliver_twice() {
         .delivered(h256_to_bits256(agent_message_id))
         .simulate()
         .await
-        .unwrap().value;
-    
+        .unwrap()
+        .value;
+
     assert!(delivered);
-    
+
     let process_delivered_error = mailbox
         .methods()
-        .process(
-            metadata.clone(),
-            agent_message.clone().into(),
-        )
+        .process(metadata.clone(), agent_message.clone().into())
         .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::new(None, Some(1_200_000), None))
         .call()
         .await
         .unwrap_err();
-    
+
     assert_eq!(get_revert_string(process_delivered_error), "delivered");
 }
 
@@ -477,10 +489,7 @@ async fn test_process_module_reject() {
 
     let process_module_error = mailbox
         .methods()
-        .process(
-            metadata,
-            agent_message.into(),
-        )
+        .process(metadata, agent_message.into())
         .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::new(None, Some(1_200_000), None))
         .call()

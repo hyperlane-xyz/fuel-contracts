@@ -1,15 +1,12 @@
 use ethers::{abi::AbiDecode, types::H256};
 use fuels::{
-    core::parameters::TxParameters,
     prelude::*,
     tx::{ContractId, Receipt},
+    types::parameters::TxParameters,
 };
 use hex::FromHex;
 use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
-use test_utils::{
-    bits256_to_h256,
-    h256_to_bits256,
-};
+use test_utils::{bits256_to_h256, h256_to_bits256};
 
 // Load abi from json
 abigen!(Contract(
