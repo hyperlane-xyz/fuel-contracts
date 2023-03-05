@@ -26,7 +26,7 @@ impl CopyTypeWrapper {
     /// Note that the value property of the struct is a u64,
     /// so the stored value will be left-padded with zeroes to
     /// fit within 64 bits.
-    fn with_value<T>(value: T) -> Self {
+    fn with_value(value: u64) -> Self {
         Self { value }
     }
 

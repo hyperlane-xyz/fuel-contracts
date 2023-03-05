@@ -36,7 +36,7 @@ abi Mailbox {
     /// ### Arguments
     ///
     /// * `module` - Address implementing ISM interface.
-    #[storage(read,write)]
+    #[storage(read, write)]
     fn set_default_ism(module: ContractId);
 
     /// Gets the default ISM used for message verification.

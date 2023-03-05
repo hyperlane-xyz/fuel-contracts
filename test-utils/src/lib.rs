@@ -2,12 +2,12 @@ use std::str::FromStr;
 
 use ethers::types::H256;
 use fuels::{
-    core::types::Bits256,
     prelude::{Bech32Address, TxParameters},
     signers::{fuel_crypto::SecretKey, WalletUnlocked},
     tx::{AssetId, Receipt},
-    types::errors::Error,
+    types::{errors::Error, Bits256},
 };
+use serde::{de::Deserializer, Deserialize};
 
 pub fn h256_to_bits256(h: H256) -> Bits256 {
     Bits256(h.0)
@@ -20,8 +20,8 @@ pub fn bits256_to_h256(b: Bits256) -> H256 {
 // Given an Error from a call or simulation, returns the revert reason.
 // Panics if it's unable to find the revert reason.
 pub fn get_revert_string(call_error: Error) -> String {
-    let receipts = if let Error::RevertTransactionError(_, r) = call_error {
-        r
+    let receipts = if let Error::RevertTransactionError { receipts, .. } = call_error {
+        receipts
     } else {
         panic!(
             "Error is not a RevertTransactionError. Error: {:?}",
@@ -65,6 +65,32 @@ pub async fn funded_wallet_with_private_key(
     fund_address(funder, wallet.address()).await?;
 
     Ok(wallet)
+}
+
+/// Kludge to deserialize into Bits256
+pub fn deserialize_bits_256<'de, D>(deserializer: D) -> Result<Bits256, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let buf = String::deserialize(deserializer)?;
+
+    Bits256::from_hex_str(&buf).map_err(serde::de::Error::custom)
+}
+
+/// Kludge to deserialize into Vec<Bits256>
+pub fn deserialize_vec_bits_256<'de, D>(deserializer: D) -> Result<Vec<Bits256>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let strs = Vec::<String>::deserialize(deserializer)?;
+
+    let mut vec = Vec::with_capacity(strs.len());
+
+    for s in strs.iter() {
+        vec.push(Bits256::from_hex_str(s).map_err(serde::de::Error::custom)?);
+    }
+
+    Ok(vec)
 }
 
 async fn fund_address(from_wallet: &WalletUnlocked, to: &Bech32Address) -> Result<(), Error> {

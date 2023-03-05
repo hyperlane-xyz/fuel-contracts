@@ -1,10 +1,14 @@
-use fuels::{prelude::*, tx::ContractId};
-use serde::{de::Deserializer, Deserialize};
+use fuels::{prelude::*, tx::ContractId, types::Bits256};
+use serde::Deserialize;
 use sha3::{Digest, Keccak256};
 use std::{fs::File, io::Read};
+use test_utils::{deserialize_bits_256, deserialize_vec_bits_256};
 
 // Load abi from json
-abigen!(TestStorageMerkleTree, "merkle-test/out/debug/merkle-test-abi.json");
+abigen!(Contract(
+    name = "TestStorageMerkleTree",
+    abi = "merkle-test/out/debug/merkle-test-abi.json"
+));
 
 async fn get_contract_instance() -> (TestStorageMerkleTree, ContractId) {
     // Launch a local network and deploy the contract
@@ -102,32 +106,6 @@ async fn satisfies_test_cases() {
             assert_eq!(proof_root.value, case.expected_root);
         }
     }
-}
-
-/// Kludge to deserialize into Bits256
-fn deserialize_bits_256<'de, D>(deserializer: D) -> Result<Bits256, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let buf = String::deserialize(deserializer)?;
-
-    Bits256::from_hex_str(&buf).map_err(serde::de::Error::custom)
-}
-
-/// Kludge to deserialize into Vec<Bits256>
-fn deserialize_vec_bits_256<'de, D>(deserializer: D) -> Result<Vec<Bits256>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let strs = Vec::<String>::deserialize(deserializer)?;
-
-    let mut vec = Vec::with_capacity(strs.len());
-
-    for s in strs.iter() {
-        vec.push(Bits256::from_hex_str(s).map_err(serde::de::Error::custom)?);
-    }
-
-    Ok(vec)
 }
 
 /// Reads merkle test case json file and returns a vector of `TestCase`s
