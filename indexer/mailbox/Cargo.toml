@@ -1,21 +1,23 @@
 [package]
 name = "mailbox-indexer"
-version = "0.0.0"
-edition = "2021"
 publish = false
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/hyperlane-xyz/fuel-contracts"
+authors = ["Abacus Works"]
 
 [lib]
 crate-type = ['cdylib']
 
 [dependencies]
-# Temporary workaround for https://github.com/FuelLabs/fuel-indexer/issues/449
-# fuel-indexer-macros = { version = "0.1.12", default-features = false }
-fuel-indexer-macros = { git = "https://github.com/FuelLabs/fuel-indexer", rev = "7f434e7", default-features = false }
-fuel-indexer-plugin = { git = "https://github.com/FuelLabs/fuel-indexer", rev = "7f434e7" }
-fuel-indexer-schema = { git = "https://github.com/FuelLabs/fuel-indexer", rev = "7f434e7", default-features = false }
-fuel-tx = "0.23.1"
-fuels-core = "0.30.0"
-fuels-types = "0.30.0"
+fuel-indexer-macros = { version = "0.4", default-features = false }
+fuel-indexer-plugin = { version = "0.4" }
+fuel-indexer-schema = { version = "0.4", default-features = false }
+fuel-tx = "0.26.0"
+fuels-core = { version = "0.37", default-features = false }
+fuels-macros = { version = "0.37" }
+fuels-types = { version = "0.37", default-features = false }
 getrandom = { version = "0.2", features = ["js"] }
 hex = "0.4.3"
 instant = { version = "0.1", default-features = false }

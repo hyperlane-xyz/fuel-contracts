@@ -5,7 +5,7 @@ members = [
     "contracts/hyperlane-message-test",
     "contracts/merkle-test",
     "test-utils",
-    # "indexer/mailbox"
+    "indexer/mailbox"
 ]
 
 [workspace.package]

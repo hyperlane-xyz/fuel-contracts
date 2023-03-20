@@ -3,8 +3,6 @@ mod message;
 
 extern crate alloc;
 
-use std::str::FromStr;
-
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::prelude::*;
 
