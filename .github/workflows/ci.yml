@@ -11,6 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
+      - name: Use https for git commands
+        run: "git config --global url.https://github.com/.insteadOf git@github.com:"
       - name: install fuelup
         run: |
           # Using -L to deal with redirects, see https://github.com/FuelLabs/sway/issues/4309
