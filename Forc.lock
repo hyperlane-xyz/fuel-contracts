@@ -5,7 +5,7 @@ dependencies = ['std']
 
 [[package]]
 name = 'core'
-source = 'path+from-root-0119DF11C9A6FAEB'
+source = 'path+from-root-2C66FC65A00ECA96'
 
 [[package]]
 name = 'hyperlane-ism-test'

@@ -105,7 +105,7 @@ async function dispatchMessage(mailbox: Contract) {
   // send the transaction request rather than using `dispatchTx.call()`.
 
   const txRequest = await dispatchTx.getTransactionRequest();
-  const txResponse = await mailbox.wallet!.sendTransaction(txRequest);
+  const txResponse = await mailbox.provider!.sendTransaction(txRequest);
 
   console.log('Dispatched message', await txResponse.wait());
 }

@@ -81,7 +81,7 @@ Start the indexer, providing a path to the relevant manifest file.
 Note the Postgres DB should be running.
 
 ```
-fuel-indexer --manifest ./indexer/mailbox/mailbox.manifest.yaml
+fuel-indexer run --manifest ./indexer/mailbox/mailbox.manifest.yaml
 ```
 
 ### Testing things are working
@@ -91,7 +91,7 @@ You can continue to send messages using the `deploy` package's `yarn deploy-and-
 You should see logs reflecting these new messages. You may also query these messages via the GraphQL API, e.g.:
 
 ```
-$ curl -X POST http://127.0.0.1:29987/api/graph/hyperlane \
+$ curl -X POST http://127.0.0.1:29987/api/graph/hyperlane/mailbox \
    -H 'content-type: application/json' \
    -d '{"query": "query { dispatchedmessage { id, version, nonce, origin, sender, destination, recipient, body, message_id, contract_id, block_hash, transaction_hash, transaction_index, receipt_index }}", "params": "0"}' \
 | json_pp
@@ -123,7 +123,7 @@ $ curl -X POST http://127.0.0.1:29987/api/graph/hyperlane \
 If you want a specific message by its ID (essentially its nonce), e.g. querying the message with nonce `1`:
 
 ```
-$ curl -X POST http://127.0.0.1:29987/api/graph/hyperlane \
+$ curl -X POST http://127.0.0.1:29987/api/graph/hyperlane/mailbox \
    -H 'content-type: application/json' \
    -d '{"query": "query { dispatchedmessage (id: \"1\") { id, version, nonce, origin, sender, destination, recipient, body, message_id, contract_id, block_hash, transaction_hash, transaction_index, receipt_index }}", "params": "0"}' \
 | json_pp

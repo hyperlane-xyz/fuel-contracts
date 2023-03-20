@@ -15,7 +15,7 @@ const DISPATCHED_MESSAGE_LOG_ID: u64 = 0x687970u64;
 /// The contract ID of the Mailbox.
 /// See https://github.com/FuelLabs/fuel-indexer/issues/451 for a better configuration path.
 const MAILBOX_CONTRACT_ID: &str =
-    "0xbec347738bd1d037fbd6ad7a3370ae98ea0ff62a72d3f9c83ad78d01fbd7bcc1";
+    "0x968a13b3bd8310939636afa85b64bd2a533dbd770bc21f0a00e0def18c32ee2b";
 
 struct LogMetadata {
     contract_id: Address,
