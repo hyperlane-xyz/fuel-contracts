@@ -81,7 +81,7 @@ impl StorageMerkleTree {
     // Reads an element of `branch` from storage.
     #[storage(read)]
     pub fn get_branch(self, index: u64) -> b256 {
-        get(StorageMerkleTree::get_branch_storage_key(index))
+        get(StorageMerkleTree::get_branch_storage_key(index)).unwrap_or(ZERO_B256)
     }
 
     // Writes an element of `branch` into storage.
@@ -93,7 +93,7 @@ impl StorageMerkleTree {
     // Reads the `count` from storage.
     #[storage(read)]
     pub fn get_count(self) -> u64 {
-        get(__get_storage_key())
+        get(__get_storage_key()).unwrap_or(0)
     }
 
     // Writes the `count` into storage.

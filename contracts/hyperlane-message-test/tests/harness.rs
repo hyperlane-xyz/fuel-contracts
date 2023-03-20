@@ -1,6 +1,5 @@
 use ethers::{abi::AbiDecode, types::H256};
 use fuels::{
-    core::parameters::TxParameters,
     prelude::*,
     tx::{ContractId, Receipt},
 };
@@ -9,10 +8,10 @@ use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
 use test_utils::{bits256_to_h256, h256_to_bits256};
 
 // Load abi from json
-abigen!(
-    TestMessage,
-    "contracts/hyperlane-message-test/out/debug/hyperlane-message-test-abi.json"
-);
+abigen!(Contract(
+    name = "TestMessage",
+    abi = "contracts/hyperlane-message-test/out/debug/hyperlane-message-test-abi.json"
+));
 
 async fn get_contract_instance() -> (TestMessage, ContractId) {
     // Launch a local network and deploy the contract
@@ -31,9 +30,9 @@ async fn get_contract_instance() -> (TestMessage, ContractId) {
     let id = Contract::deploy(
         "./out/debug/hyperlane-message-test.bin",
         &wallet,
-        TxParameters::default(),
-        StorageConfiguration::with_storage_path(Some(
+        DeployConfiguration::default().set_storage_configuration(StorageConfiguration::new(
             "./out/debug/hyperlane-message-test-storage_slots.json".to_string(),
+            vec![],
         )),
     )
     .await
@@ -105,7 +104,7 @@ async fn test_message_id() {
             .methods()
             .id(msg.into())
             // If the body is very large, a lot of gas is used!
-            .tx_params(TxParameters::new(None, Some(100_000_000), None))
+            .tx_params(TxParameters::default().set_gas_limit(100_000_000))
             .simulate()
             .await
             .unwrap();
@@ -128,7 +127,7 @@ async fn test_message_log_with_id() {
             .methods()
             .log_with_id(msg.into(), expected_log_id)
             // If the body is very large, a lot of gas is used!
-            .tx_params(TxParameters::new(None, Some(100_000_000), None))
+            .tx_params(TxParameters::default().set_gas_limit(100_000_000))
             .call()
             .await
             .unwrap();
@@ -265,7 +264,7 @@ async fn test_body() {
             .methods()
             .log_body(msg.into())
             // If the body is very large, a lot of gas is used!
-            .tx_params(TxParameters::new(None, Some(100_000_000), None))
+            .tx_params(TxParameters::default().set_gas_limit(100_000_000))
             .simulate()
             .await
             .unwrap();

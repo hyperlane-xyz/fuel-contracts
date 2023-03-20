@@ -21,6 +21,9 @@ storage {
 impl MessageRecipient for Contract {
     #[storage(read, write)]
     fn handle(origin: u32, sender: b256, message_body: Vec<u8>) {
+        // To ignore a compiler warning that no storage reads are made.
+        let _ = storage.module;
+
         storage.handled = true;
     }
 

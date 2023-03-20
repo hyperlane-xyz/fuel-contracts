@@ -268,18 +268,6 @@ impl Bytes {
             logd zero log_id ptr bytes; // Log the next `bytes` number of bytes starting from `ptr`
         };
     }
-
-    /// Performs a keccak256 of all bytes.
-    /// Heavily inspired by the keccak256 implementation:
-    /// https://github.com/FuelLabs/sway/blob/79c0a5e4bb52b04f791e7413853a1c9337ab0c27/sway-lib-std/src/hash.sw#L38
-    pub fn keccak256(self) -> b256 {
-        let mut result_buffer: b256 = ZERO_B256;
-        // See https://fuellabs.github.io/fuel-specs/master/vm/instruction_set.html#k256-keccak-256
-        asm(hash: result_buffer, ptr: self.buf.ptr(), bytes: self.len) {
-            k256 hash ptr bytes; // Hash the next `bytes` number of bytes starting from `ptr` into `hash`
-            hash: b256 // Return the hash
-        }
-    }
 }
 
 // ==================================================

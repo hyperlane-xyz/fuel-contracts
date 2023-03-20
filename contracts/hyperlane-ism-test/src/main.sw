@@ -22,6 +22,9 @@ impl TestISM for Contract {
 impl InterchainSecurityModule for Contract {
     #[storage(read, write)]
     fn verify(metadata: Vec<u8>, message: Message) -> bool {
+        // To ignore a compiler warning that no storage writes are made.
+        storage.accept = storage.accept;
+
         return storage.accept;
     }
 }

@@ -97,7 +97,7 @@ impl Mailbox for Contract {
 
     #[storage(read)]
     fn delivered(message_id: b256) -> bool {
-        storage.delivered.get(message_id)
+        delivered(message_id)
     }
 
     #[storage(read, write)]
@@ -109,7 +109,7 @@ impl Mailbox for Contract {
         require(message.destination() == LOCAL_DOMAIN, "!destination");
 
         let id = message.id();
-        require(storage.delivered.get(id) == false, "delivered");
+        require(!delivered(id), "delivered");
         storage.delivered.insert(id, true);
 
         let msg_recipient = abi(MessageRecipient, message.recipient());
@@ -177,6 +177,11 @@ fn count() -> u32 {
 #[storage(read)]
 fn root() -> b256 {
     storage.merkle_tree.root()
+}
+
+#[storage(read)]
+fn delivered(message_id: b256) -> bool {
+    storage.delivered.get(message_id).unwrap_or(false)
 }
 
 /// Gets the b256 representation of the msg_sender.
