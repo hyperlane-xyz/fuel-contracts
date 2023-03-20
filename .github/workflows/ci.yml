@@ -20,5 +20,4 @@ jobs:
           echo "$HOME/.fuelup/bin" >> $GITHUB_PATH
       - run: forc build
       - run: forc test
-      - run: cargo build
       - run: cargo test
