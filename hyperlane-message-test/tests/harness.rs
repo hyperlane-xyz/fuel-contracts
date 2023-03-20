@@ -2,7 +2,6 @@ use ethers::{abi::AbiDecode, types::H256};
 use fuels::{
     prelude::*,
     tx::{ContractId, Receipt},
-    types::parameters::TxParameters,
 };
 use hex::FromHex;
 use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
@@ -31,9 +30,9 @@ async fn get_contract_instance() -> (TestMessage, ContractId) {
     let id = Contract::deploy(
         "./out/debug/hyperlane-message-test.bin",
         &wallet,
-        TxParameters::default(),
-        StorageConfiguration::with_storage_path(Some(
+        DeployConfiguration::default().set_storage_configuration(StorageConfiguration::new(
             "./out/debug/hyperlane-message-test-storage_slots.json".to_string(),
+            vec![],
         )),
     )
     .await
@@ -105,7 +104,7 @@ async fn test_message_id() {
             .methods()
             .id(msg.into())
             // If the body is very large, a lot of gas is used!
-            .tx_params(TxParameters::new(None, Some(100_000_000), None))
+            .tx_params(TxParameters::default().set_gas_limit(100_000_000))
             .simulate()
             .await
             .unwrap();
@@ -126,7 +125,7 @@ async fn test_message_log() {
             .methods()
             .log(msg.into())
             // If the body is very large, a lot of gas is used!
-            .tx_params(TxParameters::new(None, Some(100_000_000), None))
+            .tx_params(TxParameters::default().set_gas_limit(100_000_000))
             .call()
             .await
             .unwrap();
@@ -260,7 +259,7 @@ async fn test_body() {
             .methods()
             .log_body(msg.into())
             // If the body is very large, a lot of gas is used!
-            .tx_params(TxParameters::new(None, Some(100_000_000), None))
+            .tx_params(TxParameters::default().set_gas_limit(100_000_000))
             .simulate()
             .await
             .unwrap();

@@ -1,17 +1,18 @@
 [package]
 name = "hyperlane-mailbox"
 description = "A Sway implementation of the Hyperlane Mailbox contract"
-version = "0.1.0"
-edition = "2021"
-authors = ["Trevor Porter <trevor@hyperlane.xyz>"]
-license = "Apache-2.0"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+authors = { workspace = true }
 
 [dev-dependencies]
-ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2022-12-05-01", default-features = false, features = ['legacy'] }
-fuels = { version = "0.37", features = ["fuel-core-lib"] }
-hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "253e5f8" }
+ethers = { workspace = true, default-features = false, features = ['legacy'] }
+fuels = { workspace = true, features = ["fuel-core-lib"] }
+hyperlane-core = { workspace = true }
 test-utils = { path = "../test-utils" }
-tokio = { version = "1.12", features = ["rt", "macros"] }
+tokio = { workspace = true, features = ["rt", "macros"] }
 
 [[test]]
 harness = true

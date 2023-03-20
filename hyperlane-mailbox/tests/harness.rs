@@ -64,9 +64,9 @@ async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId
     let mailbox_id = Contract::deploy(
         "./out/debug/hyperlane-mailbox.bin",
         &wallet,
-        TxParameters::default(),
-        StorageConfiguration::with_storage_path(Some(
+        DeployConfiguration::default().set_storage_configuration(StorageConfiguration::new(
             "./out/debug/hyperlane-mailbox-storage_slots.json".to_string(),
+            vec![],
         )),
     )
     .await
@@ -77,9 +77,9 @@ async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId
     let ism_id = Contract::deploy(
         "../hyperlane-ism-test/out/debug/hyperlane-ism-test.bin",
         &wallet,
-        TxParameters::default(),
-        StorageConfiguration::with_storage_path(Some(
+        DeployConfiguration::default().set_storage_configuration(StorageConfiguration::new(
             "../hyperlane-ism-test/out/debug/hyperlane-ism-test-storage_slots.json".to_string(),
+            vec![],
         )),
     )
     .await
@@ -88,10 +88,11 @@ async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId
     let msg_recipient_id= Contract::deploy(
         "../hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test.bin",
         &wallet,
-        TxParameters::default(),
-        StorageConfiguration::with_storage_path(Some(
+        DeployConfiguration::default()
+        .set_storage_configuration(
+        StorageConfiguration::new(
             "../hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test-storage_slots.json".to_string(),
-        )),
+            vec![])),
     )
     .await
     .unwrap();
@@ -397,7 +398,7 @@ async fn test_process_id() {
         .methods()
         .process(metadata.clone(), agent_message.clone().into())
         .set_contract_ids(&contract_inputs)
-        .tx_params(TxParameters::new(None, Some(1_200_000), None))
+        .tx_params(TxParameters::default().set_gas_limit(1_200_000))
         .call()
         .await
         .unwrap();
@@ -422,7 +423,7 @@ async fn test_process_handle() {
         .methods()
         .process(metadata.clone(), agent_message.clone().into())
         .set_contract_ids(&contract_inputs)
-        .tx_params(TxParameters::new(None, Some(1_200_000), None))
+        .tx_params(TxParameters::default().set_gas_limit(1_200_000))
         .call()
         .await
         .unwrap();
@@ -447,7 +448,7 @@ async fn test_process_deliver_twice() {
         .methods()
         .process(metadata.clone(), agent_message.clone().into())
         .set_contract_ids(&contract_inputs)
-        .tx_params(TxParameters::new(None, Some(1_200_000), None))
+        .tx_params(TxParameters::default().set_gas_limit(1_200_000))
         .call()
         .await
         .unwrap();
@@ -466,7 +467,7 @@ async fn test_process_deliver_twice() {
         .methods()
         .process(metadata.clone(), agent_message.clone().into())
         .set_contract_ids(&contract_inputs)
-        .tx_params(TxParameters::new(None, Some(1_200_000), None))
+        .tx_params(TxParameters::default().set_gas_limit(1_200_000))
         .call()
         .await
         .unwrap_err();
@@ -491,7 +492,7 @@ async fn test_process_module_reject() {
         .methods()
         .process(metadata, agent_message.into())
         .set_contract_ids(&contract_inputs)
-        .tx_params(TxParameters::new(None, Some(1_200_000), None))
+        .tx_params(TxParameters::default().set_gas_limit(1_200_000))
         .call()
         .await
         .unwrap_err();
