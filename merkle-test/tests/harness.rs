@@ -27,9 +27,9 @@ async fn get_contract_instance() -> (TestStorageMerkleTree, ContractId) {
     let id = Contract::deploy(
         "./out/debug/merkle-test.bin",
         &wallet,
-        TxParameters::default(),
-        StorageConfiguration::with_storage_path(Some(
+        DeployConfiguration::default().set_storage_configuration(StorageConfiguration::new(
             "./out/debug/merkle-test-storage_slots.json".to_string(),
+            vec![],
         )),
     )
     .await

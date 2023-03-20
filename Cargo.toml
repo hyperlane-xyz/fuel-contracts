@@ -7,8 +7,15 @@ members = [
     "test-utils"
 ]
 
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/hyperlane-xyz/fuel-contracts"
+authors = ["Abacus Works"]
+
 [workspace.dependencies]
-ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2022-12-05-01", default-features = false, features = ['legacy'] }
-fuels = { version = "0.37", features = ["fuel-core-lib"] }
-hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "253e5f8" }
-tokio = { version = "1.12", features = ["rt", "macros"] }
+ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2023-02-10-01" }
+fuels = { version = "0.38" }
+hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "98e5395" }
+tokio = { version = "1.12" }
