@@ -40,9 +40,7 @@ impl DispatchedMessage {
             sender: Bytes32::from(message.sender.to_fixed_bytes()),
             destination: message.destination,
             recipient: Bytes32::from(message.recipient.to_fixed_bytes()),
-            // Encode the message body as hex characters, and quote it.
-            // See https://github.com/FuelLabs/fuel-indexer/issues/450
-            body: Json(format!("\"{}\"", hex::encode(message.body))),
+            body: message.body,
             message_id,
 
             // Log metadata

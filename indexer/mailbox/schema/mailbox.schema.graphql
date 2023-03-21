@@ -10,7 +10,7 @@ type QueryRoot {
 
 type DispatchedMessage {
     # The nonce as a u64
-    # See https://fuellabs.github.io/fuel-indexer/master/components/database/ids.html
+    # See https://fuellabs.github.io/fuel-indexer/v0.4.0/reference-guide/components/database/ids.html
     id: ID!
     # There's no single byte UInt type, so we just use a u32.
     version: UInt4!
@@ -19,10 +19,8 @@ type DispatchedMessage {
     sender: Bytes32!
     destination: UInt4!
     recipient: Bytes32!
+    body: Blob!
 
-    # TODO: move to Blob once the indexer works with Blob.
-    # See https://github.com/FuelLabs/fuel-indexer/issues/450
-    body: Json!
     message_id: Bytes32!
 
     # TODO: rip the following out into a LogMetadata type.
