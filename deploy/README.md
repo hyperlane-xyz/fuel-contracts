@@ -8,11 +8,9 @@ At the moment, this is just a single script that can deploy the Mailbox contract
 
 Follow the setup instructions in the [README](../README.md) in the directory above this one to ensure you can build the contracts.
 
-Be extra sure you've installed `fuel-core`, which is the Fuel blockchain node that will be ran locally:
+Be extra sure you've installed `fuel-core`, which is the Fuel blockchain node and can be installed using `fuelup`. See https://install.fuel.network/v0.18.1/index.html.
 
-```
-cargo install fuel-core
-```
+You can see if you already have fuel-core by running `fuel-core --help`.
 
 Install all dependencies, running the following from this `deploy` directory:
 ```

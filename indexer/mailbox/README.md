@@ -19,7 +19,10 @@ brew install llvm
 ```
 rustup target add wasm32-unknown-unknown
 ```
-4. There's an errant dependency that requires the use of the `wasm-snip` executable. Install this by following [these instructions](https://fuellabs.github.io/fuel-indexer/master/getting-started/application-dependencies/wasm-snip.html#executable).
+4. There's an errant dependency that requires the use of the `wasm-snip` executable. Install this by running:
+```
+cargo install wasm-snip
+```
 5. Install the fuel-indexer executable. There are a couple ways to do this - one is to download the executable directly, the other is to use the `forc index` plugin. You can get the `forc index` plugin by running:
 ```
 cargo install forc-index

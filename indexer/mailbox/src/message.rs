@@ -11,7 +11,7 @@ use crate::encode::{Decode, DecodeError, Encode};
 
 const HYPERLANE_MESSAGE_PREFIX_LEN: usize = 77;
 
-/// A Stamped message that has been committed at some nonce
+/// A message that has been committed at some nonce
 pub type RawHyperlaneMessage = Vec<u8>;
 
 impl From<&HyperlaneMessage> for RawHyperlaneMessage {
