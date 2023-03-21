@@ -56,7 +56,7 @@ impl DispatchedMessage {
     }
 }
 
-#[indexer(manifest = "indexer/mailbox/mailbox.manifest.yaml")]
+#[indexer(manifest = "mailbox.manifest.yaml")]
 mod mailbox_indexer {
 
     fn index_block(block_data: BlockData) {

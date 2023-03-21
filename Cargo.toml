@@ -5,7 +5,13 @@ members = [
     "contracts/hyperlane-message-test",
     "contracts/merkle-test",
     "test-utils",
-    "indexer/mailbox"
+]
+exclude = [
+    # Cargo doesn't allow for packages to have different build targets.
+    # indexer/mailbox must be compiled for the wasm target and requires some
+    # special logic when being compiled.
+    # Build this package by running `./indexer/mailbox/build-wasm.sh` instead.
+    "indexer/mailbox",
 ]
 
 [workspace.package]
