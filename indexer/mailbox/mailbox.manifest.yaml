@@ -1,0 +1,12 @@
+namespace: hyperlane
+identifier: mailbox
+# Using our ABI breaks compilation because we have some interesting types.
+# See https://github.com/FuelLabs/fuel-indexer/issues/453
+# abi: contracts/hyperlane-mailbox/out/debug/hyperlane-mailbox-abi.json
+start_block: 1
+# Specifying the contract ID also breaks compilation...
+# See https://github.com/FuelLabs/fuel-indexer/issues/451
+# contract_id: "0x0000000000000000000000000000000000000000000000000000000000000000"
+graphql_schema: schema/mailbox.schema.graphql
+module:
+  wasm: target/wasm32-unknown-unknown/release/mailbox_indexer.wasm
