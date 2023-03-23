@@ -6,6 +6,8 @@ At the moment, this is just a single script that can deploy the Mailbox contract
 
 ## Setup
 
+**NOTE: Node v19 causes issues with graphql and the Fuel node. Use Node v16.**
+
 Follow the setup instructions in the [README](../README.md) in the directory above this one to ensure you can build the contracts.
 
 Be extra sure you've installed `fuel-core`, which is the Fuel blockchain node and can be installed using `fuelup`. See https://install.fuel.network/v0.18.1/index.html.
