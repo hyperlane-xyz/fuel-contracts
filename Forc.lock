@@ -61,6 +61,16 @@ dependencies = [
 ]
 
 [[package]]
+name = 'interchain-gas-paymaster'
+source = 'member'
+dependencies = [
+    'hyperlane_interfaces',
+    'ownership',
+    'std',
+    'std_lib_extended',
+]
+
+[[package]]
 name = 'merkle'
 source = 'member'
 dependencies = ['std']
@@ -82,3 +92,17 @@ dependencies = ['std']
 name = 'std'
 source = 'git+https://github.com/fuellabs/sway?tag=v0.35.5#49eae2dd93a1957e2a2c2fb3f51b11eb3791fc24'
 dependencies = ['core']
+
+[[package]]
+name = 'std_lib_extended'
+source = 'member'
+dependencies = ['std']
+
+[[package]]
+name = 'storage-gas-oracle'
+source = 'member'
+dependencies = [
+    'hyperlane_interfaces',
+    'ownership',
+    'std',
+]

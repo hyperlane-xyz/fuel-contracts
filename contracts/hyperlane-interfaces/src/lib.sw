@@ -1,6 +1,6 @@
 library hyperlane_interfaces;
 
-use std::u128::U128;
+dep igp;
 
 use hyperlane_message::Message;
 
@@ -85,23 +85,4 @@ abi MessageRecipient {
     /// If zero address is returned, the mailbox default ISM is used.
     #[storage(read)]
     fn interchain_security_module() -> ContractId;
-}
-
-pub struct RemoteGasData {
-    token_exchange_rate: U128,
-    gas_price: U128,
-}
-
-impl RemoteGasData {
-    pub fn default() -> Self {
-        Self {
-            token_exchange_rate: U128::new(),
-            gas_price: U128::new(),
-        }
-    }
-}
-
-abi GasOracle {
-    #[storage(read)]
-    fn get_exchange_rate_and_gas_price(domain: u32) -> RemoteGasData;
 }

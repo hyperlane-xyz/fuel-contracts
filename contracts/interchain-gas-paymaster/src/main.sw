@@ -8,37 +8,11 @@ use std::{
     u128::U128,
 };
 
-use std_lib_extended::{
-    option::*,
-    result::*,
-};
+use std_lib_extended::{option::*, result::*};
 
-use ownership::{
-    require_msg_sender,
-    log_ownership_transferred,
-    interface::Ownable,
-};
+use hyperlane_interfaces::igp::{GasOracle, InterchainGasPaymaster, RemoteGasData};
 
-abi InterchainGasPaymaster {
-    #[storage(read, write)]
-    fn pay_for_gas(
-        message_id: b256,
-        destination_domain: u32,
-        gas_amount: u64,
-        refund_address: Identity,
-    );
-
-    #[storage(read)]
-    fn quote_gas_payment(
-        destination_domain: u32,
-        gas_amount: u64,
-    ) -> u64;
-}
-
-abi GasOracle {
-    #[storage(read)]
-    fn get_exchange_rate_and_gas_price(domain: u32) -> (U128, U128);
-}
+use ownership::{interface::Ownable, log_ownership_transferred, require_msg_sender};
 
 pub struct BeneficiarySetEvent {
     new_beneficiary: Identity,
@@ -62,9 +36,7 @@ const TOKEN_EXCHANGE_RATE_SCALE: u64 = 10000000000;
 // TODO: set this at compile / deploy time.
 // NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
 // PRIVATE KEY, which is the first default account when running fuel-client locally.
-const INITIAL_OWNER: Option<Identity> = Option::Some(
-    Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e))
-);
+const INITIAL_OWNER: Option<Identity> = Option::Some(Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e)));
 // TODO: set this at compile / deploy time.
 // NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
 // PRIVATE KEY, which is the first default account when running fuel-client locally.
@@ -83,28 +55,21 @@ impl InterchainGasPaymaster for Contract {
         destination_domain: u32,
         gas_amount: u64,
         refund_address: Identity,
-    ) {
-
-    }
+    ) {}
 
     #[storage(read)]
-    fn quote_gas_payment(
-        destination_domain: u32,
-        gas_amount: u64,
-    ) -> u64 {
+    fn quote_gas_payment(destination_domain: u32, gas_amount: u64) -> u64 {
         // Get the gas data for the destination domain.
-        let (
+        let RemoteGasData {
             token_exchange_rate,
-            gas_price
-        ) = get_exchange_rate_and_gas_price(destination_domain);
+            gas_price,
+        } = get_exchange_rate_and_gas_price(destination_domain);
 
         // The total cost quoted in destination chain's native token.
         let destination_gas_cost = U128::from((0, gas_amount)) * gas_price;
 
         // Convert to the local native token.
-        let origin_cost =
-            (destination_gas_cost * token_exchange_rate) /
-            U128::from((0, TOKEN_EXCHANGE_RATE_SCALE));
+        let origin_cost = (destination_gas_cost * token_exchange_rate) / U128::from((0, TOKEN_EXCHANGE_RATE_SCALE));
 
         return origin_cost.as_u64().expect("quote_gas_payment overflow");
     }
@@ -112,7 +77,7 @@ impl InterchainGasPaymaster for Contract {
 
 impl GasOracle for Contract {
     #[storage(read)]
-    fn get_exchange_rate_and_gas_price(destination_domain: u32) -> (U128, U128) {
+    fn get_exchange_rate_and_gas_price(destination_domain: u32) -> RemoteGasData {
         get_exchange_rate_and_gas_price(destination_domain)
     }
 }
@@ -161,10 +126,8 @@ impl Ownable for Contract {
 }
 
 #[storage(read)]
-fn get_exchange_rate_and_gas_price(destination_domain: u32) -> (U128, U128) {
-    let gas_oracle_id = storage.gas_oracles
-        .get(destination_domain)
-        .expect("no gas oracle configured for destination");
+fn get_exchange_rate_and_gas_price(destination_domain: u32) -> RemoteGasData {
+    let gas_oracle_id = storage.gas_oracles.get(destination_domain).expect("no gas oracle configured for destination");
 
     let gas_oracle = abi(GasOracle, gas_oracle_id);
     gas_oracle.get_exchange_rate_and_gas_price(destination_domain)

@@ -1,6 +1,6 @@
 [project]
-authors = ["Yorke Rhodes"]
-entry = "main.sw"
+authors = ["Yorke Rhodes", "Trevor Porter"]
+entry = "lib.sw"
 license = "Apache-2.0"
 name = "hyperlane_interfaces"
 

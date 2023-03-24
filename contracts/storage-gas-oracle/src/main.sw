@@ -1,20 +1,10 @@
 contract;
 
-use std::{
-    logging::log,
-    u128::U128,
-};
+use std::{logging::log, u128::U128};
 
-use hyperlane_interfaces::{
-    RemoteGasData,
-    GasOracle,
-};
+use hyperlane_interfaces::igp::{GasOracle, RemoteGasData};
 
-use ownership::{
-    require_msg_sender,
-    log_ownership_transferred,
-    interface::Ownable,
-};
+use ownership::{interface::Ownable, log_ownership_transferred, require_msg_sender};
 
 struct RemoteGasDataSetEvent {
     config: RemoteGasDataConfig,
@@ -33,9 +23,7 @@ abi StorageGasOracle {
 // TODO: set this at compile / deploy time.
 // NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
 // PRIVATE KEY, which is the first default account when running fuel-client locally.
-const INITIAL_OWNER: Option<Identity> = Option::Some(
-    Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e))
-);
+const INITIAL_OWNER: Option<Identity> = Option::Some(Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e)));
 
 storage {
     owner: Option<Identity> = INITIAL_OWNER,
@@ -59,15 +47,10 @@ impl StorageGasOracle for Contract {
         let mut i = 0;
         while i < count {
             let config = configs.get(i).unwrap();
-            storage.remote_gas_data.insert(
-                config.domain,
-                config.remote_gas_data,
-            );
+            storage.remote_gas_data.insert(config.domain, config.remote_gas_data);
 
-            log(RemoteGasDataSetEvent {
-                config,
-            });
-            i++;
+            log(RemoteGasDataSetEvent { config });
+            i += 1;
         }
     }
 }

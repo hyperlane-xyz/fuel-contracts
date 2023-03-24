@@ -34,16 +34,10 @@ source = 'git+https://github.com/fuellabs/sway?tag=v0.35.5#49eae2dd93a1957e2a2c2
 dependencies = ['core']
 
 [[package]]
-name = 'std_lib_extended'
-source = 'path+from-root-7DAF9271A754A20A'
-dependencies = ['std']
-
-[[package]]
 name = 'storage-gas-oracle'
 source = 'member'
 dependencies = [
     'hyperlane_interfaces',
     'ownership',
     'std',
-    'std_lib_extended',
 ]

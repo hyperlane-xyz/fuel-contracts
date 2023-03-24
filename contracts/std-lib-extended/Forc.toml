@@ -1,6 +1,6 @@
 [project]
 authors = ["Trevor Porter"]
-entry = "main.sw"
+entry = "lib.sw"
 license = "Apache-2.0"
 name = "std_lib_extended"
 

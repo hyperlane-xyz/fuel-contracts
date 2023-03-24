@@ -25,3 +25,15 @@ impl<T, E> Result<T, E> {
         }
     }
 }
+
+#[test()]
+fn test_expect_ok() {
+    let inner = 12345;
+    assert(inner == Result::<u64, u64>::Ok(inner).expect("foo"));
+}
+
+// We don't have access to the exact revert message in Sway tests.
+#[test(should_revert)]
+fn test_expect_none() {
+    let _ = Result::<u64, u64>::Err(123).expect("foo");
+}

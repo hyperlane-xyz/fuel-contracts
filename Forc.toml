@@ -10,4 +10,7 @@ members = [
   "contracts/hyperlane-mailbox",
   "contracts/hyperlane-ism-test",
   "contracts/hyperlane-msg-recipient-test",
+  "contracts/interchain-gas-paymaster",
+  "contracts/std-lib-extended",
+  "contracts/storage-gas-oracle",
 ]

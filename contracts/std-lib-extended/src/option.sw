@@ -17,3 +17,15 @@ impl<T> Option<T> {
         }
     }
 }
+
+#[test()]
+fn test_expect_some() {
+    let inner = 12345;
+    assert(inner == Option::Some(inner).expect("foo"));
+}
+
+// We don't have access to the exact revert message in Sway tests.
+#[test(should_revert)]
+fn test_expect_none() {
+    let _ = Option::<u64>::None.expect("foo");
+}
