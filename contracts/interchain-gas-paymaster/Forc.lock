@@ -1,0 +1,21 @@
+[[package]]
+name = 'core'
+source = 'path+from-root-2C66FC65A00ECA96'
+
+[[package]]
+name = 'interchain-gas-paymaster'
+source = 'member'
+dependencies = [
+    'ownership',
+    'std',
+]
+
+[[package]]
+name = 'ownership'
+source = 'path+from-root-C018E85CA621BEC8'
+dependencies = ['std']
+
+[[package]]
+name = 'std'
+source = 'git+https://github.com/fuellabs/sway?tag=v0.35.5#49eae2dd93a1957e2a2c2fb3f51b11eb3791fc24'
+dependencies = ['core']
