@@ -3,8 +3,14 @@ contract;
 use std::{
     constants::BASE_ASSET_ID,
     context::this_balance,
+    logging::log,
     token::transfer,
     u128::U128,
+};
+
+use std_lib_extended::{
+    option::*,
+    result::*,
 };
 
 use ownership::{
@@ -34,9 +40,16 @@ abi GasOracle {
     fn get_exchange_rate_and_gas_price(domain: u32) -> (U128, U128);
 }
 
+pub struct BeneficiarySetEvent {
+    new_beneficiary: Identity,
+}
+
 abi Claimable {
     #[storage(read)]
     fn beneficiary() -> Identity;
+
+    #[storage(read, write)]
+    fn set_beneficiary(new_beneficiary: Identity);
 
     #[storage(read)]
     fn claim();
@@ -93,8 +106,7 @@ impl InterchainGasPaymaster for Contract {
             (destination_gas_cost * token_exchange_rate) /
             U128::from((0, TOKEN_EXCHANGE_RATE_SCALE));
 
-        // TODO something nicer? better revert msg
-        return origin_cost.as_u64().unwrap();
+        return origin_cost.as_u64().expect("quote_gas_payment overflow");
     }
 }
 
@@ -109,6 +121,17 @@ impl Claimable for Contract {
     #[storage(read)]
     fn beneficiary() -> Identity {
         storage.beneficiary
+    }
+
+    #[storage(read, write)]
+    fn set_beneficiary(new_beneficiary: Identity) {
+        // Only the owner can call
+        require_msg_sender(storage.owner);
+
+        storage.beneficiary = new_beneficiary;
+        log(BeneficiarySetEvent {
+            new_beneficiary,
+        });
     }
 
     #[storage(read)]
@@ -139,9 +162,10 @@ impl Ownable for Contract {
 
 #[storage(read)]
 fn get_exchange_rate_and_gas_price(destination_domain: u32) -> (U128, U128) {
-    let gas_oracle_id = storage.gas_oracles.get(destination_domain);
-    require(gas_oracle_id.is_some(), "no gas oracle configured for destination");
+    let gas_oracle_id = storage.gas_oracles
+        .get(destination_domain)
+        .expect("no gas oracle configured for destination");
 
-    let gas_oracle = abi(GasOracle, gas_oracle_id.unwrap());
+    let gas_oracle = abi(GasOracle, gas_oracle_id);
     gas_oracle.get_exchange_rate_and_gas_price(destination_domain)
 }
