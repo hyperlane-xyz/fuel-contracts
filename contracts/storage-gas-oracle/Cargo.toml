@@ -1,9 +1,9 @@
 [package]
 name = "storage-gas-oracle"
-description = "A cargo-generate template for Rust + Sway integration testing."
+description = "Tests for storage-gas-oracle"
 version = "0.1.0"
 edition = "2021"
-authors = ["Trevor Porter <trkporter@ucdavis.edu>"]
+authors = ["Trevor Porter <trevor@hyperlane.xyz>"]
 license = "Apache-2.0"
 
 [dev-dependencies]

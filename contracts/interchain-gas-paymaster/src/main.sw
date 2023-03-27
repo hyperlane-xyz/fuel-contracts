@@ -29,8 +29,8 @@ use interface::{
     OnChainFeeQuoting,
 };
 
-/// The scale of a token exchange rate. 1e18.
-const TOKEN_EXCHANGE_RATE_SCALE: u64 = 1000000000000000000;
+/// The scale of a token exchange rate. 1e19.
+const TOKEN_EXCHANGE_RATE_SCALE: u64 = 10000000000000000000;
 
 // TODO: set this at compile / deploy time.
 // NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN

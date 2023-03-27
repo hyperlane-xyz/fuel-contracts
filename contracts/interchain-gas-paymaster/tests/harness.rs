@@ -81,7 +81,7 @@ const TEST_REFUND_ADDRESS: &str =
     "0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe";
 const TEST_NON_BASE_ASSET_ID: [u8; 32] = [1u8; 32];
 
-const TOKEN_EXCHANGE_RATE_SCALE: u128 = 1e18 as u128;
+const TOKEN_EXCHANGE_RATE_SCALE: u128 = 1e19 as u128;
 
 async fn get_contract_instances() -> (InterchainGasPaymaster, StorageGasOracle) {
     let non_base_asset_id = AssetId::new(TEST_NON_BASE_ASSET_ID);
@@ -180,6 +180,17 @@ async fn get_contract_balance(
     provider
         .get_contract_asset_balance(contract_id, AssetId::BASE)
         .await
+}
+
+/// Gets a decimal-adjusted token exchange rate.
+/// exchange_rate is the exchange rate with a scale of TOKEN_EXCHANGE_RATE_SCALE as if
+/// the local and remote tokens both have the same decimals
+fn get_token_exchange_rate(exchange_rate: u128, local_decimals: u32, remote_decimals: u32) -> u128 {
+    if local_decimals > remote_decimals {
+        exchange_rate * (10u128.pow(local_decimals - remote_decimals))
+    } else {
+        exchange_rate / (10u128.pow(remote_decimals - local_decimals))
+    }
 }
 
 #[tokio::test]
@@ -790,15 +801,4 @@ async fn test_get_exchange_rate_and_gas_price_reverts_if_no_gas_oracle_set() {
         get_revert_string(call.err().unwrap()),
         "no gas oracle set for destination domain"
     );
-}
-
-/// Gets a decimal-adjusted token exchange rate.
-/// exchange_rate is the exchange rate with a scale of TOKEN_EXCHANGE_RATE_SCALE as if
-/// the local and remote tokens both have the same decimals
-fn get_token_exchange_rate(exchange_rate: u128, local_decimals: u32, remote_decimals: u32) -> u128 {
-    if local_decimals > remote_decimals {
-        exchange_rate * (10u128.pow(local_decimals - remote_decimals))
-    } else {
-        exchange_rate / (10u128.pow(remote_decimals - local_decimals))
-    }
 }
