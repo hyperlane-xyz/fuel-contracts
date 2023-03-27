@@ -10,7 +10,7 @@ use test_utils::{funded_wallet_with_private_key, get_revert_string};
 // Load abi from json
 abigen!(Contract(
     name = "InterchainGasPaymaster",
-    abi = "contracts/interchain-gas-paymaster/out/debug/interchain-gas-paymaster-abi.json"
+    abi = "contracts/igp/interchain-gas-paymaster/out/debug/interchain-gas-paymaster-abi.json"
 ));
 
 mod gas_oracle {
@@ -19,7 +19,7 @@ mod gas_oracle {
     // Load abi from json
     abigen!(Contract(
         name = "StorageGasOracle",
-        abi = "contracts/storage-gas-oracle/out/debug/storage-gas-oracle-abi.json"
+        abi = "contracts/igp/storage-gas-oracle/out/debug/storage-gas-oracle-abi.json"
     ));
 
     impl From<u64> for U128 {

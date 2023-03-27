@@ -7,7 +7,7 @@ use test_utils::{funded_wallet_with_private_key, get_revert_string};
 // Load abi from json
 abigen!(Contract(
     name = "StorageGasOracle",
-    abi = "contracts/storage-gas-oracle/out/debug/storage-gas-oracle-abi.json"
+    abi = "contracts/igp/storage-gas-oracle/out/debug/storage-gas-oracle-abi.json"
 ));
 
 // The generated U128 struct from abigen doesn't have a very nice way of

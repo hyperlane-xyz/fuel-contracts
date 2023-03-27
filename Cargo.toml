@@ -3,9 +3,9 @@
 members = [
     "contracts/hyperlane-mailbox",
     "contracts/hyperlane-message-test",
-    "contracts/interchain-gas-paymaster",
+    "contracts/igp/interchain-gas-paymaster",
+    "contracts/igp/storage-gas-oracle",
     "contracts/merkle-test",
-    "contracts/storage-gas-oracle",
     "test-utils",
 ]
 exclude = [

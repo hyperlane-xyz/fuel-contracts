@@ -5,5 +5,5 @@ license = "Apache-2.0"
 name = "storage-gas-oracle"
 
 [dependencies]
-hyperlane_interfaces = { path = "../hyperlane-interfaces" }
-ownership = { path = "../ownership" }
+hyperlane_interfaces = { path = "../../hyperlane-interfaces" }
+ownership = { path = "../../ownership" }
