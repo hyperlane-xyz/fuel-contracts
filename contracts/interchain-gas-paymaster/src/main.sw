@@ -20,6 +20,15 @@ use hyperlane_interfaces::igp::{GasOracle, InterchainGasPaymaster, RemoteGasData
 
 use ownership::{interface::Ownable, log_ownership_transferred, require_msg_sender};
 
+use interface::{
+    BeneficiarySetEvent,
+    Claimable,
+    ClaimEvent,
+    GasOracleSetEvent,
+    GasPaymentEvent,
+    OnChainFeeQuoting,
+};
+
 /// The scale of a token exchange rate. 1e18.
 const TOKEN_EXCHANGE_RATE_SCALE: u64 = 1000000000000000000;
 

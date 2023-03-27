@@ -12,7 +12,7 @@ pub struct ClaimEvent {
 }
 
 /// Logged when the gas oracle is set for a domain.
-struct GasOracleSetEvent {
+pub struct GasOracleSetEvent {
     domain: u32,
     gas_oracle: b256,
 }

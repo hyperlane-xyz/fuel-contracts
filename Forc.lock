@@ -1,9 +1,4 @@
 [[package]]
-name = 'bytes_extended'
-source = 'member'
-dependencies = ['std']
-
-[[package]]
 name = 'core'
 source = 'path+from-root-2C66FC65A00ECA96'
 
@@ -56,8 +51,8 @@ dependencies = [
 name = 'hyperlane_message'
 source = 'member'
 dependencies = [
-    'bytes_extended',
     'std',
+    'std_lib_extended',
 ]
 
 [[package]]

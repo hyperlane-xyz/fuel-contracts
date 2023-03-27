@@ -1,7 +1,6 @@
 [workspace]
 
 members = [
-  "contracts/bytes-extended",
   "contracts/hyperlane-interfaces",
   "contracts/hyperlane-message",
   "contracts/hyperlane-message-test",
