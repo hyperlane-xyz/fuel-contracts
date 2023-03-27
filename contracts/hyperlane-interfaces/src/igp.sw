@@ -2,6 +2,7 @@ library igp;
 
 use std::u128::U128;
 
+/// Gas data for a remote domain.
 pub struct RemoteGasData {
     token_exchange_rate: U128,
     gas_price: U128,
@@ -16,11 +17,13 @@ impl RemoteGasData {
     }
 }
 
+/// An oracle that provides gas data for a remote domain.
 abi GasOracle {
     #[storage(read)]
     fn get_exchange_rate_and_gas_price(domain: u32) -> RemoteGasData;
 }
 
+/// A contract to allow users to pay for interchain gas.
 abi InterchainGasPaymaster {
     #[storage(read, write)]
     #[payable]
