@@ -2865,6 +2865,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "interchain-gas-paymaster"
+version = "0.1.0"
+dependencies = [
+ "fuels",
+ "test-utils",
+ "tokio",
+]
+
+[[package]]
 name = "io-lifetimes"
 version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"

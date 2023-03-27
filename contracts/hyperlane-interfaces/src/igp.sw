@@ -23,6 +23,7 @@ abi GasOracle {
 
 abi InterchainGasPaymaster {
     #[storage(read, write)]
+    #[payable]
     fn pay_for_gas(message_id: b256, destination_domain: u32, gas_amount: u64, refund_address: Identity);
 
     #[storage(read)]

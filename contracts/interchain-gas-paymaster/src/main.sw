@@ -1,8 +1,12 @@
 contract;
 
 use std::{
+    call_frames::msg_asset_id,
     constants::BASE_ASSET_ID,
-    context::this_balance,
+    context::{
+        msg_amount,
+        this_balance,
+    },
     logging::log,
     token::transfer,
     u128::U128,
@@ -18,6 +22,25 @@ pub struct BeneficiarySetEvent {
     new_beneficiary: Identity,
 }
 
+struct ClaimEvent {
+    beneficiary: Identity,
+    amount: u64,
+}
+
+struct GasPaymentEvent {
+    message_id: b256,
+    gas_amount: u64,
+    payment: u64,
+}
+
+abi OnChainFeeQuoting {
+    #[storage(read, write)]
+    fn set_gas_oracle(domain: u32, oracle: b256);
+
+    #[storage(read)]
+    fn gas_oracle(domain: u32) -> Option<b256>;
+}
+
 abi Claimable {
     #[storage(read)]
     fn beneficiary() -> Identity;
@@ -29,9 +52,14 @@ abi Claimable {
     fn claim();
 }
 
+struct GasOracleSetEvent {
+    domain: u32,
+    gas_oracle: b256,
+}
+
 // TODO reconsider this
-// 1e10
-const TOKEN_EXCHANGE_RATE_SCALE: u64 = 10000000000;
+// 1e18
+const TOKEN_EXCHANGE_RATE_SCALE: u64 = 1000000000000000000;
 
 // TODO: set this at compile / deploy time.
 // NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
@@ -50,28 +78,35 @@ storage {
 
 impl InterchainGasPaymaster for Contract {
     #[storage(read, write)]
+    #[payable]
     fn pay_for_gas(
         message_id: b256,
         destination_domain: u32,
         gas_amount: u64,
         refund_address: Identity,
-    ) {}
+    ) {
+        // Only the base asset can be used to pay for gas.
+        require(msg_asset_id() == BASE_ASSET_ID, "interchain gas payment must be in base asset");
+
+        let required_payment = quote_gas_payment(destination_domain, gas_amount);
+
+        let payment_amount = msg_amount();
+        require(payment_amount >= required_payment, "insufficient interchain gas payment");
+        let overpayment = payment_amount - required_payment;
+        if (overpayment > 0) {
+            transfer(overpayment, BASE_ASSET_ID, refund_address);
+        }
+
+        log(GasPaymentEvent {
+            message_id,
+            gas_amount,
+            payment: required_payment,
+        });
+    }
 
     #[storage(read)]
     fn quote_gas_payment(destination_domain: u32, gas_amount: u64) -> u64 {
-        // Get the gas data for the destination domain.
-        let RemoteGasData {
-            token_exchange_rate,
-            gas_price,
-        } = get_exchange_rate_and_gas_price(destination_domain);
-
-        // The total cost quoted in destination chain's native token.
-        let destination_gas_cost = U128::from((0, gas_amount)) * gas_price;
-
-        // Convert to the local native token.
-        let origin_cost = (destination_gas_cost * token_exchange_rate) / U128::from((0, TOKEN_EXCHANGE_RATE_SCALE));
-
-        return origin_cost.as_u64().expect("quote_gas_payment overflow");
+        quote_gas_payment(destination_domain, gas_amount)
     }
 }
 
@@ -101,8 +136,14 @@ impl Claimable for Contract {
 
     #[storage(read)]
     fn claim() {
+        let beneficiary = storage.beneficiary;
         let balance = this_balance(BASE_ASSET_ID);
         transfer(balance, BASE_ASSET_ID, storage.beneficiary);
+
+        log(ClaimEvent {
+            beneficiary,
+            amount: balance,
+        });
     }
 }
 
@@ -125,10 +166,46 @@ impl Ownable for Contract {
     }
 }
 
+impl OnChainFeeQuoting for Contract {
+    #[storage(read, write)]
+    fn set_gas_oracle(domain: u32, gas_oracle: b256) {
+        // Only the owner can call
+        require_msg_sender(storage.owner);
+
+        storage.gas_oracles.insert(domain, gas_oracle);
+        log(GasOracleSetEvent {
+            domain,
+            gas_oracle,
+        });
+    }
+
+    #[storage(read)]
+    fn gas_oracle(domain: u32) -> Option<b256> {
+        storage.gas_oracles.get(domain)
+    }
+}
+
 #[storage(read)]
 fn get_exchange_rate_and_gas_price(destination_domain: u32) -> RemoteGasData {
-    let gas_oracle_id = storage.gas_oracles.get(destination_domain).expect("no gas oracle configured for destination");
+    let gas_oracle_id = storage.gas_oracles.get(destination_domain).expect("no gas oracle set for destination domain");
 
     let gas_oracle = abi(GasOracle, gas_oracle_id);
     gas_oracle.get_exchange_rate_and_gas_price(destination_domain)
+}
+
+#[storage(read)]
+fn quote_gas_payment(destination_domain: u32, gas_amount: u64) -> u64 {
+    // Get the gas data for the destination domain.
+    let RemoteGasData {
+        token_exchange_rate,
+        gas_price,
+    } = get_exchange_rate_and_gas_price(destination_domain);
+
+    // The total cost quoted in destination chain's native token.
+    let destination_gas_cost = U128::from((0, gas_amount)) * gas_price;
+
+    // Convert to the local native token.
+    let origin_cost = (destination_gas_cost * token_exchange_rate) / U128::from((0, TOKEN_EXCHANGE_RATE_SCALE));
+
+    origin_cost.as_u64().expect("quote_gas_payment overflow")
 }
