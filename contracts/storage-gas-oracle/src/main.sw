@@ -1,24 +1,14 @@
 contract;
 
+dep interface;
+
 use std::{logging::log, u128::U128};
 
 use hyperlane_interfaces::igp::{GasOracle, RemoteGasData};
 
 use ownership::{interface::Ownable, log_ownership_transferred, require_msg_sender};
 
-struct RemoteGasDataSetEvent {
-    config: RemoteGasDataConfig,
-}
-
-struct RemoteGasDataConfig {
-    domain: u32,
-    remote_gas_data: RemoteGasData,
-}
-
-abi StorageGasOracle {
-    #[storage(read, write)]
-    fn set_remote_gas_data_configs(configs: Vec<RemoteGasDataConfig>);
-}
+use interface::{RemoteGasDataConfig, RemoteGasDataSetEvent, StorageGasOracle};
 
 // TODO: set this at compile / deploy time.
 // NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
@@ -31,6 +21,7 @@ storage {
 }
 
 impl GasOracle for Contract {
+    /// Gets the gas data from storage. 
     #[storage(read)]
     fn get_exchange_rate_and_gas_price(domain: u32) -> RemoteGasData {
         storage.remote_gas_data.get(domain).unwrap_or(RemoteGasData::default())
@@ -38,6 +29,7 @@ impl GasOracle for Contract {
 }
 
 impl StorageGasOracle for Contract {
+    /// Sets the gas data for a given domain. Only callable by the owner.
     #[storage(read, write)]
     fn set_remote_gas_data_configs(configs: Vec<RemoteGasDataConfig>) {
         // Only the owner can call

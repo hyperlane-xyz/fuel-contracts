@@ -1,5 +1,7 @@
 contract;
 
+dep interface;
+
 use std::{
     call_frames::msg_asset_id,
     constants::BASE_ASSET_ID,
@@ -18,47 +20,7 @@ use hyperlane_interfaces::igp::{GasOracle, InterchainGasPaymaster, RemoteGasData
 
 use ownership::{interface::Ownable, log_ownership_transferred, require_msg_sender};
 
-pub struct BeneficiarySetEvent {
-    new_beneficiary: Identity,
-}
-
-struct ClaimEvent {
-    beneficiary: Identity,
-    amount: u64,
-}
-
-struct GasPaymentEvent {
-    message_id: b256,
-    gas_amount: u64,
-    payment: u64,
-}
-
-abi OnChainFeeQuoting {
-    #[storage(read, write)]
-    fn set_gas_oracle(domain: u32, oracle: b256);
-
-    #[storage(read)]
-    fn gas_oracle(domain: u32) -> Option<b256>;
-}
-
-abi Claimable {
-    #[storage(read)]
-    fn beneficiary() -> Identity;
-
-    #[storage(read, write)]
-    fn set_beneficiary(new_beneficiary: Identity);
-
-    #[storage(read)]
-    fn claim();
-}
-
-struct GasOracleSetEvent {
-    domain: u32,
-    gas_oracle: b256,
-}
-
-// TODO reconsider this
-// 1e18
+/// The scale of a token exchange rate. 1e18.
 const TOKEN_EXCHANGE_RATE_SCALE: u64 = 1000000000000000000;
 
 // TODO: set this at compile / deploy time.
@@ -77,6 +39,16 @@ storage {
 }
 
 impl InterchainGasPaymaster for Contract {
+    /// Pays for a message's interchain gas in the base asset.
+    /// The payment amount must be at least the amount returned by
+    /// `quote_gas_payment`.
+    ///
+    /// ### Arguments
+    ///
+    /// * `message_id` - The ID of the message.
+    /// * `destination_domain` - The destination domain of the message.
+    /// * `gas_amount` - The amount of destination gas to pay for.
+    /// * `refund_address` - The address to refund any overpayment to.
     #[storage(read, write)]
     #[payable]
     fn pay_for_gas(
@@ -92,6 +64,8 @@ impl InterchainGasPaymaster for Contract {
 
         let payment_amount = msg_amount();
         require(payment_amount >= required_payment, "insufficient interchain gas payment");
+
+        // Refund any overpayment.
         let overpayment = payment_amount - required_payment;
         if (overpayment > 0) {
             transfer(overpayment, BASE_ASSET_ID, refund_address);
@@ -104,6 +78,11 @@ impl InterchainGasPaymaster for Contract {
         });
     }
 
+    /// Quotes the required interchain gas payment to be paid in the base asset.
+    /// ### Arguments
+    ///
+    /// * `destination_domain` - The destination domain of the message.
+    /// * `gas_amount` - The amount of destination gas to pay for.
     #[storage(read)]
     fn quote_gas_payment(destination_domain: u32, gas_amount: u64) -> u64 {
         quote_gas_payment(destination_domain, gas_amount)
@@ -111,6 +90,9 @@ impl InterchainGasPaymaster for Contract {
 }
 
 impl GasOracle for Contract {
+    /// Gets the exchange rate and gas price for a given domain using the
+    /// configured gas oracle.
+    /// Reverts if no gas oracle is set.
     #[storage(read)]
     fn get_exchange_rate_and_gas_price(destination_domain: u32) -> RemoteGasData {
         get_exchange_rate_and_gas_price(destination_domain)
@@ -118,11 +100,13 @@ impl GasOracle for Contract {
 }
 
 impl Claimable for Contract {
+    /// Gets the current beneficiary.
     #[storage(read)]
     fn beneficiary() -> Identity {
         storage.beneficiary
     }
 
+    /// Sets the beneficiary to `new_beneficiary`. Only callable by the owner.
     #[storage(read, write)]
     fn set_beneficiary(new_beneficiary: Identity) {
         // Only the owner can call
@@ -134,6 +118,7 @@ impl Claimable for Contract {
         });
     }
 
+    /// Sends all base asset funds to the beneficiary. Callable by anyone.
     #[storage(read)]
     fn claim() {
         let beneficiary = storage.beneficiary;
@@ -167,6 +152,7 @@ impl Ownable for Contract {
 }
 
 impl OnChainFeeQuoting for Contract {
+    /// Sets the gas oracle for a given domain.
     #[storage(read, write)]
     fn set_gas_oracle(domain: u32, gas_oracle: b256) {
         // Only the owner can call
@@ -179,12 +165,16 @@ impl OnChainFeeQuoting for Contract {
         });
     }
 
+    /// Gets the gas oracle for a given domain.
     #[storage(read)]
     fn gas_oracle(domain: u32) -> Option<b256> {
         storage.gas_oracles.get(domain)
     }
 }
 
+/// Gets the exchange rate and gas price for a given domain using the
+/// configured gas oracle.
+/// Reverts if no gas oracle is set.
 #[storage(read)]
 fn get_exchange_rate_and_gas_price(destination_domain: u32) -> RemoteGasData {
     let gas_oracle_id = storage.gas_oracles.get(destination_domain).expect("no gas oracle set for destination domain");
@@ -193,6 +183,8 @@ fn get_exchange_rate_and_gas_price(destination_domain: u32) -> RemoteGasData {
     gas_oracle.get_exchange_rate_and_gas_price(destination_domain)
 }
 
+/// Quotes the required interchain gas payment to be paid in the base asset.
+/// Reverts if no gas oracle is set.
 #[storage(read)]
 fn quote_gas_payment(destination_domain: u32, gas_amount: u64) -> u64 {
     // Get the gas data for the destination domain.
