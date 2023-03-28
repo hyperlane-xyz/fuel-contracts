@@ -21,10 +21,16 @@ configurable {
 
 storage {
     owner: Option<Identity> = INITIAL_OWNER,
+    /// Destination domain -> gas overhead.
     destination_gas_overheads: StorageMap<u32, u64> = StorageMap {},
 }
 
+/// An IGP that wraps an inner IGP, adding a configured amount of gas to
+/// the `pay_for_gas` and `quote_gas_payment` functions before passing the call
+/// along to the inner IGP.
+/// The intended use is for applications to not need to worry about ISM gas costs themselves.
 impl OverheadIgp for Contract {
+    /// Sets the gas overheads for destination domains.
     #[storage(read, write)]
     fn set_destination_gas_overheads(configs: Vec<GasOverheadConfig>) {
         // Only owner can call
@@ -41,17 +47,21 @@ impl OverheadIgp for Contract {
         }
     }
 
+    /// Gets the gas overhead for a destination domain, or 0 if none is set.
     #[storage(read)]
     fn destination_gas_overhead(domain: u32) -> u64 {
         destination_gas_overhead(domain)
     }
 
+    /// Gets the inner IGP contract ID.
     fn inner_igp() -> b256 {
         INNER_IGP_ID
     }
 }
 
 impl InterchainGasPaymaster for Contract {
+    /// Forwards along the gas payment to the inner IGP, adding the configured
+    /// gas overhead for the destination domain.
     #[storage(read, write)]
     #[payable]
     fn pay_for_gas(
@@ -70,6 +80,7 @@ impl InterchainGasPaymaster for Contract {
         }(message_id, destination_domain, gas_amount + destination_gas_overhead(destination_domain), refund_address);
     }
 
+    /// Forwards the call to the inner IGP, adding the configured gas overhead for the destination domain.
     #[storage(read)]
     fn quote_gas_payment(destination_domain: u32, gas_amount: u64) -> u64 {
         let inner_igp = abi(InterchainGasPaymaster, INNER_IGP_ID);
@@ -96,6 +107,7 @@ impl Ownable for Contract {
     }
 }
 
+/// Gets the gas overhead for a domain, or 0 if none is set.
 #[storage(read)]
 fn destination_gas_overhead(domain: u32) -> u64 {
     storage.destination_gas_overheads.get(domain).unwrap_or(0)
