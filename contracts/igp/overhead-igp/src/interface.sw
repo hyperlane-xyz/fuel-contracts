@@ -7,7 +7,7 @@ pub struct GasOverheadConfig {
 }
 
 /// Logged when a destination gas overhead for a domain is set.
-pub struct DestinationGasOverheadSet {
+pub struct DestinationGasOverheadSetEvent {
     config: GasOverheadConfig,
 }
 

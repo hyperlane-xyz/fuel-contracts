@@ -122,6 +122,8 @@ async fn test_pay_for_gas() {
     let message_id = Bits256::from_hex_str(TEST_MESSAGE_ID).unwrap();
     let refund_address = Identity::Address(Address::from_str(TEST_REFUND_ADDRESS).unwrap());
 
+    let payment = 69;
+
     let call = overhead_igp
         .methods()
         .pay_for_gas(
@@ -134,7 +136,7 @@ async fn test_pay_for_gas() {
         .call_params(
             CallParameters::default()
                 .set_asset_id(BASE_ASSET_ID)
-                .set_amount(1),
+                .set_amount(payment),
         )
         .unwrap()
         .estimate_tx_dependencies(Some(5))
@@ -152,10 +154,24 @@ async fn test_pay_for_gas() {
     assert_eq!(
         events,
         vec![test_igp_contract::PayForGasCalled {
-            message_id: Bits256::from_hex_str(TEST_MESSAGE_ID).unwrap(),
+            message_id,
             destination_domain: TEST_DESTINATION_DOMAIN,
             gas_amount: TEST_GAS_AMOUNT + TEST_GAS_OVERHEAD_AMOUNT,
             refund_address,
+        }]
+    );
+
+    // Also confirm the payment is what's expected
+    let events = test_igp
+        .log_decoder()
+        .get_logs_with_type::<test_igp_contract::GasPaymentEvent>(&call.receipts)
+        .unwrap();
+    assert_eq!(
+        events,
+        vec![test_igp_contract::GasPaymentEvent {
+            message_id,
+            gas_amount: TEST_GAS_AMOUNT + TEST_GAS_OVERHEAD_AMOUNT,
+            payment,
         }]
     );
 }
@@ -235,13 +251,13 @@ async fn test_set_destination_gas_overheads() {
     }
 
     let events = call
-        .get_logs_with_type::<DestinationGasOverheadSet>()
+        .get_logs_with_type::<DestinationGasOverheadSetEvent>()
         .unwrap();
     assert_eq!(
         events,
         configs
             .into_iter()
-            .map(|config| DestinationGasOverheadSet { config })
+            .map(|config| DestinationGasOverheadSetEvent { config })
             .collect::<Vec<_>>(),
     );
 }

@@ -7,7 +7,7 @@ use std::{call_frames::msg_asset_id, constants::ZERO_B256, context::msg_amount};
 use hyperlane_interfaces::igp::InterchainGasPaymaster;
 use ownership::{interface::Ownable, log_ownership_transferred, require_msg_sender};
 
-use interface::{DestinationGasOverheadSet, GasOverheadConfig, OverheadIgp};
+use interface::{DestinationGasOverheadSetEvent, GasOverheadConfig, OverheadIgp};
 
 // TODO: set this at compile / deploy time.
 // NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
@@ -41,7 +41,7 @@ impl OverheadIgp for Contract {
         while i < count {
             let config = configs.get(i).unwrap();
             storage.destination_gas_overheads.insert(config.domain, config.gas_overhead);
-            log(DestinationGasOverheadSet { config });
+            log(DestinationGasOverheadSetEvent { config });
 
             i += 1;
         }
