@@ -4,6 +4,7 @@ members = [
     "contracts/hyperlane-mailbox",
     "contracts/hyperlane-message-test",
     "contracts/igp/interchain-gas-paymaster",
+    "contracts/igp/overhead-igp",
     "contracts/igp/storage-gas-oracle",
     "contracts/merkle-test",
     "test-utils",

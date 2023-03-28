@@ -17,13 +17,6 @@ pub struct GasOracleSetEvent {
     gas_oracle: b256,
 }
 
-/// Logged when a gas payment is made.
-pub struct GasPaymentEvent {
-    message_id: b256,
-    gas_amount: u64,
-    payment: u64,
-}
-
 /// Functions specific to on chain fee quoting.
 abi OnChainFeeQuoting {
     #[storage(read, write)]

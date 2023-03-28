@@ -17,5 +17,7 @@ abi OverheadIgp {
     fn set_destination_gas_overheads(configs: Vec<GasOverheadConfig>);
 
     #[storage(read)]
-    fn get_destination_gas_overhead(domain: u32) -> u64;
+    fn destination_gas_overhead(domain: u32) -> u64;
+
+    fn inner_igp() -> b256;
 }

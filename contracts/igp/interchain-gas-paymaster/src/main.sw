@@ -16,7 +16,7 @@ use std::{
 
 use std_lib_extended::{option::*, result::*};
 
-use hyperlane_interfaces::igp::{GasOracle, InterchainGasPaymaster, RemoteGasData};
+use hyperlane_interfaces::igp::{GasOracle, GasPaymentEvent, InterchainGasPaymaster, RemoteGasData};
 
 use ownership::{interface::Ownable, log_ownership_transferred, require_msg_sender};
 
@@ -25,7 +25,6 @@ use interface::{
     Claimable,
     ClaimEvent,
     GasOracleSetEvent,
-    GasPaymentEvent,
     OnChainFeeQuoting,
 };
 

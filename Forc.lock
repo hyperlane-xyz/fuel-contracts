@@ -79,6 +79,15 @@ dependencies = [
 ]
 
 [[package]]
+name = 'overhead-igp'
+source = 'member'
+dependencies = [
+    'hyperlane_interfaces',
+    'ownership',
+    'std',
+]
+
+[[package]]
 name = 'ownership'
 source = 'path+from-root-D26B060B9C691B9B'
 dependencies = ['std']
@@ -99,5 +108,13 @@ source = 'member'
 dependencies = [
     'hyperlane_interfaces',
     'ownership',
+    'std',
+]
+
+[[package]]
+name = 'interchain-gas-paymaster-test'
+source = 'member'
+dependencies = [
+    'hyperlane_interfaces',
     'std',
 ]

@@ -1,0 +1,17 @@
+[package]
+name = "overhead-igp"
+description = "A cargo-generate template for Rust + Sway integration testing."
+version = "0.1.0"
+edition = "2021"
+authors = ["Trevor Porter <trkporter@ucdavis.edu>"]
+license = "Apache-2.0"
+
+[dev-dependencies]
+fuels = { workspace = true, features = ["fuel-core-lib"] }
+tokio = { workspace = true, features = ["rt", "macros"] }
+test-utils = { path = "../../../test-utils" }
+
+[[test]]
+harness = true
+name = "integration_tests"
+path = "tests/harness.rs"

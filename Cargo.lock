@@ -3389,6 +3389,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ceedf44fb00f2d1984b0bc98102627ce622e083e49a5bacdb3e514fa4238e267"
 
 [[package]]
+name = "overhead-igp"
+version = "0.1.0"
+dependencies = [
+ "fuels",
+ "test-utils",
+ "tokio",
+]
+
+[[package]]
 name = "parity-scale-codec"
 version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
