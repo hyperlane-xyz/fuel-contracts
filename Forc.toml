@@ -10,4 +10,5 @@ members = [
   "contracts/hyperlane-mailbox",
   "contracts/hyperlane-ism-test",
   "contracts/hyperlane-msg-recipient-test",
+  "contracts/validator-announce",
 ]
