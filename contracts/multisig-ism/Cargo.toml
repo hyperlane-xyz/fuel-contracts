@@ -1,0 +1,19 @@
+[package]
+name = "hyperlane-multisig-ism"
+description = "An implementation of the Hyperlane Multisig ISM."
+version = "0.1.0"
+edition = "2021"
+authors = ["Yorke Rhodes <yorke@hyperlane.xyz>"]
+license = "Apache-2.0"
+
+[dev-dependencies]
+ethers = { workspace = true, default-features = false, features = ['legacy'] }
+fuels = { workspace = true, features = ["fuel-core-lib"] }
+hyperlane-core = { workspace = true }
+test-utils = { path = "../../test-utils" }
+tokio = { workspace = true, features = ["rt", "macros"] }
+
+[[test]]
+harness = true
+name = "integration_tests"
+path = "tests/harness.rs"

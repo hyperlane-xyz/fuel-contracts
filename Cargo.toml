@@ -1,10 +1,30 @@
 [workspace]
 
 members = [
-    "hyperlane-mailbox",
-    "multisig-ism",
-    "hyperlane-message-test",
-    "merkle-test",
+    "contracts/hyperlane-mailbox",
+    "contracts/hyperlane-message-test",
+    "contracts/merkle-test",
+    "contracts/multisig-ism",
+    "contracts/multisig-ism-metadata-test",
     "test-utils",
-    "multisig-ism-metadata-test"
 ]
+exclude = [
+    # Cargo doesn't allow for packages to have different build targets.
+    # indexer/mailbox must be compiled for the wasm target and requires some
+    # special logic when being compiled.
+    # Build this package by running `./indexer/mailbox/build-wasm.sh` instead.
+    "indexer/mailbox",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/hyperlane-xyz/fuel-contracts"
+authors = ["Abacus Works"]
+
+[workspace.dependencies]
+ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2023-02-10-01" }
+fuels = { version = "0.38" }
+hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "98e5395" }
+tokio = { version = "1.12" }

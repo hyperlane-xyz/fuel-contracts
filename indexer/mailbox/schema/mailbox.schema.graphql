@@ -1,0 +1,41 @@
+schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    # This isn't documented, but it seems that the name of this
+    # and the type need to be the same (disregarding capitalization)
+    dispatchedmessage: DispatchedMessage!
+}
+
+type DispatchedMessage {
+    # The nonce as a u64
+    # See https://fuellabs.github.io/fuel-indexer/v0.4.0/reference-guide/components/database/ids.html
+    id: ID!
+    # There's no single byte UInt type, so we just use a u32.
+    version: UInt4!
+    nonce: UInt4!
+    origin: UInt4!
+    sender: Bytes32!
+    destination: UInt4!
+    recipient: Bytes32!
+    body: Blob!
+
+    message_id: Bytes32!
+
+    # TODO: rip the following out into a LogMetadata type.
+    # It seems that querying nested objects aren't supported out of the box - meaning
+    # that having a wrapper type that includes a `message: Message!` and
+    # `logmetadata: LogMetadata!` will work, but querying the wrapper type
+    # will only result in the IDs of the message / logmetadata being supplied,
+    # and the other columns must be re-queried directly.
+    # See https://github.com/FuelLabs/fuel-indexer/issues/452
+
+    contract_id: Address!
+    block_number: UInt8!
+    block_hash: Bytes32!
+    transaction_hash: Bytes32!
+    transaction_index: UInt8!
+    # The index of the relevant receipt in the transaction
+    receipt_index: UInt8!
+}

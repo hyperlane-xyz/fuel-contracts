@@ -1,0 +1,27 @@
+[package]
+name = "mailbox-indexer"
+publish = false
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/hyperlane-xyz/fuel-contracts"
+authors = ["Abacus Works"]
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+fuel-indexer-macros = { version = "0.4", default-features = false }
+fuel-indexer-plugin = { version = "0.4" }
+fuel-indexer-schema = { version = "0.4", default-features = false }
+fuel-tx = "0.26.0"
+fuels-core = { version = "0.37", default-features = false }
+fuels-macros = { version = "0.37" }
+fuels-types = { version = "0.37", default-features = false }
+getrandom = { version = "0.2", features = ["js"] }
+hex = "0.4.3"
+instant = { version = "0.1", default-features = false }
+primitive-types = "0.12.1"
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+sha3 = "0.9.1"
+thiserror = "1.0"

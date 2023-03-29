@@ -1,16 +1,16 @@
 [workspace]
 
 members = [
-    "bytes-extended",
-    "hyperlane-interfaces",
-    "hyperlane-message",
-    "hyperlane-message-test",
-    "merkle",
-    "merkle-test",
-    "hyperlane-mailbox",
-    "hyperlane-ism-test",
-    "hyperlane-msg-recipient-test",
-    "multisig-ism",
-    "multisig-ism-metadata",
-    "multisig-ism-metadata-test"
+  "contracts/bytes-extended",
+  "contracts/hyperlane-interfaces",
+  "contracts/hyperlane-message",
+  "contracts/hyperlane-message-test",
+  "contracts/merkle",
+  "contracts/merkle-test",
+  "contracts/hyperlane-mailbox",
+  "contracts/hyperlane-ism-test",
+  "contracts/hyperlane-msg-recipient-test",
+  "contracts/multisig-ism",
+  "contracts/multisig-ism-metadata",
+  "contracts/multisig-ism-metadata-test"
 ]

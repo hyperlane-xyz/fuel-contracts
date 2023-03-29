@@ -5,7 +5,7 @@ dependencies = ['std']
 
 [[package]]
 name = 'core'
-source = 'path+from-root-E6BBD1A08F478960'
+source = 'path+from-root-2C66FC65A00ECA96'
 
 [[package]]
 name = 'hyperlane-ism-test'
@@ -90,7 +90,7 @@ dependencies = [
     'merkle',
     'multisig_ism_metadata',
     'std',
-    'sway_libs',
+    'storagemapvec',
 ]
 
 [[package]]
@@ -108,10 +108,10 @@ dependencies = ['std']
 
 [[package]]
 name = 'std'
-source = 'git+https://github.com/fuellabs/sway?tag=v0.32.2#b9996f13463c324e256014935c053c334b880ab5'
+source = 'git+https://github.com/fuellabs/sway?tag=v0.35.5#49eae2dd93a1957e2a2c2fb3f51b11eb3791fc24'
 dependencies = ['core']
 
 [[package]]
-name = 'sway_libs'
-source = 'git+https://github.com/FuelLabs/sway-libs?branch=storagemapvec#a33e002639343d8ffae50e581368c1ec3dd42fd8'
+name = 'storagemapvec'
+source = 'git+https://github.com/FuelLabs/sway-libs?default-branch#4c0c99aa98194475671fd1571ab99488c4cdd4e1'
 dependencies = ['std']
