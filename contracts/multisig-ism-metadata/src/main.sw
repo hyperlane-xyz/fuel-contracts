@@ -34,28 +34,28 @@ pub fn domain_hash(origin: u32, mailbox: b256) -> b256 {
     bytes.keccak256()
 }
 
-struct TestData {
+struct TestDomainData {
     domain: u32,
-    expectedDomainHash: b256,
     mailbox: b256,
+    hash: b256,
 }
 
 // from monorepo/vectors/domainHash.json
-const TEST_DATA: [TestData; 3] = [
-    TestData {
+const TEST_DOMAIN_DATA: [TestDomainData; 3] = [
+    TestDomainData {
         domain: 1,
-        expectedDomainHash: 0xbbca56eb98960a4637eb40486d9a069550dd70d9c185ed138516e8e33cf3d7e7,
-        mailbox: 0x0000000000000000000000002222222222222222222222222222222222222222
+        mailbox: 0x0000000000000000000000002222222222222222222222222222222222222222,
+        hash: 0xbbca56eb98960a4637eb40486d9a069550dd70d9c185ed138516e8e33cf3d7e7,
     },
-    TestData {
+    TestDomainData {
         domain: 2,
-        expectedDomainHash: 0xa6a93d86d397028e41995d521ccbc270e6db2a2fc530dcb7f0135254f30c8424,
-        mailbox: 0x0000000000000000000000002222222222222222222222222222222222222222
+        mailbox: 0x0000000000000000000000002222222222222222222222222222222222222222,
+        hash: 0xa6a93d86d397028e41995d521ccbc270e6db2a2fc530dcb7f0135254f30c8424,
     },
-    TestData {
+    TestDomainData {
         domain: 3,
-        expectedDomainHash: 0xffb4fbe5142f55e07b5d44b3c7f565c5ef4b016551cbd7c23a92c91621aca06f,
-        mailbox: 0x0000000000000000000000002222222222222222222222222222222222222222
+        mailbox: 0x0000000000000000000000002222222222222222222222222222222222222222,
+        hash: 0xffb4fbe5142f55e07b5d44b3c7f565c5ef4b016551cbd7c23a92c91621aca06f,
     }
 ];
 
@@ -64,10 +64,10 @@ fn test_domain_hash() {
 
     let mut index = 0;
     while index < 3 {
-        let test_data = TEST_DATA[index];
+        let test_data = TEST_DOMAIN_DATA[index];
 
         let computed_domain_hash = domain_hash(test_data.domain, test_data.mailbox);
-        assert(computed_domain_hash == test_data.expectedDomainHash);
+        assert(computed_domain_hash == test_data.hash);
 
         index += 1;
     }
@@ -101,6 +101,57 @@ pub fn checkpoint_hash(origin: u32, mailbox: b256, root: b256, index: u32) -> b2
     offset = bytes.write_u32(offset, index);
 
     bytes.keccak256()
+}
+
+struct TestCheckpointData {
+    domain: u32,
+    index: u32,
+    mailbox: b256,
+    root: b256,
+    hash: b256
+}
+
+const TEST_CHECKPOINT_DATA: [TestCheckpointData; 3] = [
+    TestCheckpointData {
+        domain: 1000,
+        index: 1,
+        mailbox: 0x0000000000000000000000002222222222222222222222222222222222222222,
+        root: 0x0202020202020202020202020202020202020202020202020202020202020202,
+        hash: 0xf5c90415788653e2c8ee94c8f10f7301f52025efb7cac767ce649132ff1384dd,
+    },
+    TestCheckpointData {
+        domain: 1000,
+        index: 2,
+        mailbox: 0x0000000000000000000000002222222222222222222222222222222222222222,
+        root: 0x0303030303030303030303030303030303030303030303030303030303030303,
+        hash: 0x0f01ac543ee309d1e511ad7fbaace1ec83f264b8481724b94024f587ac3c2c4e,
+    },
+    TestCheckpointData {
+        domain: 1000,
+        index: 3,
+        mailbox: 0x0000000000000000000000002222222222222222222222222222222222222222,
+        root: 0x0404040404040404040404040404040404040404040404040404040404040404,
+        hash: 0x134d65c32fac6ddf3fb9ac312552312d303b24b7b3614a9496f4de33bf412055,
+    }
+]
+
+#[test()]
+fn test_checkpoint_hash() {
+    let mut index = 0;
+    while index < 3 {
+        let test_data = TEST_CHECKPOINT_DATA[index];
+
+        let computed_checkpoint_hash = checkpoint_hash(
+            test_data.domain,
+            test_data.mailbox,
+            test_data.root,
+            test_data.index
+        );
+
+        assert(computed_checkpoint_hash == test_data.hash);
+
+        index += 1;
+    }
 }
 
 impl MultisigMetadata {
