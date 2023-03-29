@@ -84,9 +84,15 @@ source = 'git+https://github.com/fuellabs/sway?tag=v0.35.5#49eae2dd93a1957e2a2c2
 dependencies = ['core']
 
 [[package]]
+name = 'storagemapvec'
+source = 'git+https://github.com/FuelLabs/sway-libs?tag=v0.7.1#5700990f123be431e6df70f490a6a51fafac1daa'
+dependencies = ['std']
+
+[[package]]
 name = 'validator-announce'
 source = 'member'
 dependencies = [
     'bytes_extended',
     'std',
+    'storagemapvec',
 ]

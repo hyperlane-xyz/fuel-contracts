@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
-use ethers::types::H256;
+use ethers::types::{H256, Signature, U256};
 use fuels::{
-    prelude::{Bech32Address, TxParameters},
-    signers::{fuel_crypto::SecretKey, WalletUnlocked},
+    prelude::{Bech32Address, TxParameters, Account},
+    accounts::{fuel_crypto::SecretKey, WalletUnlocked},
     tx::{AssetId, Receipt},
     types::{errors::Error, Bits256},
 };
@@ -15,6 +15,28 @@ pub fn h256_to_bits256(h: H256) -> Bits256 {
 
 pub fn bits256_to_h256(b: Bits256) -> H256 {
     H256(b.0)
+}
+
+// Fuel uses compact serialization for signatures following EIP 2098
+// See https://eips.ethereum.org/EIPS/eip-2098
+// |    32 bytes   ||           32 bytes           |
+// [256-bit r value][1-bit v value][255-bit s value]
+pub fn signature_to_compact(signature: &Signature) -> [u8; 64] {
+    let mut compact = [0u8; 64];
+
+    let mut r_bytes = [0u8; 32];
+    signature.r.to_big_endian(&mut r_bytes);
+
+    let mut s_and_y_parity_bytes = [0u8; 32];
+    // v is either 27 or 28, subtract 27 to normalize to y parity as 0 or 1
+    let y_parity = signature.v - 27;
+    let s_and_y_parity = (U256::from(y_parity) << 255) | signature.s;
+    s_and_y_parity.to_big_endian(&mut s_and_y_parity_bytes);
+
+    compact[..32].copy_from_slice(&r_bytes);
+    compact[32..64].copy_from_slice(&s_and_y_parity_bytes);
+
+    compact
 }
 
 // Given an Error from a call or simulation, returns the revert reason.
@@ -55,7 +77,7 @@ pub async fn funded_wallet_with_private_key(
     let wallet = WalletUnlocked::new_from_private_key(
         SecretKey::from_str(private_key)
             .map_err(|e| Error::WalletError(format!("SecretKey error {:?}", e)))?,
-        Some(funder.get_provider()?.clone()),
+        Some(funder.provider().ok_or_else(|| Error::WalletError("No provider".into()))?.clone()),
     );
 
     fund_address(funder, wallet.address()).await?;

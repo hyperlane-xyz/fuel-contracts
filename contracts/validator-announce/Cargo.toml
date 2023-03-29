@@ -1,19 +1,19 @@
 [package]
-name = "hyperlane-message-test"
+name = "validator-announce"
 description = "A cargo-generate template for Rust + Sway integration testing."
-version = { workspace = true }
-edition = { workspace = true }
-license = { workspace = true }
-repository = { workspace = true }
-authors = { workspace = true }
+version = "0.1.0"
+edition = "2021"
+authors = ["Trevor Porter <trkporter@ucdavis.edu>"]
+license = "Apache-2.0"
 
 [dev-dependencies]
-ethers = { workspace = true, default-features = false, features = ['legacy'] }
+ethers = { workspace = true }
 fuels = { workspace = true, features = ["fuel-core-lib"] }
+tokio = { workspace = true, features = ["rt", "macros"] }
 hex = { workspace = true }
 hyperlane-core = { workspace = true }
+hyperlane-ethereum = { workspace = true }
 test-utils = { path = "../../test-utils" }
-tokio = { workspace = true, features = ["rt", "macros"] }
 
 [[test]]
 harness = true
