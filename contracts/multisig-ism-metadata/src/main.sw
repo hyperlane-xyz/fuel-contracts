@@ -34,6 +34,45 @@ pub fn domain_hash(origin: u32, mailbox: b256) -> b256 {
     bytes.keccak256()
 }
 
+struct TestData {
+    domain: u32,
+    expectedDomainHash: b256,
+    mailbox: b256,
+}
+
+// from monorepo/vectors/domainHash.json
+const TEST_DATA: [TestData; 3] = [
+    TestData {
+        domain: 1,
+        expectedDomainHash: 0xbbca56eb98960a4637eb40486d9a069550dd70d9c185ed138516e8e33cf3d7e7,
+        mailbox: 0x0000000000000000000000002222222222222222222222222222222222222222
+    },
+    TestData {
+        domain: 2,
+        expectedDomainHash: 0xa6a93d86d397028e41995d521ccbc270e6db2a2fc530dcb7f0135254f30c8424,
+        mailbox: 0x0000000000000000000000002222222222222222222222222222222222222222
+    },
+    TestData {
+        domain: 3,
+        expectedDomainHash: 0xffb4fbe5142f55e07b5d44b3c7f565c5ef4b016551cbd7c23a92c91621aca06f,
+        mailbox: 0x0000000000000000000000002222222222222222222222222222222222222222
+    }
+];
+
+#[test()]
+fn test_domain_hash() {
+
+    let mut index = 0;
+    while index < 3 {
+        let test_data = TEST_DATA[index];
+
+        let computed_domain_hash = domain_hash(test_data.domain, test_data.mailbox);
+        assert(computed_domain_hash == test_data.expectedDomainHash);
+
+        index += 1;
+    }
+}
+
 pub fn commitment(threshold: u8, validators: Vec<EvmAddress>) -> b256 {
     let num_validators = validators.len();
 
