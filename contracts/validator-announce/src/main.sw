@@ -1,7 +1,8 @@
 contract;
 
 dep digest;
-dep signature;
+dep interface;
+dep storable_string;
 
 use std::{
     b512::B512,
@@ -16,33 +17,10 @@ use std::{
 use storagemapvec::StorageMapVec;
 
 use digest::{get_announcement_digest, get_replay_id};
-use signature::Signature;
+use interface::ValidatorAnnounce;
+use storable_string::StorableString;
 
 use bytes_extended::*;
-
-
-// TODO?
-// const STORAGE_LOCATION_MAX_LENGTH = 128;
-
-abi ValidatorAnnounce {
-    #[storage(read, write)]
-    fn announce_vec_signature(validator: EvmAddress, storage_location_vec: Vec<u8>, signature: Signature);
-
-    #[storage(read, write)]
-    fn announce_vec_b512(validator: EvmAddress, storage_location_vec: Vec<u8>, signature: B512);
-
-    #[storage(read, write)]
-    fn announce(validator: EvmAddress, storage_location: Bytes, signature: B512);
-
-    // #[storage(read)]
-    // fn get_announced_storage_locations(validators: Vec<EvmAddress>) -> Bytes;
-
-    #[storage(read, write)]
-    fn get_announced_storage_location(validator: EvmAddress, storage_location_index: Option<u64>) -> Bytes;
-
-    #[storage(read)]
-    fn get_announced_validators() -> Vec<EvmAddress>;
-}
 
 /// Configurable constants to be set at deploy time.
 configurable {
@@ -53,47 +31,27 @@ configurable {
 }
 
 storage {
-    /// Replay id -> whether it has been used
+    /// Replay id -> whether it has been used.
+    /// Used for ensuring a storage location for a validator cannot be announced more than once.
     replay_protection: StorageMap<b256, bool> = StorageMap {},
+
+    /// Lookup table for whether a validator has made any announcements.
     validators_map: StorageMap<EvmAddress, bool> = StorageMap {},
+    /// Unique validators that have made announcements.
     validators_vec: StorageVec<EvmAddress> = StorageVec {},
 
-    storage_locations: StorageMapVec<EvmAddress, str[128]> = StorageMapVec {},
-}
-
-impl From<str[128]> for Bytes {
-    fn from(s: str[128]) -> Self {
-        let mut bytes = Bytes::with_length(128);
-        let _ = bytes.write_packed_bytes(0u64, __addr_of(s), 128);
-        bytes
-    }
-
-    fn into(self) -> str[128] {
-        bytes_to_str_128(self)
-    }
-}
-
-fn bytes_to_str_128(bytes: Bytes) -> str[128] {
-    require(bytes.len() <= 128, "length of bytes must be <= 128");
-
-    // Create copy that's 128 bytes
-    let mut copy = Bytes::with_length(128);
-    let _ = copy.write_bytes(0u64, bytes);
-
-    let read_ptr = copy.get_read_ptr(0, 128);
-    asm(ptr: read_ptr) {
-        ptr: str[128] // convert the ptr to a str[128]
-    }
+    /// Storage locations announced by each validator.
+    storage_locations: StorageMapVec<EvmAddress, StorableString> = StorageMapVec {},
 }
 
 impl ValidatorAnnounce for Contract {
+    /// TODO: remove this function.
+    /// Until https://github.com/FuelLabs/fuels-rs/pull/904 gets in, fuels-rs
+    /// doesn't support Bytes as an input into contract calls.
+    /// For now, we allow the user to pass in a `Vec<u8>` that's converted to `Bytes`
+    /// behind the scenes.
     #[storage(read, write)]
-    fn announce_vec_signature(validator: EvmAddress, storage_location_vec: Vec<u8>, signature: Signature) {
-        announce(validator, Bytes::from(storage_location_vec), signature.into());
-    }
-
-    #[storage(read, write)]
-    fn announce_vec_b512(
+    fn announce_vec(
         validator: EvmAddress,
         storage_location_vec: Vec<u8>,
         signature: B512,
@@ -101,18 +59,59 @@ impl ValidatorAnnounce for Contract {
         announce(validator, Bytes::from(storage_location_vec), signature);
     }
 
+    /// Announces a validator's storage location.
     #[storage(read, write)]
     fn announce(validator: EvmAddress, storage_location: Bytes, signature: B512) {
         announce(validator, storage_location, signature);
     }
 
-    #[storage(read, write)]
+    /// Returns all announced storage locations for each of the validators.
+    /// Note that tooling doesn't yet support nested heap return types, so
+    /// use of `get_announced_storage_location` is recommended in the short term.
+    /// Only intended for off-chain view calls due to potentially high gas costs.
+    #[storage(read)]
+    fn get_announced_storage_locations(validators: Vec<EvmAddress>) -> Vec<Vec<Bytes>> {
+        let validators_len = validators.len();
+        let mut all_storage_locations = Vec::with_capacity(validators_len);
+        let mut i = 0;
+        while i < validators_len {
+            let validator = validators.get(i).unwrap();
+            let storage_location_count = storage.storage_locations.len(validator);
+            let mut storage_locations = Vec::with_capacity(storage_location_count);
+            let mut j = 0;
+            while j < storage_location_count {
+                let storage_location = storage.storage_locations.get(validator, j).unwrap();
+                storage_locations.push(storage_location.into());
+                j += 1;
+            }
+            all_storage_locations.push(storage_locations);
+            i += 1;
+        }
+
+        all_storage_locations
+    }
+
+    #[storage(read)]
     fn get_announced_storage_location(validator: EvmAddress, storage_location_index: Option<u64>) -> Bytes {
-        let storage_location_index = storage_location_index.unwrap_or(storage.storage_locations.len(validator) - 1);
+        let storage_location_count = storage.storage_locations.len(validator);
+        // If no storage locations have been announced for this validator, return empty Bytes.
+        // Note ideally this would be an `Option::None`, but fuels-rs doesn't support nested
+        // heap types yet. This includes `Option<Bytes>`, `(Bytes, bool)`, etc.
+        if storage_location_count == 0 {
+            return Bytes::new();
+        }
+
+        // If the index isn't specified, default to the last announced storage location.
+        let storage_location_index = storage_location_index.unwrap_or(storage_location_count - 1);
         // TODO: move to `expect` once https://github.com/hyperlane-xyz/fuel-contracts/pull/52 is in
         let storage_location = storage.storage_locations.get(validator, storage_location_index).unwrap();
 
-        Bytes::from(storage_location)
+        storage_location.into()
+    }
+
+    #[storage(read)]
+    fn get_announced_storage_location_count(validator: EvmAddress) -> u64 {
+        storage.storage_locations.len(validator)
     }
 
     /// Gets all announced validators. Only intended for off-chain view calls due to
@@ -131,6 +130,9 @@ impl ValidatorAnnounce for Contract {
     }
 }
 
+/// If a validator is not already present in the validators map,
+/// it's added to the validators vec and the validators map.
+/// Idemptotent.
 #[storage(read, write)]
 fn upsert_validator(validator: EvmAddress) {
     if storage.validators_map.get(validator).is_none() {
@@ -139,6 +141,7 @@ fn upsert_validator(validator: EvmAddress) {
     storage.validators_map.insert(validator, true);
 }
 
+/// Announces a validator's storage location.
 #[storage(read, write)]
 fn announce(
     validator: EvmAddress,
@@ -157,7 +160,5 @@ fn announce(
 
     upsert_validator(validator);
 
-    // storage_location.into() doesn't work to convert from Bytes to str[128].
-    // Instead, bytes_to_str_128 is used directly.
-    storage.storage_locations.push(validator, bytes_to_str_128(storage_location));
+    storage.storage_locations.push(validator, StorableString::from(storage_location));
 }

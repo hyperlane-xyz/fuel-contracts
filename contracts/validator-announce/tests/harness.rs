@@ -100,7 +100,7 @@ async fn test_get_announced_storage_locations() {
 
     validator_announce
         .methods()
-        .announce(
+        .announce_vec(
             validator,
             signed_announcement.value.storage_location.as_bytes().into(),
             signature_to_compact(&signed_announcement.signature).as_slice().try_into().unwrap(),
@@ -118,9 +118,6 @@ async fn test_get_announced_storage_locations() {
         .unwrap()
         .value;
     let storage_location = String::from_utf8(storage_location.into()).unwrap();
-    // Trim the null bytes at the end. These are present because under the hood, a str[128] is
-    // being stored.
-    let storage_location = storage_location.trim_end_matches('\0');
     assert_eq!(storage_location, signed_announcement.value.storage_location);
 
     // Sign a new announcement and announce it
@@ -133,7 +130,7 @@ async fn test_get_announced_storage_locations() {
 
     validator_announce
         .methods()
-        .announce(
+        .announce_vec(
             validator,
             second_signed_announcement.value.storage_location.as_bytes().into(),
             signature_to_compact(&second_signed_announcement.signature).as_slice().try_into().unwrap(),
@@ -151,7 +148,6 @@ async fn test_get_announced_storage_locations() {
         .unwrap()
         .value;
     let storage_location = String::from_utf8(storage_location.into()).unwrap();
-    let storage_location = storage_location.trim_end_matches('\0');
     assert_eq!(storage_location, second_signed_announcement.value.storage_location);
 
     // Ensure we can still get the first storage location
@@ -163,7 +159,7 @@ async fn test_get_announced_storage_locations() {
         .unwrap()
         .value;
     let storage_location = String::from_utf8(storage_location.into()).unwrap();
-    let storage_location = storage_location.trim_end_matches('\0');
     assert_eq!(storage_location, signed_announcement.value.storage_location);
 }
+
 
