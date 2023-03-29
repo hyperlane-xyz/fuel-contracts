@@ -11,7 +11,7 @@ use std::{
     constants::ZERO_B256
 };
 
-use sway_libs::storagemapvec::StorageMapVec;
+use storagemapvec::StorageMapVec;
 
 use hyperlane_message::{Message, EncodedMessage};
 
@@ -24,10 +24,10 @@ use multisig_ism_metadata::{MultisigMetadata, commitment};
 /// See https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/isms/MultisigIsm.sol
 /// for the reference implementation.
 
+// TODO: consider u32 => struct
 storage {
-    // TODO: consider u32 => struct
-    threshold: StorageMap<u32, u8> = StorageMap {},
     validators: StorageMapVec<u32, EvmAddress> = StorageMapVec {},
+    threshold: StorageMap<u32, u8> = StorageMap {},
     commitment: StorageMap<u32, b256> = StorageMap {},
 }
 
@@ -35,28 +35,35 @@ storage {
 #[storage(read, write)]
 fn update_commitment(domain: u32) {
     let validators = storage.validators.to_vec(domain);
-    let threshold = storage.threshold.get(domain);
+    let threshold = storage.threshold.get(domain).unwrap();
     storage.commitment.insert(domain, commitment(threshold, validators));
 }
 
-/// Returns true if the validator is on the multisig for the domain
-/// Currently O(n) but could be O(log(n)) with a set data structure
+/// Returns index of the validator on the multisig for the domain
+/// /// Currently O(n) but could be O(log(n)) with a set data structure
 #[storage(read)]
-fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
+fn index_of(domain: u32, validator: EvmAddress) -> u32 {
     let validators = storage.validators.to_vec(domain);
     let mut i = 0;
     let len = validators.len();
     while i < len {
         if validators.get(i).unwrap() == validator {
-            return true;
+            return i;
         }
         i += 1;
     }
-    return false;
+    return i;
+}
+
+/// Returns true if the validator is on the multisig for the domain
+#[storage(read)]
+fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
+    let len = storage.validators.len(domain);
+    let index = index_of(domain, validator);
+    return index < len;
 }
 
 /// Returns true if the metadata merkle proof verifies the inclusion of the message in the root.
-#[storage(read)]
 pub fn verify_merkle_proof(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
     let calculated_root = StorageMerkleTree::branch_root(message.id(), metadata.proof, metadata.index);
     return calculated_root == metadata.root;
@@ -67,7 +74,7 @@ pub fn verify_merkle_proof(metadata: MultisigMetadata, message: EncodedMessage) 
 pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
     let origin = message.origin();
     // Ensures the validator set encoded in the metadata matches what we have stored
-    require(metadata.commitment() == storage.commitment.get(origin), "!commitment");
+    require(metadata.commitment() == storage.commitment.get(origin).unwrap(), "!commitment");
 
     let digest = metadata.checkpoint_digest(origin);
 
@@ -129,7 +136,7 @@ impl MultisigIsm for Contract {
     /// Returns the threshold for the domain.
     #[storage(read)]
     fn threshold(domain: u32) -> u8 {
-        storage.threshold.get(domain)
+        storage.threshold.get(domain).unwrap()
     }
 
     /// Returns the validator set enrolled for the domain.
@@ -198,20 +205,10 @@ impl MultisigIsm for Contract {
     /// Unenrolls a validator for the domain (and updates commitment).
     #[storage(read, write)]
     fn unenroll_validator(domain: u32, validator: EvmAddress) {
-        // TODO: check memory layout of storagemapvec
         require(is_enrolled(domain, validator), "!enrolled");
-        let validators = storage.validators.to_vec(domain);
-        storage.validators.clear(domain);
-
-        let mut i = 0;
-        let len = validators.len();
-        while i < len {
-            let v = validators.get(i).unwrap();
-            if v != validator {
-                storage.validators.push(domain, v);
-            }
-            i += 1;
-        }
+        let index = index_of(domain, validator);
+        let removed = storage.validators.swap_remove(domain, index);
+        assert(removed == validator); // for sanity
         update_commitment(domain);
     }
 }
