@@ -19,7 +19,7 @@ use merkle::StorageMerkleTree;
 
 use interface::MultisigIsm;
 
-use multisig_ism_metadata::{MultisigMetadata, commitment};
+use multisig_ism_metadata::MultisigMetadata;
 
 /// See https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/isms/MultisigIsm.sol
 /// for the reference implementation.
@@ -28,15 +28,6 @@ use multisig_ism_metadata::{MultisigMetadata, commitment};
 storage {
     validators: StorageMapVec<u32, EvmAddress> = StorageMapVec {},
     threshold: StorageMap<u32, u8> = StorageMap {},
-    commitment: StorageMap<u32, b256> = StorageMap {},
-}
-
-/// Updates storage commitment that is used to verify the validator set and threshold tuple.
-#[storage(read, write)]
-fn update_commitment(domain: u32) {
-    let validators = storage.validators.to_vec(domain);
-    let threshold = storage.threshold.get(domain).unwrap();
-    storage.commitment.insert(domain, commitment(threshold, validators));
 }
 
 /// Returns index of the validator on the multisig for the domain
@@ -69,26 +60,27 @@ pub fn verify_merkle_proof(metadata: MultisigMetadata, message: EncodedMessage) 
     return calculated_root == metadata.root;
 }
 
-/// Returns true if a threshold of metadata signatures match the stored commitment.
+/// Returns true if a threshold of metadata signatures match the stored validator set and threshold.
 #[storage(read)]
 pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
-    let origin = message.origin();
-    // Ensures the validator set encoded in the metadata matches what we have stored
-    require(metadata.commitment() == storage.commitment.get(origin).unwrap(), "!commitment");
+let origin = message.origin();
+
+    let threshold = storage.threshold.get(origin).unwrap();
+    let validators = storage.validators.to_vec(origin);
 
     let digest = metadata.checkpoint_digest(origin);
 
-    let validator_count = metadata.validators.len();
+    let validator_count = validators.len();
     let mut validator_index = 0;
     let mut signature_index = 0;
 
     // Assumes that signatures are ordered by validator
-    while signature_index < metadata.threshold {
+    while signature_index < threshold {
         let signature = metadata.signatures.get(signature_index).unwrap();
         let signer = ec_recover_evm_address(signature, digest).unwrap();
 
         // Loop through remaining validators until we find a match
-        while validator_index < validator_count && signer != metadata.validators.get(validator_index).unwrap() {
+        while validator_index < validator_count && signer != validators.get(validator_index).unwrap() {
             validator_index += 1;
         }
 
@@ -102,7 +94,7 @@ pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedM
 
 /// Enrolls a validator without updating the commitment.
 #[storage(read,write)]
-fn enroll_validator_without_commit(domain: u32, validator: EvmAddress) {
+fn enroll_validator(domain: u32, validator: EvmAddress) {
     let ZERO_ADDRESS = EvmAddress::from(ZERO_B256);
     require(validator != ZERO_ADDRESS, "zero address");
     require(!is_enrolled(domain, validator), "enrolled");
@@ -114,7 +106,6 @@ fn enroll_validator_without_commit(domain: u32, validator: EvmAddress) {
 fn set_threshold(domain: u32, threshold: u8) {
     require(threshold > 0 && threshold <= storage.validators.len(domain), "!range");
     storage.threshold.insert(domain, threshold);
-    update_commitment(domain);
 }
 
 // TODO: implement with generic ISM abi
@@ -140,15 +131,15 @@ impl MultisigIsm for Contract {
     }
 
     /// Returns the validator set enrolled for the domain.
-    // #[storage(read)]
-    // fn validators(domain: u32) -> Vec<EvmAddress> {
-    //     storage.validators.to_vec(domain)
-    // }
+    #[storage(read)]
+    fn validators(domain: u32) -> Vec<EvmAddress> {
+        return storage.validators.to_vec(domain);
+    }
 
     /// Returns true if the validator is enrolled for the domain.
     #[storage(read)]
     fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
-        is_enrolled(domain, validator)
+        return is_enrolled(domain, validator);
     }
 
     /// Sets the threshold for the domain.
@@ -162,8 +153,7 @@ impl MultisigIsm for Contract {
     /// Must not already be enrolled.
     #[storage(read, write)]
     fn enroll_validator(domain: u32, validator: EvmAddress) {
-        enroll_validator_without_commit(domain, validator);
-        update_commitment(domain);
+        enroll_validator(domain, validator);
     }
 
     /// Batches validator enrollment for a list of domains.
@@ -171,6 +161,7 @@ impl MultisigIsm for Contract {
     fn enroll_validators(domains: Vec<u32>, validators: Vec<Vec<EvmAddress>>) {
         let domain_len = domains.len();
         require(domain_len == validators.len(), "!length");
+
         let mut i = 0;
         while i < domain_len {
             let domain = domains.get(i).unwrap();
@@ -180,11 +171,9 @@ impl MultisigIsm for Contract {
             let validator_len = domain_validators.len();
             while j < validator_len {
                 let validator = domain_validators.get(j).unwrap();
-                enroll_validator_without_commit(domain, validator);
+                enroll_validator(domain, validator);
                 j += 1;
             }
-
-            update_commitment(domain);
             i += 1;
         }
     }
@@ -208,7 +197,6 @@ impl MultisigIsm for Contract {
         require(is_enrolled(domain, validator), "!enrolled");
         let index = index_of(domain, validator);
         let removed = storage.validators.swap_remove(domain, index);
-        assert(removed == validator); // for sanity
-        update_commitment(domain);
+        assert(removed == validator);
     }
 }

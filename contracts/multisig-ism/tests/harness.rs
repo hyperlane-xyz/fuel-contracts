@@ -1,7 +1,11 @@
 use fuels::{prelude::*, tx::ContractId};
 
 // Load abi from json
-abigen!(MultisigIsm, "multisig-ism/out/debug/multisig_ism-abi.json");
+abigen!(
+     Contract(
+        name = "MultisigIsm",
+        abi = "contracts/multisig-ism/out/debug/multisig_ism-abi.json"
+    ));
 
 async fn get_contract_instance() -> (MultisigIsm, ContractId) {
     // Launch a local network and deploy the contract
@@ -20,9 +24,9 @@ async fn get_contract_instance() -> (MultisigIsm, ContractId) {
     let id = Contract::deploy(
         "./out/debug/multisig_ism.bin",
         &wallet,
-        TxParameters::default(),
-        StorageConfiguration::with_storage_path(Some(
+        DeployConfiguration::default().set_storage_configuration(StorageConfiguration::new(
             "./out/debug/multisig_ism-storage_slots.json".to_string(),
+            vec![],
         )),
     )
     .await
