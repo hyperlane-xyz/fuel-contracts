@@ -1,8 +1,9 @@
 contract;
 
 dep digest;
-dep interface;
 dep storable_string;
+dep interface;
+
 
 use std::{
     b512::B512,
@@ -17,7 +18,10 @@ use std::{
 use storagemapvec::StorageMapVec;
 
 use digest::{get_announcement_digest, get_replay_id};
-use interface::ValidatorAnnounce;
+use interface::{
+    ValidatorAnnounce,
+    ValidatorAnnouncementEvent,
+};
 use storable_string::StorableString;
 
 use bytes_extended::*;
@@ -160,5 +164,12 @@ fn announce(
 
     upsert_validator(validator);
 
-    storage.storage_locations.push(validator, StorableString::from(storage_location));
+    let storable = StorableString::from(storage_location);
+    storage.storage_locations.push(validator, storable);
+
+    // Log the announcement
+    log(ValidatorAnnouncementEvent {
+        validator,
+        storage_location: storable,
+    });
 }

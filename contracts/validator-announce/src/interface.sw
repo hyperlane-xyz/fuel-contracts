@@ -6,6 +6,14 @@ use std::{
     vm::evm::evm_address::EvmAddress,
 };
 
+use ::storable_string::StorableString;
+
+/// Logged when a validator announcement is made.
+pub struct ValidatorAnnouncementEvent {
+    validator: EvmAddress,
+    storage_location: StorableString,
+}
+
 abi ValidatorAnnounce {
     #[storage(read, write)]
     fn announce_vec(validator: EvmAddress, storage_location_vec: Vec<u8>, signature: B512);
