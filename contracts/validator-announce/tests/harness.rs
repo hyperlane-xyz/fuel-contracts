@@ -1,7 +1,9 @@
 use std::str::FromStr;
 
+use ethers::signers::Signer;
 use fuels::{
     prelude::*,
+    programs::call_response::FuelCallResponse,
     tx::ContractId,
     types::{Bits256, EvmAddress, SizedAsciiString},
 };
@@ -25,6 +27,10 @@ impl TryFrom<String> for StorableString {
             string: SizedAsciiString::try_from(format!("{:\0<128}", s))?,
         })
     }
+}
+
+fn evm_address(signer: &Signers) -> EvmAddress {
+    h256_to_bits256(signer.address().into()).into()
 }
 
 const TEST_MAILBOX_ID: &str = "0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe";
@@ -75,6 +81,38 @@ async fn get_contract_instance() -> (ValidatorAnnounce<WalletUnlocked>, Contract
     (instance, id.into())
 }
 
+async fn sign_and_announce(
+    validator_announce: &ValidatorAnnounce<WalletUnlocked>,
+    signer: &Signers,
+    storage_location: String,
+) -> Result<FuelCallResponse<()>> {
+    let mailbox_id = H256::from_str(TEST_MAILBOX_ID).unwrap();
+    let signer_address = signer.address();
+
+    let signed_announcement = signer
+        .sign(Announcement {
+            validator: signer_address,
+            mailbox_address: mailbox_id,
+            mailbox_domain: TEST_LOCAL_DOMAIN,
+            storage_location,
+        })
+        .await
+        .unwrap();
+
+    validator_announce
+        .methods()
+        .announce_vec(
+            evm_address(signer),
+            signed_announcement.value.storage_location.as_bytes().into(),
+            signature_to_compact(&signed_announcement.signature)
+                .as_slice()
+                .try_into()
+                .unwrap(),
+        )
+        .call()
+        .await
+}
+
 // ================ announce ================
 
 #[tokio::test]
@@ -85,34 +123,11 @@ async fn test_announce() {
         .parse::<ethers::signers::LocalWallet>()
         .unwrap()
         .into();
+    let signer_evm_address = evm_address(&signer);
 
-    let mailbox_id = H256::from_str(TEST_MAILBOX_ID).unwrap();
+    let storage_location = "file://some/path/to/storage".to_string();
 
-    let validator_h160 = H160::from_str(TEST_VALIDATOR_0_ADDRESS).unwrap();
-    let validator: EvmAddress = h256_to_bits256(validator_h160.into()).into();
-
-    // Sign an announcement and announce it
-    let signed_announcement = signer
-        .sign(Announcement {
-            validator: validator_h160,
-            mailbox_address: mailbox_id,
-            mailbox_domain: TEST_LOCAL_DOMAIN,
-            storage_location: "file://some/path/to/storage".into(),
-        })
-        .await
-        .unwrap();
-
-    let call = validator_announce
-        .methods()
-        .announce_vec(
-            validator,
-            signed_announcement.value.storage_location.as_bytes().into(),
-            signature_to_compact(&signed_announcement.signature)
-                .as_slice()
-                .try_into()
-                .unwrap(),
-        )
-        .call()
+    let call = sign_and_announce(&validator_announce, &signer, storage_location.clone())
         .await
         .unwrap();
 
@@ -122,29 +137,13 @@ async fn test_announce() {
     assert_eq!(
         events,
         vec![ValidatorAnnouncementEvent {
-            validator,
-            storage_location: signed_announcement
-                .value
-                .storage_location
-                .clone()
-                .try_into()
-                .unwrap(),
-        }]
+            validator: signer_evm_address,
+            storage_location: storage_location.clone().try_into().unwrap(),
+        }],
     );
 
     // Check that we can't announce twice
-    let call = validator_announce
-        .methods()
-        .announce_vec(
-            validator,
-            signed_announcement.value.storage_location.as_bytes().into(),
-            signature_to_compact(&signed_announcement.signature)
-                .as_slice()
-                .try_into()
-                .unwrap(),
-        )
-        .call()
-        .await;
+    let call = sign_and_announce(&validator_announce, &signer, storage_location.clone()).await;
     assert!(call.is_err());
     assert_eq!(
         get_revert_string(call.err().unwrap()),
@@ -209,101 +208,57 @@ async fn test_get_announced_storage_location() {
         .parse::<ethers::signers::LocalWallet>()
         .unwrap()
         .into();
+    let validator = evm_address(&signer);
 
-    let mailbox_id = H256::from_str(TEST_MAILBOX_ID).unwrap();
+    let storage_location = "file://some/path/to/storage".to_string();
 
-    let validator_h160 = H160::from_str(TEST_VALIDATOR_0_ADDRESS).unwrap();
-    let validator: EvmAddress = h256_to_bits256(validator_h160.into()).into();
-
-    // Sign an announcement and announce it
-    let signed_announcement = signer
-        .sign(Announcement {
-            validator: validator_h160,
-            mailbox_address: mailbox_id,
-            mailbox_domain: TEST_LOCAL_DOMAIN,
-            storage_location: "file://some/path/to/storage".into(),
-        })
-        .await
-        .unwrap();
-
-    validator_announce
-        .methods()
-        .announce_vec(
-            validator,
-            signed_announcement.value.storage_location.as_bytes().into(),
-            signature_to_compact(&signed_announcement.signature)
-                .as_slice()
-                .try_into()
-                .unwrap(),
-        )
-        .call()
+    sign_and_announce(&validator_announce, &signer, storage_location.clone())
         .await
         .unwrap();
 
     // Specify an index of None, defaulting to the latest storage location
-    let storage_location = validator_announce
+    let announced_storage_location = validator_announce
         .methods()
         .get_announced_storage_location(validator, None)
         .simulate()
         .await
         .unwrap()
         .value;
-    let storage_location = String::from_utf8(storage_location.into()).unwrap();
-    assert_eq!(storage_location, signed_announcement.value.storage_location);
+    let announced_storage_location = String::from_utf8(announced_storage_location.into()).unwrap();
+    assert_eq!(announced_storage_location, storage_location);
+
+    let second_storage_location = "s3://some/s3/path".to_string();
 
     // Sign a new announcement and announce it
-    let second_signed_announcement = signer
-        .sign(Announcement {
-            validator: validator_h160,
-            mailbox_address: mailbox_id,
-            mailbox_domain: TEST_LOCAL_DOMAIN,
-            storage_location: "s3://some/s3/path".into(),
-        })
-        .await
-        .unwrap();
-
-    validator_announce
-        .methods()
-        .announce_vec(
-            validator,
-            second_signed_announcement
-                .value
-                .storage_location
-                .as_bytes()
-                .into(),
-            signature_to_compact(&second_signed_announcement.signature)
-                .as_slice()
-                .try_into()
-                .unwrap(),
-        )
-        .call()
-        .await
-        .unwrap();
+    sign_and_announce(
+        &validator_announce,
+        &signer,
+        second_storage_location.clone(),
+    )
+    .await
+    .unwrap();
 
     // Get the latest storage location, which should be the second announcement now
-    let storage_location = validator_announce
+    let announced_storage_location = validator_announce
         .methods()
         .get_announced_storage_location(validator, None)
         .simulate()
         .await
         .unwrap()
         .value;
-    let storage_location = String::from_utf8(storage_location.into()).unwrap();
-    assert_eq!(
-        storage_location,
-        second_signed_announcement.value.storage_location
-    );
+    let announced_storage_location = String::from_utf8(announced_storage_location.into()).unwrap();
+    assert_eq!(announced_storage_location, second_storage_location,);
 
     // Ensure we can still get the first storage location
-    let storage_location = validator_announce
+    let announced_storage_location = validator_announce
         .methods()
         .get_announced_storage_location(validator, Some(0))
         .simulate()
         .await
         .unwrap()
         .value;
-    let storage_location = String::from_utf8(storage_location.into()).unwrap();
-    assert_eq!(storage_location, signed_announcement.value.storage_location);
+    let announced_storage_location = String::from_utf8(announced_storage_location.into()).unwrap();
+    assert_eq!(announced_storage_location, storage_location);
 }
 
 #[tokio::test]
@@ -335,29 +290,9 @@ async fn test_get_announced_storage_location_reverts_if_index_out_of_bounds() {
         .parse::<ethers::signers::LocalWallet>()
         .unwrap()
         .into();
-    let mailbox_id = H256::from_str(TEST_MAILBOX_ID).unwrap();
-    // Sign an announcement and announce it
-    let signed_announcement = signer
-        .sign(Announcement {
-            validator: validator_h160,
-            mailbox_address: mailbox_id,
-            mailbox_domain: TEST_LOCAL_DOMAIN,
-            storage_location: "file://some/path/to/storage".into(),
-        })
-        .await
-        .unwrap();
 
-    validator_announce
-        .methods()
-        .announce_vec(
-            validator,
-            signed_announcement.value.storage_location.as_bytes().into(),
-            signature_to_compact(&signed_announcement.signature)
-                .as_slice()
-                .try_into()
-                .unwrap(),
-        )
-        .call()
+    let storage_location = "file://some/path/to/storage".to_string();
+    sign_and_announce(&validator_announce, &signer, storage_location)
         .await
         .unwrap();
 
@@ -381,44 +316,10 @@ async fn test_get_announced_storage_location_count() {
         .parse::<ethers::signers::LocalWallet>()
         .unwrap()
         .into();
+    let validator = evm_address(&signer);
 
-    let mailbox_id = H256::from_str(TEST_MAILBOX_ID).unwrap();
-
-    let validator_h160 = H160::from_str(TEST_VALIDATOR_0_ADDRESS).unwrap();
-    let validator: EvmAddress = h256_to_bits256(validator_h160.into()).into();
-
-    // Get the count of storage locations, expect 0
-    let storage_location_count = validator_announce
-        .methods()
-        .get_announced_storage_location_count(validator)
-        .simulate()
-        .await
-        .unwrap()
-        .value;
-    assert_eq!(storage_location_count, 0);
-
-    // Sign an announcement and announce it
-    let signed_announcement = signer
-        .sign(Announcement {
-            validator: validator_h160,
-            mailbox_address: mailbox_id,
-            mailbox_domain: TEST_LOCAL_DOMAIN,
-            storage_location: "file://some/path/to/storage".into(),
-        })
-        .await
-        .unwrap();
-
-    validator_announce
-        .methods()
-        .announce_vec(
-            validator,
-            signed_announcement.value.storage_location.as_bytes().into(),
-            signature_to_compact(&signed_announcement.signature)
-                .as_slice()
-                .try_into()
-                .unwrap(),
-        )
-        .call()
+    let storage_location = "file://some/path/to/storage".to_string();
+    sign_and_announce(&validator_announce, &signer, storage_location)
         .await
         .unwrap();
 
@@ -432,32 +333,8 @@ async fn test_get_announced_storage_location_count() {
         .value;
     assert_eq!(storage_location_count, 1);
 
-    // Sign a new announcement and announce it
-    let second_signed_announcement = signer
-        .sign(Announcement {
-            validator: validator_h160,
-            mailbox_address: mailbox_id,
-            mailbox_domain: TEST_LOCAL_DOMAIN,
-            storage_location: "s3://some/s3/path".into(),
-        })
-        .await
-        .unwrap();
-
-    validator_announce
-        .methods()
-        .announce_vec(
-            validator,
-            second_signed_announcement
-                .value
-                .storage_location
-                .as_bytes()
-                .into(),
-            signature_to_compact(&second_signed_announcement.signature)
-                .as_slice()
-                .try_into()
-                .unwrap(),
-        )
-        .call()
+    let second_storage_location = "s3://some/s3/path".to_string();
+    sign_and_announce(&validator_announce, &signer, second_storage_location)
         .await
         .unwrap();
 
@@ -482,11 +359,7 @@ async fn test_get_announced_validators() {
         .parse::<ethers::signers::LocalWallet>()
         .unwrap()
         .into();
-
-    let mailbox_id = H256::from_str(TEST_MAILBOX_ID).unwrap();
-
-    let validator_0_h160 = H160::from_str(TEST_VALIDATOR_0_ADDRESS).unwrap();
-    let validator_0: EvmAddress = h256_to_bits256(validator_0_h160.into()).into();
+    let validator_0 = evm_address(&signer_0);
 
     // No validators yet
     let announced_validators = validator_announce
@@ -498,28 +371,8 @@ async fn test_get_announced_validators() {
         .value;
     assert_eq!(announced_validators, vec![]);
 
-    // Sign an announcement and announce it
-    let signed_announcement = signer_0
-        .sign(Announcement {
-            validator: validator_0_h160,
-            mailbox_address: mailbox_id,
-            mailbox_domain: TEST_LOCAL_DOMAIN,
-            storage_location: "file://some/path/to/storage".into(),
-        })
-        .await
-        .unwrap();
-
-    validator_announce
-        .methods()
-        .announce_vec(
-            validator_0,
-            signed_announcement.value.storage_location.as_bytes().into(),
-            signature_to_compact(&signed_announcement.signature)
-                .as_slice()
-                .try_into()
-                .unwrap(),
-        )
-        .call()
+    let storage_location = "file://some/path/to/storage".to_string();
+    sign_and_announce(&validator_announce, &signer_0, storage_location.clone())
         .await
         .unwrap();
 
@@ -537,30 +390,9 @@ async fn test_get_announced_validators() {
         .parse::<ethers::signers::LocalWallet>()
         .unwrap()
         .into();
-    let validator_1_h160 = H160::from_str(TEST_VALIDATOR_1_ADDRESS).unwrap();
-    let validator_1: EvmAddress = h256_to_bits256(validator_1_h160.into()).into();
+    let validator_1: EvmAddress = evm_address(&signer_1);
 
-    let signed_announcement = signer_1
-        .sign(Announcement {
-            validator: validator_1_h160,
-            mailbox_address: mailbox_id,
-            mailbox_domain: TEST_LOCAL_DOMAIN,
-            storage_location: "file://some/path/to/storage".into(),
-        })
-        .await
-        .unwrap();
-
-    validator_announce
-        .methods()
-        .announce_vec(
-            validator_1,
-            signed_announcement.value.storage_location.as_bytes().into(),
-            signature_to_compact(&signed_announcement.signature)
-                .as_slice()
-                .try_into()
-                .unwrap(),
-        )
-        .call()
+    sign_and_announce(&validator_announce, &signer_1, storage_location)
         .await
         .unwrap();
 
@@ -574,28 +406,9 @@ async fn test_get_announced_validators() {
         .value;
     assert_eq!(announced_validators, vec![validator_0, validator_1]);
 
+    let second_storage_location = "file://a/different/path/to/storage".to_string();
     // Sign another announcement from validator_0 and announce it
-    let signed_announcement = signer_0
-        .sign(Announcement {
-            validator: validator_0_h160,
-            mailbox_address: mailbox_id,
-            mailbox_domain: TEST_LOCAL_DOMAIN,
-            storage_location: "file://a/different/path/to/storage".into(),
-        })
-        .await
-        .unwrap();
-
-    validator_announce
-        .methods()
-        .announce_vec(
-            validator_0,
-            signed_announcement.value.storage_location.as_bytes().into(),
-            signature_to_compact(&signed_announcement.signature)
-                .as_slice()
-                .try_into()
-                .unwrap(),
-        )
-        .call()
+    sign_and_announce(&validator_announce, &signer_0, second_storage_location)
         .await
         .unwrap();
 
