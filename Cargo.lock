@@ -2686,7 +2686,7 @@ dependencies = [
 [[package]]
 name = "hyperlane-core"
 version = "0.1.0"
-source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=98e5395#98e53959861441353ea68968448de99230e8ae57"
+source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=930cded#930cded0f4abdfd86ac29f275840ee38ad5d30a5"
 dependencies = [
  "async-trait",
  "auto_impl 1.0.1",
