@@ -2,7 +2,7 @@ library digest;
 
 use std::{bytes::Bytes, vm::evm::evm_address::EvmAddress};
 
-use bytes_extended::*;
+use std_lib_extended::bytes::*;
 
 pub struct ValidatorAnnounceDigest {
     bytes: Bytes,

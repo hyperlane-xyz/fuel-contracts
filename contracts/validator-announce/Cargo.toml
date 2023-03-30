@@ -10,7 +10,6 @@ license = "Apache-2.0"
 ethers = { workspace = true }
 fuels = { workspace = true, features = ["fuel-core-lib"] }
 tokio = { workspace = true, features = ["rt", "macros"] }
-hex = { workspace = true }
 hyperlane-core = { workspace = true }
 hyperlane-ethereum = { workspace = true }
 test-utils = { path = "../../test-utils" }

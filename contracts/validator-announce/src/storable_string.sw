@@ -2,7 +2,7 @@ library storable_string;
 
 use std::bytes::Bytes;
 
-use bytes_extended::*;
+use std_lib_extended::bytes::*;
 
 pub const MAX_STORABLE_STRING_CHARS: u64 = 128;
 

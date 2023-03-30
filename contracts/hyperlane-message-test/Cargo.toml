@@ -1,6 +1,6 @@
 [package]
 name = "hyperlane-message-test"
-description = "A cargo-generate template for Rust + Sway integration testing."
+description = "Tests for hyperlane-message"
 version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
@@ -10,7 +10,7 @@ authors = { workspace = true }
 [dev-dependencies]
 ethers = { workspace = true, default-features = false, features = ['legacy'] }
 fuels = { workspace = true, features = ["fuel-core-lib"] }
-hex = { workspace = true }
+hex = "0.4.3"
 hyperlane-core = { workspace = true }
 test-utils = { path = "../../test-utils" }
 tokio = { workspace = true, features = ["rt", "macros"] }

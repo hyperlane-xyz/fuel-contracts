@@ -53,3 +53,13 @@ forc fmt
 * [Sway std lib](https://github.com/FuelLabs/sway/tree/master/sway-lib-std/) - great for existing Sway patterns & understanding the std lib
 * [Fuel Rust SDK book](https://fuellabs.github.io/fuels-rs/v0.31.1/index.html) - good for understanding how to interact with Fuel/Sway contracts via the Rust SDK
 * Fuel Discord - find invite on the [Fuel site](https://www.fuel.network/). Great for specific issues / questions
+
+## Troubleshooting
+
+If `cargo build` or `cargo test` fails with a message like:
+
+```
+attempted ssh-agent authentication, but no usernames succeeded: `git`
+```
+
+Try following these instructions: https://github.com/rust-lang/cargo/issues/3381#issuecomment-308460530

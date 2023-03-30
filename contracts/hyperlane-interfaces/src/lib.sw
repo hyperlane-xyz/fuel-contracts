@@ -1,5 +1,7 @@
 library hyperlane_interfaces;
 
+dep igp;
+
 use hyperlane_message::Message;
 
 abi Mailbox {

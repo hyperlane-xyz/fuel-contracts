@@ -27,7 +27,7 @@ use storable_string::{
     MAX_STORABLE_STRING_CHARS,
 };
 
-use bytes_extended::*;
+use std_lib_extended::bytes::*;
 
 /// Configurable constants to be set at deploy time.
 configurable {

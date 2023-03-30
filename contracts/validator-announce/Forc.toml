@@ -5,5 +5,5 @@ license = "Apache-2.0"
 name = "validator-announce"
 
 [dependencies]
-bytes_extended = { path = "../bytes-extended" }
+std_lib_extended = { path = "../std-lib-extended" }
 storagemapvec = { git = "https://github.com/FuelLabs/sway-libs", tag = "v0.7.1" }

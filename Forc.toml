@@ -1,7 +1,6 @@
 [workspace]
 
 members = [
-  "contracts/bytes-extended",
   "contracts/hyperlane-interfaces",
   "contracts/hyperlane-message",
   "contracts/hyperlane-message-test",
@@ -10,5 +9,10 @@ members = [
   "contracts/hyperlane-mailbox",
   "contracts/hyperlane-ism-test",
   "contracts/hyperlane-msg-recipient-test",
+  "contracts/igp/interchain-gas-paymaster",
+  "contracts/igp/overhead-igp",
+  "contracts/igp/storage-gas-oracle",
+  "contracts/igp/interchain-gas-paymaster-test",
   "contracts/validator-announce",
+  "contracts/std-lib-extended",
 ]
