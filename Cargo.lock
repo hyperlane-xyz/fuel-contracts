@@ -2686,7 +2686,7 @@ dependencies = [
 [[package]]
 name = "hyperlane-core"
 version = "0.1.0"
-source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=98e5395#98e53959861441353ea68968448de99230e8ae57"
+source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=930cded#930cded0f4abdfd86ac29f275840ee38ad5d30a5"
 dependencies = [
  "async-trait",
  "auto_impl 1.0.1",
@@ -2862,6 +2862,15 @@ dependencies = [
  "js-sys",
  "wasm-bindgen",
  "web-sys",
+]
+
+[[package]]
+name = "interchain-gas-paymaster"
+version = "0.1.0"
+dependencies = [
+ "fuels",
+ "test-utils",
+ "tokio",
 ]
 
 [[package]]
@@ -3378,6 +3387,15 @@ name = "os_str_bytes"
 version = "6.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ceedf44fb00f2d1984b0bc98102627ce622e083e49a5bacdb3e514fa4238e267"
+
+[[package]]
+name = "overhead-igp"
+version = "0.1.0"
+dependencies = [
+ "fuels",
+ "test-utils",
+ "tokio",
+]
 
 [[package]]
 name = "parity-scale-codec"
@@ -4562,6 +4580,15 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "storage-gas-oracle"
+version = "0.1.0"
+dependencies = [
+ "fuels",
+ "test-utils",
+ "tokio",
+]
 
 [[package]]
 name = "strsim"

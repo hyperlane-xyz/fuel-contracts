@@ -1,0 +1,17 @@
+[package]
+name = "interchain-gas-paymaster"
+description = "Tests for interchain-gas-paymaster"
+version = "0.1.0"
+edition = "2021"
+authors = ["Trevor Porter <trevor@hyperlane.xyz>"]
+license = "Apache-2.0"
+
+[dev-dependencies]
+fuels = { workspace = true, features = ["fuel-core-lib"] }
+tokio = { workspace = true, features = ["rt", "macros"] }
+test-utils = { path = "../../../test-utils" }
+
+[[test]]
+harness = true
+name = "integration_tests"
+path = "tests/harness.rs"

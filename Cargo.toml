@@ -3,6 +3,9 @@
 members = [
     "contracts/hyperlane-mailbox",
     "contracts/hyperlane-message-test",
+    "contracts/igp/interchain-gas-paymaster",
+    "contracts/igp/overhead-igp",
+    "contracts/igp/storage-gas-oracle",
     "contracts/merkle-test",
     "test-utils",
 ]
@@ -24,5 +27,5 @@ authors = ["Abacus Works"]
 [workspace.dependencies]
 ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2023-02-10-01" }
 fuels = { version = "0.38" }
-hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "98e5395" }
+hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "930cded" }
 tokio = { version = "1.12" }
