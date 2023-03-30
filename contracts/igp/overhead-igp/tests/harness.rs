@@ -132,7 +132,6 @@ async fn test_pay_for_gas() {
             TEST_GAS_AMOUNT,
             refund_address.clone(),
         )
-        // Pay 1 base asset
         .call_params(
             CallParameters::default()
                 .set_asset_id(BASE_ASSET_ID)

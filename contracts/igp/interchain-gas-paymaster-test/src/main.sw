@@ -25,8 +25,10 @@ struct QuoteGasPaymentCalled {
     gas_amount: u64,
 }
 
-// An IGP intended to be used for testing purposes
-
+/// NOTE: This contract is for testing purposes only. It is not intended to be used in production.
+///
+/// This contract implements the IGP interface and charges at least 1 base token. Intended to be used
+/// by tests to avoid needing to set up gas oracles with the canonical IGP contract.
 impl InterchainGasPaymaster for Contract {
     #[storage(read, write)]
     #[payable]
