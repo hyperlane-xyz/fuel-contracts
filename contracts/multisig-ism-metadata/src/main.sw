@@ -12,7 +12,6 @@ pub struct MultisigMetadata {
     index: u32,
     mailbox: b256,
     proof: [b256; 32],
-    // TODO: look into malleability of signatures
     signatures: Vec<B512>,
 }
 

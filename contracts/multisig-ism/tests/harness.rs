@@ -1,5 +1,7 @@
-use fuels::{prelude::*, tx::ContractId};
+use fuels::{prelude::*, tx::ContractId, types::Bits256};
+
 use hyperlane_ethereum::Signers;
+use hyperlane_core::{Checkpoint, HyperlaneSignerExt, SignedCheckpoint, MultisigSignedCheckpoint, H256};
 use test_utils::evm_address;
 
 // Load abi from json
@@ -80,3 +82,41 @@ async fn test_enroll_validators() {
         assert_eq!(addresses, result.value);
     }
 }
+
+// #[tokio::test]
+// async fn verify_validator_signatures() {
+//     let (instance, _id) = get_contract_instance().await;
+
+//     let signers = Vec::from([
+//         get_signer(TEST_VALIDATOR_0_PRIVATE_KEY),
+//         get_signer(TEST_VALIDATOR_1_PRIVATE_KEY),
+//     ]);
+
+//     let addresses = signers
+//         .iter()
+//         .map(|signer| evm_address(signer))
+//         .collect::<Vec<_>>();
+
+//     let domains = Vec::from([TEST_LOCAL_DOMAIN, TEST_REMOTE_DOMAIN]);
+
+//     let validators = domains.iter().map(|_| addresses.clone()).collect::<Vec<_>>();
+
+//     let _call = instance.methods().enroll_validators(domains.clone(), validators).call().await;
+
+//     signers.iter().map(|signer| signer.sign(Checkpoint {
+//         mailbox_address: ,
+//         mailbox_domain: TEST_LOCAL_DOMAIN,
+//         root: H256::zero(),
+//         index: 0
+//     }));
+
+//     todo!();
+
+// }
+
+// #[tokio::test]
+// async fn verify_validator_merkle_proof() {
+//     let (_instance, _id) = get_contract_instance().await;
+
+//     todo!();
+// }
