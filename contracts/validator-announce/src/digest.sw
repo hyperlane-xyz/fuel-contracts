@@ -18,7 +18,6 @@ pub struct ValidatorAnnounceDigest {
 /// ))
 /// ```
 /// Found here: https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/0b60a32e9cf0fc98c203379b6100b6b9aa61dac9/solidity/contracts/libs/ValidatorAnnouncements.sol#L23-L29
-
 const DOMAIN_HASH_LOCAL_DOMAIN_OFFSET: u64 = 0;
 const DOMAIN_HASH_MAILBOX_ID_OFFSET: u64 = 4;
 // The suffix is "HYPERLANE_ANNOUNCEMENT"
@@ -47,7 +46,6 @@ fn domain_hash(mailbox_id: b256, local_domain: u32) -> b256 {
 // );
 /// ```
 /// Found here: https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/0b60a32e9cf0fc98c203379b6100b6b9aa61dac9/solidity/contracts/libs/ValidatorAnnouncements.sol#L30-L33
-
 const DIGEST_DOMAIN_HASH_OFFSET: u64 = 0;
 const DIGEST_STORAGE_LOCATION_OFFSET: u64 = 32;
 
@@ -76,7 +74,6 @@ pub fn get_announcement_digest(
 /// keccak256(abi.encodePacked(_validator, _storageLocation))
 /// ```
 /// Found here: https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/0b60a32e9cf0fc98c203379b6100b6b9aa61dac9/solidity/contracts/ValidatorAnnounce.sol#L75-L77
-
 const REPLAY_ID_VALIDATOR_OFFSET: u64 = 0;
 const REPLAY_ID_STORAGE_LOCATION_OFFSET: u64 = 20;
 

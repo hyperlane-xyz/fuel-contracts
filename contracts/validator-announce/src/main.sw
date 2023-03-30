@@ -113,6 +113,7 @@ impl ValidatorAnnounce for Contract {
         storage_location.into()
     }
 
+    /// Gets the number of storage locations announced for a particular validator.
     #[storage(read)]
     fn get_announced_storage_location_count(validator: EvmAddress) -> u64 {
         storage.storage_locations.len(validator)
@@ -127,7 +128,7 @@ impl ValidatorAnnounce for Contract {
         let mut vec = Vec::with_capacity(len);
         let mut i = 0;
         while i < len {
-            vec.set(i, storage.validators_vec.get(i).unwrap());
+            vec.push(storage.validators_vec.get(i).unwrap());
             i += 1;
         }
         vec
