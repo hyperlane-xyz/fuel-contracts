@@ -13,6 +13,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "abigen"
+version = "0.1.0"
+source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=98e5395#98e53959861441353ea68968448de99230e8ae57"
+dependencies = [
+ "Inflector",
+ "ethers",
+]
+
+[[package]]
 name = "aes"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1202,6 +1211,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive_builder"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d67778784b508018359cbc8696edb3db78160bab2c2a28ba7f56ef6932997f8"
+dependencies = [
+ "derive_builder_macro",
+]
+
+[[package]]
+name = "derive_builder_core"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c11bdc11a0c47bc7d37d582b5285da6849c96681023680b906673c5707af7b0f"
+dependencies = [
+ "darling 0.14.4",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "derive_builder_macro"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebcda35c7a396850a55ffeac740804b40ffec779b98fffbb1738f4033f0ee79e"
+dependencies = [
+ "derive_builder_core",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "derive_more"
 version = "0.99.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1627,6 +1667,28 @@ dependencies = [
  "tracing",
  "tracing-futures",
  "url",
+]
+
+[[package]]
+name = "ethers-prometheus"
+version = "0.1.0"
+source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=98e5395#98e53959861441353ea68968448de99230e8ae57"
+dependencies = [
+ "abigen",
+ "async-trait",
+ "derive-new",
+ "derive_builder",
+ "ethers",
+ "futures",
+ "log",
+ "maplit",
+ "parking_lot 0.12.1",
+ "primitive-types",
+ "prometheus",
+ "serde",
+ "serde_json",
+ "static_assertions",
+ "tokio",
 ]
 
 [[package]]
@@ -2769,6 +2831,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "hyperlane-ethereum"
+version = "0.1.0"
+source = "git+https://github.com/hyperlane-xyz/hyperlane-monorepo?rev=98e5395#98e53959861441353ea68968448de99230e8ae57"
+dependencies = [
+ "abigen",
+ "async-trait",
+ "derive-new",
+ "ethers",
+ "ethers-contract",
+ "ethers-prometheus",
+ "ethers-signers",
+ "hex",
+ "hyperlane-core",
+ "num",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-futures",
+ "url",
+]
+
+[[package]]
 name = "hyperlane-mailbox"
 version = "0.1.0"
 dependencies = [
@@ -2798,6 +2885,7 @@ dependencies = [
  "ethers",
  "fuels",
  "hyperlane-core",
+ "hyperlane-ethereum",
  "test-utils",
  "tokio",
 ]
@@ -3128,6 +3216,12 @@ dependencies = [
  "cc",
  "libc",
 ]
+
+[[package]]
+name = "maplit"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "matches"
@@ -3774,6 +3868,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "prometheus"
+version = "0.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "449811d15fbdf5ceb5c1144416066429cf82316e2ec8ce0c1f6f8a02e7bbcf8c"
+dependencies = [
+ "cfg-if",
+ "fnv",
+ "lazy_static",
+ "memchr",
+ "parking_lot 0.12.1",
+ "protobuf",
+ "thiserror",
+]
+
+[[package]]
 name = "prometheus-client"
 version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3795,6 +3904,12 @@ dependencies = [
  "quote",
  "syn 1.0.109",
 ]
+
+[[package]]
+name = "protobuf"
+version = "2.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 
 [[package]]
 name = "psl-types"
@@ -3927,10 +4042,12 @@ dependencies = [
  "http-body",
  "hyper",
  "hyper-rustls 0.23.2",
+ "hyper-tls",
  "ipnet",
  "js-sys",
  "log",
  "mime",
+ "native-tls",
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
@@ -3940,6 +4057,7 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "tokio",
+ "tokio-native-tls",
  "tokio-rustls 0.23.4",
  "tower-service",
  "url",
@@ -4766,6 +4884,8 @@ version = "0.1.0"
 dependencies = [
  "ethers",
  "fuels",
+ "hyperlane-core",
+ "hyperlane-ethereum",
  "serde",
  "serde_json",
 ]

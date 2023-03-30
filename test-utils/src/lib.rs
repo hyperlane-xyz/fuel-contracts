@@ -1,13 +1,17 @@
 use std::str::FromStr;
 
-use ethers::types::H256;
+use ethers::{
+    types::H256,
+    signers::Signer
+};
 use fuels::{
     prelude::{Bech32Address, TxParameters},
     signers::{fuel_crypto::SecretKey, WalletUnlocked},
     tx::{AssetId, Receipt},
-    types::{errors::Error, Bits256},
+    types::{errors::Error, Bits256, EvmAddress},
 };
 use serde::{de::Deserializer, Deserialize};
+use hyperlane_ethereum::Signers;
 
 pub fn h256_to_bits256(h: H256) -> Bits256 {
     Bits256(h.0)
@@ -15,6 +19,10 @@ pub fn h256_to_bits256(h: H256) -> Bits256 {
 
 pub fn bits256_to_h256(b: Bits256) -> H256 {
     H256(b.0)
+}
+
+pub fn evm_address(signer: &Signers) -> EvmAddress {
+    h256_to_bits256(signer.address().into()).into()
 }
 
 // Given an Error from a call or simulation, returns the revert reason.

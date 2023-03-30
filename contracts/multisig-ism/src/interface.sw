@@ -15,7 +15,6 @@ abi MultisigIsm {
     #[storage(read)]
     fn is_enrolled(domain: u32, validator: EvmAddress) -> bool;
 
-    // TODO: add once vector return type is supported
     #[storage(read)]
     fn validators(domain: u32) -> Vec<EvmAddress>;
 
