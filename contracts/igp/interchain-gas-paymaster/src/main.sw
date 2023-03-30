@@ -29,7 +29,7 @@ use interface::{
 };
 
 /// The scale of a token exchange rate. 1e19.
-const TOKEN_EXCHANGE_RATE_SCALE: u64 = 10000000000000000000;
+const TOKEN_EXCHANGE_RATE_SCALE: u64 = 10_000_000_000_000_000_000;
 
 // TODO: set this at compile / deploy time.
 // NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
@@ -114,15 +114,15 @@ impl Claimable for Contract {
         storage.beneficiary
     }
 
-    /// Sets the beneficiary to `new_beneficiary`. Only callable by the owner.
+    /// Sets the beneficiary to `beneficiary`. Only callable by the owner.
     #[storage(read, write)]
-    fn set_beneficiary(new_beneficiary: Identity) {
+    fn set_beneficiary(beneficiary: Identity) {
         // Only the owner can call
         require_msg_sender(storage.owner);
 
-        storage.beneficiary = new_beneficiary;
+        storage.beneficiary = beneficiary;
         log(BeneficiarySetEvent {
-            new_beneficiary,
+            beneficiary,
         });
     }
 

@@ -661,7 +661,7 @@ async fn test_set_beneficiary() {
     assert_eq!(
         events,
         vec![BeneficiarySetEvent {
-            new_beneficiary: new_beneficiary.clone(),
+            beneficiary: new_beneficiary.clone(),
         }]
     );
 

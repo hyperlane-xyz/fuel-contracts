@@ -2,7 +2,7 @@ library interface;
 
 /// Logged when the benficiary is set.
 pub struct BeneficiarySetEvent {
-    new_beneficiary: Identity,
+    beneficiary: Identity,
 }
 
 /// Logged when the balance is claimed and sent to the beneficiary.
@@ -32,7 +32,7 @@ abi Claimable {
     fn beneficiary() -> Identity;
 
     #[storage(read, write)]
-    fn set_beneficiary(new_beneficiary: Identity);
+    fn set_beneficiary(beneficiary: Identity);
 
     #[storage(read)]
     fn claim();
