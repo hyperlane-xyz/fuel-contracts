@@ -22,7 +22,10 @@ use interface::{
     ValidatorAnnounce,
     ValidatorAnnouncementEvent,
 };
-use storable_string::StorableString;
+use storable_string::{
+    StorableString,
+    MAX_STORABLE_STRING_CHARS,
+};
 
 use bytes_extended::*;
 
@@ -159,6 +162,8 @@ fn announce(
     storage_location: Bytes,
     signature: B512,
 ) {
+    require(storage_location.len() <= MAX_STORABLE_STRING_CHARS, "storage location must be at most 128 characters");
+
     let replay_id = get_replay_id(validator, storage_location);
     require(storage.replay_protection.get(replay_id).is_none(), "validator and storage location already announced");
     storage.replay_protection.insert(replay_id, true);

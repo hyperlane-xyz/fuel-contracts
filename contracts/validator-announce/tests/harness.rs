@@ -198,6 +198,23 @@ async fn test_announce_reverts_if_invalid_signature() {
     );
 }
 
+#[tokio::test]
+async fn test_announce_reverts_if_storage_location_over_128_chars() {
+    let (validator_announce, _id) = get_contract_instance().await;
+
+    let signer: Signers = TEST_VALIDATOR_0_PRIVATE_KEY
+        .parse::<ethers::signers::LocalWallet>()
+        .unwrap()
+        .into();
+    let storage_location = "a".repeat(129);
+    let call = sign_and_announce(&validator_announce, &signer, storage_location).await;
+    assert!(call.is_err());
+    assert_eq!(
+        get_revert_string(call.err().unwrap()),
+        "storage location must be at most 128 characters"
+    );
+}
+
 // ================ get_announced_storage_location ================
 
 #[tokio::test]

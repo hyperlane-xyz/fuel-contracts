@@ -4,6 +4,8 @@ use std::bytes::Bytes;
 
 use bytes_extended::*;
 
+pub const MAX_STORABLE_STRING_CHARS: u64 = 128;
+
 // As a workaround to account for storable types not yet being composable,
 // which precludes the use of StorageBytes, Bytes are instead represented
 // as a str[128] (which is a fixed length array of bytes) and a corresponding length.
@@ -29,7 +31,7 @@ impl From<Bytes> for StorableString {
 }
 
 pub fn bytes_to_str_128(bytes: Bytes) -> str[128] {
-    require(bytes.len() <= 128, "length of bytes must be <= 128");
+    require(bytes.len() <= MAX_STORABLE_STRING_CHARS, "length of bytes must be <= 128");
 
     // Create copy that's 128 bytes in length.
     // It's possible for `bytes` to have a length < 128 bytes,
