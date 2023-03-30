@@ -1,0 +1,9 @@
+[project]
+authors = ["Trevor Porter"]
+entry = "main.sw"
+license = "Apache-2.0"
+name = "overhead-igp"
+
+[dependencies]
+hyperlane_interfaces = { path = "../../hyperlane-interfaces" }
+ownership = { path = "../../ownership" }

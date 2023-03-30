@@ -23,6 +23,13 @@ abi GasOracle {
     fn get_exchange_rate_and_gas_price(domain: u32) -> RemoteGasData;
 }
 
+/// Logged when a gas payment is made.
+pub struct GasPaymentEvent {
+    message_id: b256,
+    gas_amount: u64,
+    payment: u64,
+}
+
 /// A contract to allow users to pay for interchain gas.
 abi InterchainGasPaymaster {
     #[storage(read, write)]

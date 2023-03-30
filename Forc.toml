@@ -10,6 +10,8 @@ members = [
   "contracts/hyperlane-ism-test",
   "contracts/hyperlane-msg-recipient-test",
   "contracts/igp/interchain-gas-paymaster",
-  "contracts/std-lib-extended",
+  "contracts/igp/overhead-igp",
   "contracts/igp/storage-gas-oracle",
+  "contracts/igp/interchain-gas-paymaster-test",
+  "contracts/std-lib-extended",
 ]
