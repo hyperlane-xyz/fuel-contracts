@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
-use ethers::types::{H256, Signature, U256};
+use ethers::types::{Signature, H256, U256};
 use fuels::{
-    prelude::{Bech32Address, TxParameters, Account},
     accounts::{fuel_crypto::SecretKey, WalletUnlocked},
+    prelude::{Account, Bech32Address, TxParameters},
     tx::{AssetId, Receipt},
     types::{errors::Error, Bits256},
 };
@@ -77,7 +77,12 @@ pub async fn funded_wallet_with_private_key(
     let wallet = WalletUnlocked::new_from_private_key(
         SecretKey::from_str(private_key)
             .map_err(|e| Error::WalletError(format!("SecretKey error {:?}", e)))?,
-        Some(funder.provider().ok_or_else(|| Error::WalletError("No provider".into()))?.clone()),
+        Some(
+            funder
+                .provider()
+                .ok_or_else(|| Error::WalletError("No provider".into()))?
+                .clone(),
+        ),
     );
 
     fund_address(funder, wallet.address()).await?;
