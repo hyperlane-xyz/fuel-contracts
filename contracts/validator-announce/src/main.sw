@@ -48,6 +48,12 @@ storage {
     storage_locations: StorageMapVec<EvmAddress, StorableString> = StorageMapVec {},
 }
 
+/// Bytes are intentionally used instead of the sway-lib String throughout this contract
+/// to handle dynamic-length strings.
+/// This is due to immature support in tooling surrounding Fuel's String type. The String
+/// type is just a thin wrapper around Bytes, but heap types (like Bytes) are not yet
+/// supported by libraries like fuels-rs when they are composed with other types (like in structs or tuples).
+
 impl ValidatorAnnounce for Contract {
     /// TODO: remove this function when Bytes can be passed in.
     /// Until https://github.com/FuelLabs/fuels-rs/pull/904 gets in, fuels-rs
