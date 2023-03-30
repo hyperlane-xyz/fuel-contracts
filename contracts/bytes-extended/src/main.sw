@@ -349,10 +349,10 @@ impl Bytes {
     }
 }
 
-// Cannot use Bytes::from_vec_u8 requires a mutable Vec<u8> to be passed in.
-// In situations where the Vec is a parameter for a public function in the abi,
-// this isn't suitable. So instead we have implement a non-mutable way to convert
-// from Vec<u8> to Bytes.
+/// Bytes::from_vec_u8 requires a mutable Vec<u8> to be passed in.
+/// Certain situations, like when a Vec is a parameter to a public abi function,
+/// the Vec cannot be mutable. So instead we provide a non-mutable way to convert
+/// from Vec<u8> to Bytes.
 impl From<Vec<u8>> for Bytes {
     fn from(vec: Vec<u8>) -> Self {
         let vec_len = vec.len();

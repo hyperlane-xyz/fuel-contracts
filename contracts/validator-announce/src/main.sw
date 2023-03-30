@@ -49,7 +49,7 @@ storage {
 }
 
 impl ValidatorAnnounce for Contract {
-    /// TODO: remove this function.
+    /// TODO: remove this function when Bytes can be passed in.
     /// Until https://github.com/FuelLabs/fuels-rs/pull/904 gets in, fuels-rs
     /// doesn't support Bytes as an input into contract calls.
     /// For now, we allow the user to pass in a `Vec<u8>` that's converted to `Bytes`
