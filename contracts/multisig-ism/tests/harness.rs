@@ -1,7 +1,7 @@
-use fuels::{prelude::*, tx::{ContractId, Receipt}, types::{B512, Bits256, EvmAddress}};
+use fuels::{prelude::*, tx::{ContractId, Receipt}, types::{B512, Bits256, EvmAddress}, programs::logs};
 
 use hyperlane_ethereum::Signers;
-use hyperlane_core::{Checkpoint, H256, HyperlaneSigner, Signable};
+use hyperlane_core::{Checkpoint, H256, HyperlaneSigner, Signable, HyperlaneMessage, Decode, accumulator::merkle::MerkleTree};
 use test_utils::{evm_address, h256_to_bits256, get_revert_string, zero_address, get_signer, bits256_to_h256, sign_compact};
 
 mod mailbox_contract {
@@ -248,20 +248,6 @@ async fn test_set_thresholds() {
 }
 
 const TEST_MAILBOX_ADDRESS: H256 = H256::repeat_byte(0xau8);
-const TEST_CHECKPOINT_ROOT: H256 = H256::repeat_byte(0xbu8);
-const TEST_CHECKPOINT_INDEX: u32 = 69u32;
-
-fn test_message() -> Message {
-    Message {
-        version: 0u8,
-        nonce: 0u32,
-        origin: TEST_LOCAL_DOMAIN,
-        sender: h256_to_bits256(TEST_MAILBOX_ADDRESS),
-        destination: TEST_REMOTE_DOMAIN,
-        recipient: h256_to_bits256(TEST_MAILBOX_ADDRESS),
-        body: vec![10u8; 100],
-    }
-}
 
 #[tokio::test]
 async fn test_verify() {
@@ -276,7 +262,7 @@ async fn test_verify() {
     let mailbox = deploy_mailbox(wallet).await;
 
     let body = vec![10u8; 100];
-    let _ = mailbox.methods().dispatch(
+    let dispatch_call = mailbox.methods().dispatch(
         TEST_REMOTE_DOMAIN,
         Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
         body,
@@ -284,25 +270,27 @@ async fn test_verify() {
     .call()
     .await.unwrap();
 
-    // TODO: build merkle tree and proof
-    // 1. get logged message and decode
-    // 2. insert message id to incremental merkle tree
-    // 3. get latest checkpoint and sign
-    // 4. produce merkle proof for message id at checkpoint.index in checkpoint.root
-    // 5. build metadata from signatures and proof
-    // 5. verify message against metadata
+    // The log is expected to be the second receipt
+    let log_receipt = &dispatch_call.receipts[1];
+    let log_data = if let Receipt::LogData { data, .. } = log_receipt {
+        data
+    } else {
+        panic!("Expected LogData receipt. Receipt: {:?}", log_receipt);
+    };
 
-    // let message_id = bits256_to_h256(call.value);
-    // // insert message_id to merkle tree
-    // // produce proof
+    let message = HyperlaneMessage::read_from(&mut log_data.as_slice()).unwrap();
 
-    // let latest_checkpoint = mailbox.methods().latest_checkpoint().simulate().await.unwrap();
+    let depth = 32;
+    let mut tree = MerkleTree::create(&[], depth);
+    let _ = tree.push_leaf(message.id(), depth);
+
+    let (root, index) = mailbox.methods().latest_checkpoint().simulate().await.unwrap().value;
 
     let checkpoint = Checkpoint {
         mailbox_address: TEST_MAILBOX_ADDRESS,
         mailbox_domain: TEST_LOCAL_DOMAIN,
-        root: TEST_CHECKPOINT_ROOT,
-        index: TEST_CHECKPOINT_INDEX,
+        root: bits256_to_h256(root),
+        index,
     };
 
     let mut signatures: Vec<B512> = Vec::new();
@@ -312,71 +300,37 @@ async fn test_verify() {
         signatures.push(compact);
     }
 
+    let (leaf, proof) = tree.generate_proof(index as usize, depth);
+    assert_eq!(leaf, message.id());
+
     let metadata = MultisigMetadata {
         root: h256_to_bits256(checkpoint.root),
         index: checkpoint.index,
         mailbox: h256_to_bits256(checkpoint.mailbox_address),
-        proof: [Bits256([0; 32]); 32],
+        proof: proof.iter().map(|p| h256_to_bits256(*p)).collect::<Vec<_>>().as_slice().try_into().unwrap(),
         signatures,
     };
 
     let result = instance.methods().verify(
         metadata,
-        test_message()
+        message.into()
     ).simulate().await;
 
-    if result.is_err() {
-        let call_error = result.unwrap_err();
-        let revert_reason = get_revert_string(call_error);
-        println!("revert reason: {}", revert_reason);
-    
-        // let receipts = if let Error::RevertTransactionError { receipts, .. } = call_error {
-        //     receipts
-        // } else {
-        //     panic!(
-        //         "Error is not a RevertTransactionError. Error: {:?}",
-        //         call_error
-        //     );
-        // };
-    
-        // receipts.iter().for_each(|receipt| {
-        //     if let Receipt::Log { ra, .. } = receipt {
-        //         println!("ra: {:?}", ra);
-        //     } else if let Receipt::LogData { data, .. } = receipt {
-        //         match data.len() {
-        //             64 => {
-        //                 let b512 = B512::try_from(data.as_slice());
-        //                 if b512.is_ok() {
-        //                     println!("signature: {:?}", b512.unwrap());
-        //                 }
-        //             },
-        //             32 => {
-        //                 let slice = data.as_slice();
-        //                 let b256 = Bits256(slice.try_into().unwrap());
-        //                 if slice[0] == 0 && slice[1] == 0 && slice[2] == 0 {
-        //                     let address = EvmAddress::from(b256);
-        //                     println!("signer: {:?}", address);
-        //                 } else {
-        //                     println!("digest: {:?}", bits256_to_h256(b256));
-        //                 }
-        //             },
-        //             _ => {
-        //                 println!("data: {:?} len: {:?}", data, data.len());
-        //             }
-        //         }
-        //         // let s = String::from_utf8(cleaned).unwrap();
-        //     }
-        // });
-        assert!(false);
-    } else {
-        let verified = result.unwrap().value;
-        assert!(verified);
-    }
+    let verified = result.unwrap().value;
+    assert!(verified);
 }
 
-// #[tokio::test]
-// async fn verify_validator_merkle_proof() {
-//     let (_instance, _id, _) = get_contract_instance().await;
-
-//     todo!();
-// }
+// TODO: dedupe with mailbox tests
+impl From<HyperlaneMessage> for Message {
+    fn from(agent_msg: HyperlaneMessage) -> Self {
+        Self {
+            version: agent_msg.version,
+            nonce: agent_msg.nonce,
+            origin: agent_msg.origin,
+            sender: h256_to_bits256(agent_msg.sender),
+            destination: agent_msg.destination,
+            recipient: h256_to_bits256(agent_msg.recipient),
+            body: agent_msg.body,
+        }
+    }
+}
