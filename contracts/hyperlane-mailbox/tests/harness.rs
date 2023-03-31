@@ -61,13 +61,18 @@ async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId
     .await;
     let wallet = wallets.pop().unwrap();
 
+    let mailbox_configurables =
+        mailbox_contract::MailboxConfigurables::new().set_LOCAL_DOMAIN(TEST_LOCAL_DOMAIN);
+
     let mailbox_id = Contract::deploy(
         "./out/debug/hyperlane-mailbox.bin",
         &wallet,
-        DeployConfiguration::default().set_storage_configuration(StorageConfiguration::new(
-            "./out/debug/hyperlane-mailbox-storage_slots.json".to_string(),
-            vec![],
-        )),
+        DeployConfiguration::default()
+            .set_storage_configuration(StorageConfiguration::new(
+                "./out/debug/hyperlane-mailbox-storage_slots.json".to_string(),
+                vec![],
+            ))
+            .set_configurables(mailbox_configurables),
     )
     .await
     .unwrap();
@@ -85,7 +90,7 @@ async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId
     .await
     .unwrap();
 
-    let msg_recipient_id= Contract::deploy(
+    let msg_recipient_id = Contract::deploy(
         "../hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test.bin",
         &wallet,
         DeployConfiguration::default()

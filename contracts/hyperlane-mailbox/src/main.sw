@@ -16,16 +16,11 @@ use ownership::{
 use hyperlane_interfaces::{Mailbox, MessageRecipient, InterchainSecurityModule};
 use hyperlane_message::{Message, EncodedMessage};
 
-// Sway doesn't allow pow in a const.
-// Equal to 2 KiB, or 2 * (2 ** 10).
-const MAX_MESSAGE_BODY_BYTES: u64 = 2048;
+/// The mailbox version.
 const VERSION: u8 = 0;
-// TODO: can this be set at compile / deploy time?
-// https://fuellabs.github.io/sway/v0.31.1/basics/variables.html#configuration-time-constants
-// Issue tracked here: https://github.com/hyperlane-xyz/fuel-contracts/issues/6
-// "fuel" in bytes
-const LOCAL_DOMAIN: u32 = 0x6675656cu32;
-// "hyp" in bytes
+/// The max bytes in a message body. Equal to 2 KiB, or 2 * (2 ** 10).
+const MAX_MESSAGE_BODY_BYTES: u64 = 2048;
+/// The log ID for dispatched messages. "hyp" in bytes
 const DISPATCHED_MESSAGE_LOG_ID: u64 = 0x687970u64;
 // TODO: set this at compile / deploy time.
 // NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
@@ -37,6 +32,12 @@ const INITIAL_OWNER: Option<Identity> = Option::Some(
 const ZERO_ID: ContractId = ContractId {
     value: 0x0000000000000000000000000000000000000000000000000000000000000000,
 };
+
+configurable {
+    /// The domain of the local chain.
+    /// Defaults to `fuel` (0x6675656c).
+    LOCAL_DOMAIN: u32 = 0x6675656cu32,
+}
 
 storage {
     /// The owner of the contract.

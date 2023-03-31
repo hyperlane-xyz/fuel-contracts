@@ -4,7 +4,7 @@ use std::alloc::alloc;
 use std::constants::ZERO_B256;
 
 use std::bytes::Bytes;
-use bytes_extended::*;
+use std_lib_extended::bytes::*;
 
 /// A Hyperlane message.
 /// This struct is not intended to be used within smart contracts directly

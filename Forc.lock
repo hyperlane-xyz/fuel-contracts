@@ -1,9 +1,4 @@
 [[package]]
-name = 'bytes_extended'
-source = 'member'
-dependencies = ['std']
-
-[[package]]
 name = 'core'
 source = 'path+from-root-2C66FC65A00ECA96'
 
@@ -56,8 +51,18 @@ dependencies = [
 name = 'hyperlane_message'
 source = 'member'
 dependencies = [
-    'bytes_extended',
     'std',
+    'std_lib_extended',
+]
+
+[[package]]
+name = 'interchain-gas-paymaster'
+source = 'member'
+dependencies = [
+    'hyperlane_interfaces',
+    'ownership',
+    'std',
+    'std_lib_extended',
 ]
 
 [[package]]
@@ -74,6 +79,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = 'multisig-ism-metadata-test'
 source = 'member'
 dependencies = [
@@ -98,6 +104,13 @@ name = 'multisig_ism_metadata'
 source = 'member'
 dependencies = [
     'bytes_extended',
+=======
+name = 'overhead-igp'
+source = 'member'
+dependencies = [
+    'hyperlane_interfaces',
+    'ownership',
+>>>>>>> main
     'std',
 ]
 
@@ -112,6 +125,29 @@ source = 'git+https://github.com/fuellabs/sway?tag=v0.35.5#49eae2dd93a1957e2a2c2
 dependencies = ['core']
 
 [[package]]
+<<<<<<< HEAD
 name = 'storagemapvec'
 source = 'git+https://github.com/FuelLabs/sway-libs?default-branch#4c0c99aa98194475671fd1571ab99488c4cdd4e1'
 dependencies = ['std']
+=======
+name = 'std_lib_extended'
+source = 'member'
+dependencies = ['std']
+
+[[package]]
+name = 'storage-gas-oracle'
+source = 'member'
+dependencies = [
+    'hyperlane_interfaces',
+    'ownership',
+    'std',
+]
+
+[[package]]
+name = 'interchain-gas-paymaster-test'
+source = 'member'
+dependencies = [
+    'hyperlane_interfaces',
+    'std',
+]
+>>>>>>> main

@@ -1,13 +1,11 @@
-library bytes_extended;
-
-dep mem;
+library bytes;
 
 use std::{
     bytes::Bytes,
     constants::ZERO_B256,
     vm::evm::evm_address::EvmAddress
 };
-use mem::CopyTypeWrapper;
+use ::mem::CopyTypeWrapper;
 
 /// The number of bytes in a b256.
 pub const B256_BYTE_COUNT: u64 = 32u64;
