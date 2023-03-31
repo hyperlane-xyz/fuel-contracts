@@ -47,7 +47,12 @@ const INTIAL_OWNER_PRIVATE_KEY: &str =
 const INITIAL_OWNER_ADDRESS: &str =
     "0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e";
 
-async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId, WalletUnlocked) {
+async fn get_contract_instance() -> (
+    Mailbox<WalletUnlocked>,
+    Bech32ContractId,
+    Bech32ContractId,
+    WalletUnlocked,
+) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -103,13 +108,13 @@ async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId
     .unwrap();
 
     let initial_owner_wallet =
-        funded_wallet_with_private_key(&mailbox.wallet(), INTIAL_OWNER_PRIVATE_KEY)
+        funded_wallet_with_private_key(&mailbox.account(), INTIAL_OWNER_PRIVATE_KEY)
             .await
             .unwrap();
 
     let raw_ism_id: ContractId = ism_id.clone().into();
     mailbox
-        .with_wallet(initial_owner_wallet)
+        .with_account(initial_owner_wallet)
         .unwrap()
         .methods()
         .set_default_ism(raw_ism_id)
@@ -131,11 +136,11 @@ async fn get_contract_instance() -> (Mailbox, Bech32ContractId, Bech32ContractId
 // Gets the wallet address from the `Mailbox` instance, and
 // creates a test message with that address as the sender.
 fn test_message(
-    mailbox: &Mailbox,
+    mailbox: &Mailbox<WalletUnlocked>,
     recipient: Bech32ContractId,
     outbound: bool,
 ) -> HyperlaneAgentMessage {
-    let sender: Address = mailbox.wallet().address().into();
+    let sender: Address = mailbox.account().address().into();
     HyperlaneAgentMessage {
         version: 0u8,
         nonce: 0u32,
@@ -290,18 +295,18 @@ async fn test_initial_owner() {
 }
 
 async fn transfer_ownership_test_helper(
-    mailbox: &Mailbox,
+    mailbox: &Mailbox<WalletUnlocked>,
     initial_owner: Option<Identity>,
     new_owner: Option<Identity>,
 ) {
     let initial_owner_wallet =
-        funded_wallet_with_private_key(&mailbox.wallet(), INTIAL_OWNER_PRIVATE_KEY)
+        funded_wallet_with_private_key(&mailbox.account(), INTIAL_OWNER_PRIVATE_KEY)
             .await
             .unwrap();
 
     // From the current owner's wallet, transfer ownership
     let transfer_ownership_call = mailbox
-        .with_wallet(initial_owner_wallet.clone())
+        .with_account(initial_owner_wallet.clone())
         .unwrap()
         .methods()
         .transfer_ownership(new_owner.clone())
@@ -328,7 +333,7 @@ async fn transfer_ownership_test_helper(
 
     // Ensure the old owner can't transfer ownership anymore
     let invalid_transfer_ownership_call = mailbox
-        .with_wallet(initial_owner_wallet)
+        .with_account(initial_owner_wallet)
         .unwrap()
         .methods()
         .transfer_ownership(new_owner.clone())

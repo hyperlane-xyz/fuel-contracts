@@ -60,14 +60,14 @@ impl EncodedMessage {
 
         let mut bytes = Bytes::with_length(bytes_len);
 
-        bytes.write_u8(VERSION_BYTE_OFFSET, version);
-        bytes.write_u32(NONCE_BYTE_OFFSET, nonce);
-        bytes.write_u32(ORIGIN_BYTE_OFFSET, origin);
-        bytes.write_b256(SENDER_BYTE_OFFSET, sender);
-        bytes.write_u32(DESTINATION_BYTE_OFFSET, destination);
-        bytes.write_b256(RECIPIENT_BYTE_OFFSET, recipient);
+        let _ = bytes.write_u8(VERSION_BYTE_OFFSET, version);
+        let _ = bytes.write_u32(NONCE_BYTE_OFFSET, nonce);
+        let _ = bytes.write_u32(ORIGIN_BYTE_OFFSET, origin);
+        let _ = bytes.write_b256(SENDER_BYTE_OFFSET, sender);
+        let _ = bytes.write_u32(DESTINATION_BYTE_OFFSET, destination);
+        let _ = bytes.write_b256(RECIPIENT_BYTE_OFFSET, recipient);
         if body.len() > 0 {
-            bytes.write_bytes(BODY_BYTE_OFFSET, Bytes::from_vec_u8(body));
+            let _ = bytes.write_bytes(BODY_BYTE_OFFSET, Bytes::from_vec_u8(body));
         }
 
         Self { bytes }

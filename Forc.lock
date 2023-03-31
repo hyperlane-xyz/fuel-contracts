@@ -66,6 +66,14 @@ dependencies = [
 ]
 
 [[package]]
+name = 'interchain-gas-paymaster-test'
+source = 'member'
+dependencies = [
+    'hyperlane_interfaces',
+    'std',
+]
+
+[[package]]
 name = 'merkle'
 source = 'member'
 dependencies = ['std']
@@ -112,9 +120,15 @@ dependencies = [
 ]
 
 [[package]]
-name = 'interchain-gas-paymaster-test'
+name = 'storagemapvec'
+source = 'git+https://github.com/FuelLabs/sway-libs?tag=v0.7.1#5700990f123be431e6df70f490a6a51fafac1daa'
+dependencies = ['std']
+
+[[package]]
+name = 'validator-announce'
 source = 'member'
 dependencies = [
-    'hyperlane_interfaces',
     'std',
+    'std_lib_extended',
+    'storagemapvec',
 ]

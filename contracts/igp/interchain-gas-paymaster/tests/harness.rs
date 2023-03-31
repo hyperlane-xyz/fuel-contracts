@@ -83,7 +83,10 @@ const TEST_NON_BASE_ASSET_ID: [u8; 32] = [1u8; 32];
 
 const TOKEN_EXCHANGE_RATE_SCALE: u128 = 1e19 as u128;
 
-async fn get_contract_instances() -> (InterchainGasPaymaster, StorageGasOracle) {
+async fn get_contract_instances() -> (
+    InterchainGasPaymaster<WalletUnlocked>,
+    StorageGasOracle<WalletUnlocked>,
+) {
     let non_base_asset_id = AssetId::new(TEST_NON_BASE_ASSET_ID);
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
@@ -132,9 +135,9 @@ async fn get_contract_instances() -> (InterchainGasPaymaster, StorageGasOracle) 
     .unwrap();
     let storage_gas_oracle = StorageGasOracle::new(storage_gas_oracle_id.clone(), wallet);
 
-    let owner_wallet = initial_owner_wallet(&igp.wallet()).await.unwrap();
+    let owner_wallet = initial_owner_account(&igp.account()).await.unwrap();
 
-    igp.with_wallet(owner_wallet)
+    igp.with_account(owner_wallet)
         .unwrap()
         .methods()
         .set_gas_oracle(
@@ -148,17 +151,17 @@ async fn get_contract_instances() -> (InterchainGasPaymaster, StorageGasOracle) 
     (igp, storage_gas_oracle)
 }
 
-async fn initial_owner_wallet(funder: &WalletUnlocked) -> Result<WalletUnlocked> {
+async fn initial_owner_account(funder: &WalletUnlocked) -> Result<WalletUnlocked> {
     funded_wallet_with_private_key(funder, INTIAL_OWNER_PRIVATE_KEY).await
 }
 
 async fn set_remote_gas_data(
-    oracle: &StorageGasOracle,
+    oracle: &StorageGasOracle<WalletUnlocked>,
     remote_gas_data_config: RemoteGasDataConfig,
 ) -> Result<()> {
-    let owner_wallet = initial_owner_wallet(&oracle.wallet()).await?;
+    let owner_wallet = initial_owner_account(&oracle.account()).await?;
     oracle
-        .with_wallet(owner_wallet)?
+        .with_account(owner_wallet)?
         .methods()
         .set_remote_gas_data_configs(vec![remote_gas_data_config])
         .call()
@@ -229,8 +232,8 @@ async fn test_pay_for_gas() {
     .await
     .unwrap();
 
-    let wallet = igp.wallet();
-    let provider = wallet.get_provider().unwrap();
+    let wallet = igp.account();
+    let provider = wallet.provider().unwrap();
 
     let refund_address = Address::from_str(TEST_REFUND_ADDRESS).unwrap();
 
@@ -577,7 +580,7 @@ async fn test_quote_gas_payment_reverts_if_no_gas_oracle_set() {
 async fn test_set_gas_oracle() {
     let (igp, oracle) = get_contract_instances().await;
 
-    let owner_wallet = initial_owner_wallet(&igp.wallet()).await.unwrap();
+    let owner_wallet = initial_owner_account(&igp.account()).await.unwrap();
 
     let remote_domain = TEST_DESTINATION_DOMAIN + 1;
     let oracle_contract_id_bits256 = Bits256(oracle.contract_id().hash().into());
@@ -594,7 +597,7 @@ async fn test_set_gas_oracle() {
 
     // Now set the gas oracle
     let call = igp
-        .with_wallet(owner_wallet)
+        .with_account(owner_wallet)
         .unwrap()
         .methods()
         .set_gas_oracle(remote_domain, oracle_contract_id_bits256)
@@ -644,12 +647,12 @@ async fn test_set_gas_oracle_reverts_if_not_owner() {
 async fn test_set_beneficiary() {
     let (igp, _) = get_contract_instances().await;
 
-    let owner_wallet = initial_owner_wallet(&igp.wallet()).await.unwrap();
+    let owner_wallet = initial_owner_account(&igp.account()).await.unwrap();
 
     let new_beneficiary = Identity::Address(Address::from_str(TEST_REFUND_ADDRESS).unwrap());
 
     let call = igp
-        .with_wallet(owner_wallet)
+        .with_account(owner_wallet)
         .unwrap()
         .methods()
         .set_beneficiary(new_beneficiary.clone())
@@ -690,7 +693,7 @@ async fn test_claim() {
 
     let amount = 12345677u64;
 
-    let wallet = igp.wallet();
+    let wallet = igp.account();
     // Send some tokens to the contract
     let (_, _) = wallet
         .force_transfer_to_contract(
@@ -702,7 +705,7 @@ async fn test_claim() {
         .await
         .unwrap();
 
-    let provider = wallet.get_provider().unwrap();
+    let provider = wallet.provider().unwrap();
 
     let beneficiary = Address::from_str(INITIAL_OWNER_ADDRESS).unwrap();
 

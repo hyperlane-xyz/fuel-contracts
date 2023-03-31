@@ -33,7 +33,10 @@ const TEST_REFUND_ADDRESS: &str =
     "0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe";
 const TEST_GAS_OVERHEAD_AMOUNT: u64 = 100000;
 
-async fn get_contract_instances() -> (OverheadIgp, TestInterchainGasPaymaster) {
+async fn get_contract_instances() -> (
+    OverheadIgp<WalletUnlocked>,
+    TestInterchainGasPaymaster<WalletUnlocked>,
+) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -78,9 +81,9 @@ async fn get_contract_instances() -> (OverheadIgp, TestInterchainGasPaymaster) {
     let overhead_igp = OverheadIgp::new(overhead_igp_id.clone(), wallet.clone());
 
     // Set the destination gas overhead for the test destination domain
-    let owner_wallet = initial_owner_wallet(&wallet).await.unwrap();
+    let owner_wallet = initial_owner_account(&wallet).await.unwrap();
     overhead_igp
-        .with_wallet(owner_wallet)
+        .with_account(owner_wallet)
         .unwrap()
         .methods()
         .set_destination_gas_overheads(vec![GasOverheadConfig {
@@ -94,7 +97,7 @@ async fn get_contract_instances() -> (OverheadIgp, TestInterchainGasPaymaster) {
     (overhead_igp, test_igp)
 }
 
-async fn initial_owner_wallet(funder: &WalletUnlocked) -> Result<WalletUnlocked> {
+async fn initial_owner_account(funder: &WalletUnlocked) -> Result<WalletUnlocked> {
     funded_wallet_with_private_key(funder, INTIAL_OWNER_PRIVATE_KEY).await
 }
 
@@ -211,7 +214,9 @@ async fn test_quote_gas_payment() {
 async fn test_set_destination_gas_overheads() {
     let (overhead_igp, _) = get_contract_instances().await;
 
-    let owner_wallet = initial_owner_wallet(&overhead_igp.wallet()).await.unwrap();
+    let owner_wallet = initial_owner_account(&overhead_igp.account())
+        .await
+        .unwrap();
 
     let configs = vec![
         GasOverheadConfig {
@@ -225,7 +230,7 @@ async fn test_set_destination_gas_overheads() {
     ];
 
     let call = overhead_igp
-        .with_wallet(owner_wallet)
+        .with_account(owner_wallet)
         .unwrap()
         .methods()
         .set_destination_gas_overheads(configs.clone())
