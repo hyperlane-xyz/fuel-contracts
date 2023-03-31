@@ -8,9 +8,9 @@ use fuels::{
     types::{Bits256, EvmAddress, SizedAsciiString},
 };
 
-use hyperlane_core::{Announcement, HyperlaneSignerExt, H160, H256};
+use hyperlane_core::{Announcement, H256};
 use hyperlane_ethereum::Signers;
-use test_utils::{get_revert_string, h256_to_bits256, signature_to_compact};
+use test_utils::{get_revert_string, evm_address, get_signer, sign_compact};
 
 // Load abi from json
 abigen!(Contract(
@@ -29,19 +29,13 @@ impl TryFrom<String> for StorableString {
     }
 }
 
-fn evm_address(signer: &Signers) -> EvmAddress {
-    h256_to_bits256(signer.address().into()).into()
-}
-
 const TEST_MAILBOX_ID: &str = "0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe";
 const TEST_LOCAL_DOMAIN: u32 = 0x6675656cu32;
 
-// Random generated addresses & private keys
-const TEST_VALIDATOR_0_ADDRESS: &str = "0x44156681B61fa38a052B690e3816d0B85225B787";
+// Random generated private keys
 const TEST_VALIDATOR_0_PRIVATE_KEY: &str =
     "2ef987da35e5b389bb47cc4ec024ce0c37e5defd00de35fe61db6f50d1a858a1";
 
-const TEST_VALIDATOR_1_ADDRESS: &str = "0xbF4FBf156ace892787EBA14AB7771c81c9653EF8";
 const TEST_VALIDATOR_1_PRIVATE_KEY: &str =
     "411f401057d09d1d65d898ff48f775b0568e8a4cd1212e894b8b4c8820c75c3e";
 
@@ -89,25 +83,21 @@ async fn sign_and_announce(
     let mailbox_id = H256::from_str(TEST_MAILBOX_ID).unwrap();
     let signer_address = signer.address();
 
-    let signed_announcement = signer
-        .sign(Announcement {
-            validator: signer_address,
-            mailbox_address: mailbox_id,
-            mailbox_domain: TEST_LOCAL_DOMAIN,
-            storage_location,
-        })
-        .await
-        .unwrap();
+    let announcement = Announcement {
+        validator: signer_address,
+        mailbox_address: mailbox_id,
+        mailbox_domain: TEST_LOCAL_DOMAIN,
+        storage_location: storage_location.clone(),
+    };
+
+    let compact_signed = sign_compact(signer, announcement).await;
 
     validator_announce
         .methods()
         .announce_vec(
             evm_address(signer),
-            signed_announcement.value.storage_location.as_bytes().into(),
-            signature_to_compact(&signed_announcement.signature)
-                .as_slice()
-                .try_into()
-                .unwrap(),
+            storage_location.as_bytes().into(),
+            compact_signed
         )
         .call()
         .await
@@ -119,10 +109,7 @@ async fn sign_and_announce(
 async fn test_announce() {
     let (validator_announce, _id) = get_contract_instance().await;
 
-    let signer: Signers = TEST_VALIDATOR_0_PRIVATE_KEY
-        .parse::<ethers::signers::LocalWallet>()
-        .unwrap()
-        .into();
+    let signer = get_signer(TEST_VALIDATOR_0_PRIVATE_KEY);
     let signer_evm_address = evm_address(&signer);
 
     let storage_location = "file://some/path/to/storage".to_string();
@@ -155,39 +142,31 @@ async fn test_announce() {
 async fn test_announce_reverts_if_invalid_signature() {
     let (validator_announce, _id) = get_contract_instance().await;
 
-    let signer: Signers = TEST_VALIDATOR_0_PRIVATE_KEY
-        .parse::<ethers::signers::LocalWallet>()
-        .unwrap()
-        .into();
+    let signer = get_signer(TEST_VALIDATOR_0_PRIVATE_KEY);
 
     let mailbox_id = H256::from_str(TEST_MAILBOX_ID).unwrap();
 
-    let validator_h160 = H160::from_str(TEST_VALIDATOR_0_ADDRESS).unwrap();
+    let validator_h160 = signer.address();
 
-    let non_signer_validator: EvmAddress =
-        h256_to_bits256(H160::from_str(TEST_VALIDATOR_1_ADDRESS).unwrap().into()).into();
+    let non_signer_validator = evm_address(&get_signer(TEST_VALIDATOR_1_PRIVATE_KEY));
+
+    let storage_location = "file://some/path/to/storage";
+    let announcement = Announcement {
+        validator: validator_h160,
+        mailbox_address: mailbox_id,
+        mailbox_domain: TEST_LOCAL_DOMAIN,
+        storage_location: storage_location.into(),
+    };
 
     // Sign an announcement and announce it
-    let signed_announcement = signer
-        .sign(Announcement {
-            validator: validator_h160,
-            mailbox_address: mailbox_id,
-            mailbox_domain: TEST_LOCAL_DOMAIN,
-            storage_location: "file://some/path/to/storage".into(),
-        })
-        .await
-        .unwrap();
-
+    let compact_signature = sign_compact(&signer, announcement).await;
     let call = validator_announce
         .methods()
         .announce_vec(
             // Try announcing with a different validator address
             non_signer_validator,
-            signed_announcement.value.storage_location.as_bytes().into(),
-            signature_to_compact(&signed_announcement.signature)
-                .as_slice()
-                .try_into()
-                .unwrap(),
+            storage_location.as_bytes().into(),
+            compact_signature,
         )
         .call()
         .await;
@@ -202,10 +181,7 @@ async fn test_announce_reverts_if_invalid_signature() {
 async fn test_announce_reverts_if_storage_location_over_128_chars() {
     let (validator_announce, _id) = get_contract_instance().await;
 
-    let signer: Signers = TEST_VALIDATOR_0_PRIVATE_KEY
-        .parse::<ethers::signers::LocalWallet>()
-        .unwrap()
-        .into();
+    let signer = get_signer(TEST_VALIDATOR_0_PRIVATE_KEY);
     let storage_location = "a".repeat(129);
     let call = sign_and_announce(&validator_announce, &signer, storage_location).await;
     assert!(call.is_err());
@@ -221,10 +197,7 @@ async fn test_announce_reverts_if_storage_location_over_128_chars() {
 async fn test_get_announced_storage_location() {
     let (validator_announce, _id) = get_contract_instance().await;
 
-    let signer: Signers = TEST_VALIDATOR_0_PRIVATE_KEY
-        .parse::<ethers::signers::LocalWallet>()
-        .unwrap()
-        .into();
+    let signer = get_signer(TEST_VALIDATOR_0_PRIVATE_KEY);
     let validator = evm_address(&signer);
 
     let storage_location = "file://some/path/to/storage".to_string();
@@ -282,8 +255,8 @@ async fn test_get_announced_storage_location() {
 async fn test_get_announced_storage_location_if_none_announced() {
     let (validator_announce, _id) = get_contract_instance().await;
 
-    let validator_h160 = H160::from_str(TEST_VALIDATOR_0_ADDRESS).unwrap();
-    let validator: EvmAddress = h256_to_bits256(validator_h160.into()).into();
+    let signer = get_signer(TEST_VALIDATOR_0_PRIVATE_KEY);
+    let validator: EvmAddress = evm_address(&signer);
 
     let storage_location = validator_announce
         .methods()
@@ -300,13 +273,8 @@ async fn test_get_announced_storage_location_if_none_announced() {
 async fn test_get_announced_storage_location_reverts_if_index_out_of_bounds() {
     let (validator_announce, _id) = get_contract_instance().await;
 
-    let validator_h160 = H160::from_str(TEST_VALIDATOR_0_ADDRESS).unwrap();
-    let validator: EvmAddress = h256_to_bits256(validator_h160.into()).into();
-
-    let signer: Signers = TEST_VALIDATOR_0_PRIVATE_KEY
-        .parse::<ethers::signers::LocalWallet>()
-        .unwrap()
-        .into();
+    let signer: Signers = get_signer(TEST_VALIDATOR_0_PRIVATE_KEY);
+    let validator: EvmAddress = evm_address(&signer);
 
     let storage_location = "file://some/path/to/storage".to_string();
     sign_and_announce(&validator_announce, &signer, storage_location)
@@ -332,10 +300,7 @@ async fn test_get_announced_storage_location_reverts_if_index_out_of_bounds() {
 async fn test_get_announced_storage_location_count() {
     let (validator_announce, _id) = get_contract_instance().await;
 
-    let signer: Signers = TEST_VALIDATOR_0_PRIVATE_KEY
-        .parse::<ethers::signers::LocalWallet>()
-        .unwrap()
-        .into();
+    let signer: Signers = get_signer(TEST_VALIDATOR_0_PRIVATE_KEY);
     let validator = evm_address(&signer);
 
     let storage_location = "file://some/path/to/storage".to_string();
@@ -375,10 +340,7 @@ async fn test_get_announced_storage_location_count() {
 async fn test_get_announced_validators() {
     let (validator_announce, _id) = get_contract_instance().await;
 
-    let signer_0: Signers = TEST_VALIDATOR_0_PRIVATE_KEY
-        .parse::<ethers::signers::LocalWallet>()
-        .unwrap()
-        .into();
+    let signer_0: Signers = get_signer(TEST_VALIDATOR_0_PRIVATE_KEY);
     let validator_0 = evm_address(&signer_0);
 
     // No validators yet
@@ -406,10 +368,7 @@ async fn test_get_announced_validators() {
     assert_eq!(announced_validators, vec![validator_0]);
 
     // New validator signer
-    let signer_1: Signers = TEST_VALIDATOR_1_PRIVATE_KEY
-        .parse::<ethers::signers::LocalWallet>()
-        .unwrap()
-        .into();
+    let signer_1: Signers = get_signer(TEST_VALIDATOR_1_PRIVATE_KEY);
     let validator_1: EvmAddress = evm_address(&signer_1);
 
     sign_and_announce(&validator_announce, &signer_1, storage_location)

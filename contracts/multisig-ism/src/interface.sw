@@ -10,6 +10,9 @@ abi MultisigIsm {
     #[storage(read)]
     fn verify(metadata: MultisigMetadata, message: Message) -> bool;
 
+    // #[storage(read)]
+    // fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedMessage) -> bool;
+
     #[storage(read)]
     fn threshold(domain: u32) -> u8;
     #[storage(read)]

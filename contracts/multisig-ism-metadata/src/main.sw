@@ -2,7 +2,7 @@ library metadata;
 
 use std::{b512::B512, bytes::Bytes, hash::keccak256, vm::evm::evm_address::EvmAddress};
 
-use bytes_extended::*;
+use std_lib_extended::bytes::*;
 
 /// See https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/libs/isms/MultisigIsmMetadata.sol
 /// for the reference implementation.

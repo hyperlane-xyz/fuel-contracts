@@ -15,7 +15,7 @@ const TEST_MAILBOX_DOMAIN: u32 = 420u32;
 const TEST_CHECKPOINT_ROOT: H256 = H256::repeat_byte(0xbu8);
 const TEST_CHECKPOINT_INDEX: u32 = 69u32;
 
-async fn get_contract_instance() -> (TestMultisigIsmMetadata, ContractId) {
+async fn get_contract_instance() -> (TestMultisigIsmMetadata<WalletUnlocked>, ContractId) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(

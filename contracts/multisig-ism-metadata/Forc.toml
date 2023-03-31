@@ -5,4 +5,4 @@ license = "Apache-2.0"
 name = "multisig_ism_metadata"
 
 [dependencies]
-bytes_extended = { path = "../bytes-extended" }
+std_lib_extended = { path = "../std-lib-extended" }

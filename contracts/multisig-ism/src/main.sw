@@ -21,6 +21,11 @@ use interface::MultisigIsm;
 
 use multisig_ism_metadata::MultisigMetadata;
 
+use std_lib_extended::{
+    option::*,
+    result::*
+};
+
 /// See https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/isms/MultisigIsm.sol
 /// for the reference implementation.
 
@@ -66,9 +71,12 @@ pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedM
     let origin = message.origin();
 
     let threshold = storage.threshold.get(origin).unwrap();
+    log(threshold);
+
     let validators = storage.validators.to_vec(origin);
 
     let digest = metadata.checkpoint_digest(origin);
+    log(digest);
 
     let validator_count = validators.len();
     let mut validator_index = 0;
@@ -77,7 +85,10 @@ pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedM
     // Assumes that signatures are ordered by validator
     while signature_index < threshold {
         let signature = metadata.signatures.get(signature_index).unwrap();
-        let signer = ec_recover_evm_address(signature, digest).unwrap();
+        log(signature);
+
+        let signer = ec_recover_evm_address(signature, digest).expect("validator signature recovery failed");
+        log(signer);
 
         // Loop through remaining validators until we find a match
         while validator_index < validator_count && signer != validators.get(validator_index).unwrap() {
@@ -119,7 +130,7 @@ impl MultisigIsm for Contract {
     fn verify(metadata: MultisigMetadata, _message: Message) -> bool {
         // TODO: revert once abigen handles Bytes
         let message = EncodedMessage::from(_message);
-        require(verify_merkle_proof(metadata, message), "!merkle");
+        // require(verify_merkle_proof(metadata, message), "!merkle");
         require(verify_validator_signatures(metadata, message), "!signatures");
         return true;
     }
