@@ -4,6 +4,18 @@ use hyperlane_ethereum::Signers;
 use hyperlane_core::{Checkpoint, H256, HyperlaneSigner, Signable};
 use test_utils::{evm_address, h256_to_bits256, get_revert_string, zero_address, get_signer, bits256_to_h256, sign_compact};
 
+mod mailbox_contract {
+    use fuels::prelude::abigen;
+
+    // Load abi from json
+    abigen!(Contract(
+        name = "Mailbox",
+        abi = "contracts/hyperlane-mailbox/out/debug/hyperlane-mailbox-abi.json"
+    ));
+}
+
+use crate::mailbox_contract::Mailbox;
+
 // Load abi from json
 abigen!(Contract(
     name = "MultisigIsm",
@@ -19,7 +31,9 @@ const TEST_VALIDATOR_0_PRIVATE_KEY: &str =
 const TEST_VALIDATOR_1_PRIVATE_KEY: &str =
     "411f401057d09d1d65d898ff48f775b0568e8a4cd1212e894b8b4c8820c75c3e";
 
-async fn get_contract_instance() -> (MultisigIsm<WalletUnlocked>, ContractId) {
+const TEST_RECIPIENT: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+async fn get_contract_instance() -> (MultisigIsm<WalletUnlocked>, ContractId, WalletUnlocked) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -44,9 +58,29 @@ async fn get_contract_instance() -> (MultisigIsm<WalletUnlocked>, ContractId) {
     .await
     .unwrap();
 
-    let instance = MultisigIsm::new(id.clone(), wallet);
+    let instance = MultisigIsm::new(id.clone(), wallet.clone());
 
-    (instance, id.into())
+    (instance, id.into(), wallet)
+}
+
+async fn deploy_mailbox(wallet: WalletUnlocked) -> Mailbox<WalletUnlocked> {
+    let mailbox_configurables =
+        mailbox_contract::MailboxConfigurables::new().set_LOCAL_DOMAIN(TEST_LOCAL_DOMAIN);
+
+    let mailbox_id = Contract::deploy(
+        "../hyperlane-mailbox/out/debug/hyperlane-mailbox.bin",
+        &wallet,
+        DeployConfiguration::default()
+            .set_storage_configuration(StorageConfiguration::new(
+                "../hyperlane-mailbox/out/debug/hyperlane-mailbox-storage_slots.json".to_string(),
+                vec![],
+            ))
+            .set_configurables(mailbox_configurables),
+    )
+    .await
+    .unwrap();
+
+    return Mailbox::new(mailbox_id, wallet);
 }
 
 async fn setup() -> (Vec<u32>, Vec<EvmAddress>, Vec<Signers>, Vec<u8>) {
@@ -69,7 +103,7 @@ async fn setup() -> (Vec<u32>, Vec<EvmAddress>, Vec<Signers>, Vec<u8>) {
 
 #[tokio::test]
 async fn test_enroll_validator() {
-    let (instance, _id) = get_contract_instance().await;
+    let (instance, _id, _) = get_contract_instance().await;
     
     let (domains, addresses, _, _) = setup().await;
 
@@ -98,7 +132,7 @@ async fn test_enroll_validator() {
 
 #[tokio::test]
 async fn test_unenroll_validator() {
-    let (instance, _id) = get_contract_instance().await;
+    let (instance, _id, _) = get_contract_instance().await;
     
     let (domains, mut addresses, _, _) = setup().await;
 
@@ -128,7 +162,7 @@ async fn test_unenroll_validator() {
 
 #[tokio::test]
 async fn test_enroll_validators() {
-    let (instance, _id) = get_contract_instance().await;
+    let (instance, _id, _) = get_contract_instance().await;
     
     let (mut domains, addresses, _, _) = setup().await;
 
@@ -154,7 +188,7 @@ async fn test_enroll_validators() {
 
 #[tokio::test]
 async fn test_set_threshold() {
-    let (instance, _id) = get_contract_instance().await;
+    let (instance, _id, _) = get_contract_instance().await;
     
     let (domains, addresses, _, thresholds) = setup().await;
 
@@ -188,7 +222,7 @@ async fn test_set_threshold() {
 
 #[tokio::test]
 async fn test_set_thresholds() {
-    let (instance, _id) = get_contract_instance().await;
+    let (instance, _id, _) = get_contract_instance().await;
     
     let (mut domains, addresses, _, thresholds) = setup().await;
 
@@ -221,17 +255,17 @@ fn test_message() -> Message {
     Message {
         version: 0u8,
         nonce: 0u32,
-        origin: TEST_REMOTE_DOMAIN,
+        origin: TEST_LOCAL_DOMAIN,
         sender: h256_to_bits256(TEST_MAILBOX_ADDRESS),
-        destination: TEST_LOCAL_DOMAIN,
+        destination: TEST_REMOTE_DOMAIN,
         recipient: h256_to_bits256(TEST_MAILBOX_ADDRESS),
         body: vec![10u8; 100],
     }
 }
 
 #[tokio::test]
-async fn test_verify_validator_signatures() {
-    let (instance, _id) = get_contract_instance().await;
+async fn test_verify() {
+    let (instance, _id, wallet) = get_contract_instance().await;
 
     let (domains, addresses, signers, thresholds) = setup().await;
 
@@ -239,9 +273,34 @@ async fn test_verify_validator_signatures() {
     let _ = instance.methods().enroll_validators(domains.clone(), validators).call().await;
     let _ = instance.methods().set_thresholds(domains.clone(), thresholds).call().await;
 
+    let mailbox = deploy_mailbox(wallet).await;
+
+    let body = vec![10u8; 100];
+    let _ = mailbox.methods().dispatch(
+        TEST_REMOTE_DOMAIN,
+        Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
+        body,
+    )
+    .call()
+    .await.unwrap();
+
+    // TODO: build merkle tree and proof
+    // 1. get logged message and decode
+    // 2. insert message id to incremental merkle tree
+    // 3. get latest checkpoint and sign
+    // 4. produce merkle proof for message id at checkpoint.index in checkpoint.root
+    // 5. build metadata from signatures and proof
+    // 5. verify message against metadata
+
+    // let message_id = bits256_to_h256(call.value);
+    // // insert message_id to merkle tree
+    // // produce proof
+
+    // let latest_checkpoint = mailbox.methods().latest_checkpoint().simulate().await.unwrap();
+
     let checkpoint = Checkpoint {
         mailbox_address: TEST_MAILBOX_ADDRESS,
-        mailbox_domain: TEST_REMOTE_DOMAIN,
+        mailbox_domain: TEST_LOCAL_DOMAIN,
         root: TEST_CHECKPOINT_ROOT,
         index: TEST_CHECKPOINT_INDEX,
     };
@@ -266,57 +325,58 @@ async fn test_verify_validator_signatures() {
         test_message()
     ).simulate().await;
 
-    // if result.is_err() {
-    //     let call_error = result.unwrap_err();
-    //     // let revert_reason = get_revert_string(call_error);
-    //     // println!("revert reason: {}", revert_reason);
+    if result.is_err() {
+        let call_error = result.unwrap_err();
+        let revert_reason = get_revert_string(call_error);
+        println!("revert reason: {}", revert_reason);
     
-    //     let receipts = if let Error::RevertTransactionError { receipts, .. } = call_error {
-    //         receipts
-    //     } else {
-    //         panic!(
-    //             "Error is not a RevertTransactionError. Error: {:?}",
-    //             call_error
-    //         );
-    //     };
+        // let receipts = if let Error::RevertTransactionError { receipts, .. } = call_error {
+        //     receipts
+        // } else {
+        //     panic!(
+        //         "Error is not a RevertTransactionError. Error: {:?}",
+        //         call_error
+        //     );
+        // };
     
-    //     receipts.iter().for_each(|receipt| {
-    //         if let Receipt::Log { ra, .. } = receipt {
-    //             println!("ra: {:?}", ra);
-    //         } else if let Receipt::LogData { data, .. } = receipt {
-    //             match data.len() {
-    //                 64 => {
-    //                     let b512 = B512::try_from(data.as_slice());
-    //                     if b512.is_ok() {
-    //                         println!("signature: {:?}", b512.unwrap());
-    //                     }
-    //                 },
-    //                 32 => {
-    //                     let slice = data.as_slice();
-    //                     let b256 = Bits256(slice.try_into().unwrap());
-    //                     if slice[0] == 0 && slice[1] == 0 && slice[2] == 0 {
-    //                         let address = EvmAddress::from(b256);
-    //                         println!("signer: {:?}", address);
-    //                     } else {
-    //                         println!("digest: {:?}", bits256_to_h256(b256));
-    //                     }
-    //                 },
-    //                 _ => {
-    //                     println!("data: {:?} len: {:?}", data, data.len());
-    //                 }
-    //             }
-    //             // let s = String::from_utf8(cleaned).unwrap();
-    //         }
-    //     });
-    // }
-
-    let verified = result.unwrap().value;
-    assert!(verified);
+        // receipts.iter().for_each(|receipt| {
+        //     if let Receipt::Log { ra, .. } = receipt {
+        //         println!("ra: {:?}", ra);
+        //     } else if let Receipt::LogData { data, .. } = receipt {
+        //         match data.len() {
+        //             64 => {
+        //                 let b512 = B512::try_from(data.as_slice());
+        //                 if b512.is_ok() {
+        //                     println!("signature: {:?}", b512.unwrap());
+        //                 }
+        //             },
+        //             32 => {
+        //                 let slice = data.as_slice();
+        //                 let b256 = Bits256(slice.try_into().unwrap());
+        //                 if slice[0] == 0 && slice[1] == 0 && slice[2] == 0 {
+        //                     let address = EvmAddress::from(b256);
+        //                     println!("signer: {:?}", address);
+        //                 } else {
+        //                     println!("digest: {:?}", bits256_to_h256(b256));
+        //                 }
+        //             },
+        //             _ => {
+        //                 println!("data: {:?} len: {:?}", data, data.len());
+        //             }
+        //         }
+        //         // let s = String::from_utf8(cleaned).unwrap();
+        //     }
+        // });
+        assert!(false);
+    } else {
+        let verified = result.unwrap().value;
+        assert!(verified);
+    }
 }
 
 // #[tokio::test]
 // async fn verify_validator_merkle_proof() {
-//     let (_instance, _id) = get_contract_instance().await;
+//     let (_instance, _id, _) = get_contract_instance().await;
 
 //     todo!();
 // }

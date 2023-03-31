@@ -82,10 +82,8 @@ pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedM
     // Assumes that signatures are ordered by validator
     while signature_index < threshold {
         let signature = metadata.signatures.get(signature_index).unwrap();
-        log(signature);
 
         let signer = ec_recover_evm_address(signature, digest).expect("validator signature recovery failed");
-        log(signer);
 
         // Loop through remaining validators until we find a match
         while validator_index < validator_count && signer != validators.get(validator_index).unwrap() {
@@ -127,7 +125,7 @@ impl MultisigIsm for Contract {
     fn verify(metadata: MultisigMetadata, _message: Message) -> bool {
         // TODO: revert once abigen handles Bytes
         let message = EncodedMessage::from(_message);
-        // require(verify_merkle_proof(metadata, message), "!merkle");
+        require(verify_merkle_proof(metadata, message), "!merkle");
         require(verify_validator_signatures(metadata, message), "!signatures");
         return true;
     }
