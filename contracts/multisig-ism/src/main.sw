@@ -70,15 +70,12 @@ pub fn verify_merkle_proof(metadata: MultisigMetadata, message: EncodedMessage) 
 pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
     let origin = message.origin();
 
-    let threshold = storage.threshold.get(origin).unwrap();
-    log(threshold);
-
-    let validators = storage.validators.to_vec(origin);
-
     let digest = metadata.checkpoint_digest(origin);
-    log(digest);
 
+    let threshold = storage.threshold.get(origin).unwrap();
+    let validators = storage.validators.to_vec(origin);
     let validator_count = validators.len();
+
     let mut validator_index = 0;
     let mut signature_index = 0;
 

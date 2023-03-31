@@ -1,9 +1,8 @@
-use ethers::signers::Signer;
 use fuels::{prelude::*, tx::{ContractId, Receipt}, types::{B512, Bits256, EvmAddress}};
 
 use hyperlane_ethereum::Signers;
-use hyperlane_core::{Checkpoint, HyperlaneSignerExt, H256, HyperlaneSigner, H160, Signable};
-use test_utils::{evm_address, signature_to_compact, h256_to_bits256, get_revert_string, zero_address, get_signer, bits256_to_h256, sign_compact};
+use hyperlane_core::{Checkpoint, H256, HyperlaneSigner, Signable};
+use test_utils::{evm_address, h256_to_bits256, get_revert_string, zero_address, get_signer, bits256_to_h256, sign_compact};
 
 // Load abi from json
 abigen!(Contract(
@@ -215,7 +214,6 @@ async fn test_set_thresholds() {
 }
 
 const TEST_MAILBOX_ADDRESS: H256 = H256::repeat_byte(0xau8);
-const TEST_MAILBOX_DOMAIN: u32 = 420u32;
 const TEST_CHECKPOINT_ROOT: H256 = H256::repeat_byte(0xbu8);
 const TEST_CHECKPOINT_INDEX: u32 = 69u32;
 
@@ -243,7 +241,7 @@ async fn test_verify_validator_signatures() {
 
     let checkpoint = Checkpoint {
         mailbox_address: TEST_MAILBOX_ADDRESS,
-        mailbox_domain: TEST_MAILBOX_DOMAIN,
+        mailbox_domain: TEST_REMOTE_DOMAIN,
         root: TEST_CHECKPOINT_ROOT,
         index: TEST_CHECKPOINT_INDEX,
     };
@@ -251,14 +249,9 @@ async fn test_verify_validator_signatures() {
     let mut signatures: Vec<B512> = Vec::new();
 
     for signer in signers.iter() {
-        let eth_hash = checkpoint.eth_signed_message_hash();
-        println!("eth hash: {:?}", eth_hash);
         let compact = sign_compact(signer, checkpoint).await;
         signatures.push(compact);
     }
-    
-    // println!("signature: {:?}", signatures[0]);
-    println!("signer: {:?}", signers[0].eth_address());
 
     let metadata = MultisigMetadata {
         root: h256_to_bits256(checkpoint.root),
@@ -273,54 +266,52 @@ async fn test_verify_validator_signatures() {
         test_message()
     ).simulate().await;
 
-    if result.is_err() {
-        let call_error = result.unwrap_err();
-        // let revert_reason = get_revert_string(call_error);
-        // println!("revert reason: {}", revert_reason);
+    // if result.is_err() {
+    //     let call_error = result.unwrap_err();
+    //     // let revert_reason = get_revert_string(call_error);
+    //     // println!("revert reason: {}", revert_reason);
     
-        let receipts = if let Error::RevertTransactionError { receipts, .. } = call_error {
-            receipts
-        } else {
-            panic!(
-                "Error is not a RevertTransactionError. Error: {:?}",
-                call_error
-            );
-        };
+    //     let receipts = if let Error::RevertTransactionError { receipts, .. } = call_error {
+    //         receipts
+    //     } else {
+    //         panic!(
+    //             "Error is not a RevertTransactionError. Error: {:?}",
+    //             call_error
+    //         );
+    //     };
     
-        receipts.iter().for_each(|receipt| {
-            if let Receipt::Log { ra, .. } = receipt {
-                println!("ra: {:?}", ra);
-            } else if let Receipt::LogData { data, .. } = receipt {
-                match data.len() {
-                    64 => {
-                        let b512 = B512::try_from(data.as_slice());
-                        if b512.is_ok() {
-                            println!("signature: {:?}", b512.unwrap());
-                        }
-                    },
-                    32 => {
-                        let slice = data.as_slice();
-                        let b256 = Bits256(slice.try_into().unwrap());
-                        if slice[0] == 0 && slice[1] == 0 && slice[2] == 0 {
-                            let address = EvmAddress::from(b256);
-                            println!("signer: {:?}", address);
-                        } else {
-                            println!("digest: {:?}", bits256_to_h256(b256));
-                        }
-                    },
-                    _ => {
-                        println!("data: {:?} len: {:?}", data, data.len());
-                    }
-                }
-                // let s = String::from_utf8(cleaned).unwrap();
-            }
-        });
-    }
+    //     receipts.iter().for_each(|receipt| {
+    //         if let Receipt::Log { ra, .. } = receipt {
+    //             println!("ra: {:?}", ra);
+    //         } else if let Receipt::LogData { data, .. } = receipt {
+    //             match data.len() {
+    //                 64 => {
+    //                     let b512 = B512::try_from(data.as_slice());
+    //                     if b512.is_ok() {
+    //                         println!("signature: {:?}", b512.unwrap());
+    //                     }
+    //                 },
+    //                 32 => {
+    //                     let slice = data.as_slice();
+    //                     let b256 = Bits256(slice.try_into().unwrap());
+    //                     if slice[0] == 0 && slice[1] == 0 && slice[2] == 0 {
+    //                         let address = EvmAddress::from(b256);
+    //                         println!("signer: {:?}", address);
+    //                     } else {
+    //                         println!("digest: {:?}", bits256_to_h256(b256));
+    //                     }
+    //                 },
+    //                 _ => {
+    //                     println!("data: {:?} len: {:?}", data, data.len());
+    //                 }
+    //             }
+    //             // let s = String::from_utf8(cleaned).unwrap();
+    //         }
+    //     });
+    // }
 
-    assert!(false);
-
-    // let verified = result.unwrap().value;
-    // assert!(verified);
+    let verified = result.unwrap().value;
+    assert!(verified);
 }
 
 // #[tokio::test]
