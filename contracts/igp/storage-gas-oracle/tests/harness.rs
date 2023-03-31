@@ -26,7 +26,7 @@ const INTIAL_OWNER_PRIVATE_KEY: &str =
 const INITIAL_OWNER_ADDRESS: &str =
     "0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e";
 
-async fn get_contract_instance() -> (StorageGasOracle, ContractId) {
+async fn get_contract_instance() -> (StorageGasOracle<WalletUnlocked>, ContractId) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -56,7 +56,7 @@ async fn get_contract_instance() -> (StorageGasOracle, ContractId) {
     (instance, id.into())
 }
 
-async fn initial_owner_wallet(funder: &WalletUnlocked) -> Result<WalletUnlocked> {
+async fn initial_owner_account(funder: &WalletUnlocked) -> Result<WalletUnlocked> {
     funded_wallet_with_private_key(funder, INTIAL_OWNER_PRIVATE_KEY).await
 }
 
@@ -94,12 +94,12 @@ async fn test_initial_owner() {
 #[tokio::test]
 async fn test_set_remote_gas_data_configs_and_get_exchange_rate_and_gas_price() {
     let (oracle, _) = get_contract_instance().await;
-    let owner_wallet = initial_owner_wallet(&oracle.wallet()).await.unwrap();
+    let owner_wallet = initial_owner_account(&oracle.account()).await.unwrap();
 
     let configs = get_test_remote_gas_data_configs();
 
     let call = oracle
-        .with_wallet(owner_wallet)
+        .with_account(owner_wallet)
         .unwrap()
         .methods()
         .set_remote_gas_data_configs(configs.clone())

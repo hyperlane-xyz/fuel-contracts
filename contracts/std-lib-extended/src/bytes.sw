@@ -100,13 +100,7 @@ impl Bytes {
     /// The Bytes will be able to hold exactly `length` bytes without
     /// reallocating.
     pub fn with_length(length: u64) -> Self {
-        // TODO: remove the + 1 once fixed upstream in the VM.
-        // An extra byte is allocated due to a bug in the FuelVM that prevents logging the
-        // byte closest to the top of the heap. This can occur if this is
-        // is the first time heap allocation is occurring.
-        // See https://github.com/FuelLabs/fuel-vm/issues/282 and the pending fix
-        // https://github.com/FuelLabs/fuel-vm/pull/287
-        let mut _self = Bytes::with_capacity(length + 1);
+        let mut _self = Bytes::with_capacity(length);
         _self.len = length;
         _self
     }
@@ -353,6 +347,28 @@ impl Bytes {
     }
 }
 
+/// Bytes::from_vec_u8 requires a mutable Vec<u8> to be passed in.
+/// Certain situations, like when a Vec is a parameter to a public abi function,
+/// the Vec cannot be mutable. So instead we provide a non-mutable way to convert
+/// from Vec<u8> to Bytes.
+impl From<Vec<u8>> for Bytes {
+    fn from(vec: Vec<u8>) -> Self {
+        let vec_len = vec.len();
+        let mut bytes = Bytes::with_length(vec_len);
+        let mut i = 0;
+        while i < vec_len {
+            bytes.set(i, vec.get(i).unwrap());
+            i += 1;
+        }
+        bytes
+    }
+
+    fn into(self) -> Vec<u8> {
+        require(false, "Bytes -> Vec<u8> not implemented");
+        Vec::new()
+    }
+}
+
 // ==================================================
 // =====                                        =====
 // =====                  Tests                 =====
@@ -360,7 +376,7 @@ impl Bytes {
 // ==================================================
 
 fn write_and_read_b256(ref mut bytes: Bytes, offset: u64, value: b256) -> b256 {
-    bytes.write_b256(offset, value);
+    let _ = bytes.write_b256(offset, value);
     bytes.read_b256(offset)
 }
 
@@ -380,7 +396,7 @@ fn test_write_and_read_b256() {
 }
 
 fn write_and_read_evm_address(ref mut bytes: Bytes, offset: u64, value: EvmAddress) -> EvmAddress {
-    bytes.write_evm_address(offset, value);
+    let _ = bytes.write_evm_address(offset, value);
     bytes.read_evm_address(offset)
 }
 
@@ -404,7 +420,7 @@ fn test_write_and_read_evm_address() {
 }
 
 fn write_and_read_u64(ref mut bytes: Bytes, offset: u64, value: u64) -> u64 {
-    bytes.write_u64(offset, value);
+    let _ = bytes.write_u64(offset, value);
     bytes.read_u64(offset)
 }
 
@@ -424,7 +440,7 @@ fn test_write_and_read_u64() {
 }
 
 fn write_and_read_u32(ref mut bytes: Bytes, offset: u64, value: u32) -> u32 {
-    bytes.write_u32(offset, value);
+    let _ = bytes.write_u32(offset, value);
     bytes.read_u32(offset)
 }
 
@@ -444,7 +460,7 @@ fn test_write_and_read_u32() {
 }
 
 fn write_and_read_u16(ref mut bytes: Bytes, offset: u64, value: u16) -> u16 {
-    bytes.write_u16(offset, value);
+    let _ = bytes.write_u16(offset, value);
     bytes.read_u16(offset)
 }
 
@@ -464,7 +480,7 @@ fn test_write_and_read_u16() {
 }
 
 fn write_and_read_u8(ref mut bytes: Bytes, offset: u64, value: u8) -> u8 {
-    bytes.write_u8(offset, value);
+    let _ = bytes.write_u8(offset, value);
     bytes.read_u8(offset)
 }
 
@@ -487,7 +503,7 @@ fn test_write_and_read_u8() {
 }
 
 fn write_and_read_bytes(ref mut bytes: Bytes, offset: u64, value: Bytes) -> Bytes {
-    bytes.write_bytes(offset, value);
+    let _ = bytes.write_bytes(offset, value);
     bytes.read_bytes(offset, value.len())
 }
 
@@ -496,8 +512,8 @@ fn test_write_and_read_bytes() {
     let mut bytes = Bytes::with_length(64);
 
     let mut value = Bytes::with_length(16);
-    value.write_u64(0u64, 0xabcdefabu64);
-    value.write_u64(8u64, 0xabcdefabu64);
+    let _ = value.write_u64(0u64, 0xabcdefabu64);
+    let _ = value.write_u64(8u64, 0xabcdefabu64);
 
     // 0 byte offset
     assert(value.keccak256() == write_and_read_bytes(bytes, 0u64, value).keccak256());
@@ -510,7 +526,7 @@ fn test_write_and_read_bytes() {
 }
 
 fn write_and_read_str(ref mut bytes: Bytes, offset: u64, value: str[30]) -> str[30] {
-    bytes.write_packed_bytes(0u64, __addr_of(value), 30);
+    let _ = bytes.write_packed_bytes(0u64, __addr_of(value), 30);
     let read_ptr = bytes.get_read_ptr(offset, 30);
     asm(ptr: read_ptr) {
         ptr: str[30] // convert the ptr to a str[30]

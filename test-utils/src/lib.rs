@@ -1,17 +1,20 @@
 use std::str::FromStr;
 
 use ethers::{
-    types::H256,
     signers::Signer
 };
+use ethers::types::{Signature, H256, U256};
+use fuels::types::B512;
 use fuels::{
-    prelude::{Bech32Address, TxParameters},
-    signers::{fuel_crypto::SecretKey, WalletUnlocked},
+    accounts::{fuel_crypto::SecretKey, WalletUnlocked},
+    prelude::{Account, Bech32Address, TxParameters},
     tx::{AssetId, Receipt},
     types::{errors::Error, Bits256, EvmAddress},
 };
+use hyperlane_core::Signable;
 use serde::{de::Deserializer, Deserialize};
 use hyperlane_ethereum::Signers;
+use hyperlane_core::HyperlaneSignerExt;
 
 pub fn h256_to_bits256(h: H256) -> Bits256 {
     Bits256(h.0)
@@ -23,6 +26,44 @@ pub fn bits256_to_h256(b: Bits256) -> H256 {
 
 pub fn evm_address(signer: &Signers) -> EvmAddress {
     h256_to_bits256(signer.address().into()).into()
+}
+
+pub fn zero_address() -> EvmAddress {
+    EvmAddress::from(Bits256([0u8; 32]))
+}
+
+pub fn get_signer(private_key: &str) -> Signers {
+    return private_key
+        .parse::<ethers::signers::LocalWallet>()
+        .unwrap()
+        .into();
+}
+
+// Fuel uses compact serialization for signatures following EIP 2098
+// See https://eips.ethereum.org/EIPS/eip-2098
+// |    32 bytes   ||           32 bytes           |
+// [256-bit r value][1-bit v value][255-bit s value]
+pub fn signature_to_compact(signature: &Signature) -> [u8; 64] {
+    let mut compact = [0u8; 64];
+
+    let mut r_bytes = [0u8; 32];
+    signature.r.to_big_endian(&mut r_bytes);
+
+    let mut s_and_y_parity_bytes = [0u8; 32];
+    // v is either 27 or 28, subtract 27 to normalize to y parity as 0 or 1
+    let y_parity = signature.v - 27;
+    let s_and_y_parity = (U256::from(y_parity) << 255) | signature.s;
+    s_and_y_parity.to_big_endian(&mut s_and_y_parity_bytes);
+
+    compact[..32].copy_from_slice(&r_bytes);
+    compact[32..64].copy_from_slice(&s_and_y_parity_bytes);
+
+    compact
+}
+
+pub async fn sign_compact<T: Signable + std::marker::Send>(signer: &Signers, signable: T) -> B512 {
+    let signed = signer.sign(signable).await.unwrap();
+    return B512::try_from(signature_to_compact(&signed.signature).as_slice()).unwrap();
 }
 
 // Given an Error from a call or simulation, returns the revert reason.
@@ -40,6 +81,7 @@ pub fn get_revert_string(call_error: Error) -> String {
     // The receipts will be:
     // [any prior receipts..., LogData with reason, Revert, ScriptResult]
     // We want the LogData with the reason, which is utf-8 encoded as the `data`.
+
     let revert_reason_receipt = &receipts[receipts.len() - 3];
     let data = if let Receipt::LogData { data, .. } = revert_reason_receipt {
         data
@@ -63,7 +105,12 @@ pub async fn funded_wallet_with_private_key(
     let wallet = WalletUnlocked::new_from_private_key(
         SecretKey::from_str(private_key)
             .map_err(|e| Error::WalletError(format!("SecretKey error {:?}", e)))?,
-        Some(funder.get_provider()?.clone()),
+        Some(
+            funder
+                .provider()
+                .ok_or_else(|| Error::WalletError("No provider".into()))?
+                .clone(),
+        ),
     );
 
     fund_address(funder, wallet.address()).await?;

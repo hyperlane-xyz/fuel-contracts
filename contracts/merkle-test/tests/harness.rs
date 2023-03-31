@@ -10,7 +10,7 @@ abigen!(Contract(
     abi = "contracts/merkle-test/out/debug/merkle-test-abi.json"
 ));
 
-async fn get_contract_instance() -> (TestStorageMerkleTree, ContractId) {
+async fn get_contract_instance() -> (TestStorageMerkleTree<WalletUnlocked>, ContractId) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
