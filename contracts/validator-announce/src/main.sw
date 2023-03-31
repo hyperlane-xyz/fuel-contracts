@@ -27,7 +27,11 @@ use storable_string::{
     MAX_STORABLE_STRING_CHARS,
 };
 
-use std_lib_extended::bytes::*;
+use std_lib_extended::{
+    bytes::*,
+    option::*,
+    result::*,
+};
 
 /// Configurable constants to be set at deploy time.
 configurable {
@@ -116,8 +120,9 @@ impl ValidatorAnnounce for Contract {
 
         // If the index isn't specified, default to the last announced storage location.
         let storage_location_index = storage_location_index.unwrap_or(storage_location_count - 1);
-        // TODO: move to `expect` once https://github.com/hyperlane-xyz/fuel-contracts/pull/52 is in
-        let storage_location = storage.storage_locations.get(validator, storage_location_index).unwrap();
+        let storage_location = storage.storage_locations
+            .get(validator, storage_location_index)
+            .expect("storage location index out of bounds");
 
         storage_location.into()
     }
@@ -170,8 +175,7 @@ fn announce(
 
     let digest = get_announcement_digest(MAILBOX_ID, LOCAL_DOMAIN, storage_location);
 
-    // TODO: move to `expect` once https://github.com/hyperlane-xyz/fuel-contracts/pull/52 is in
-    let signer = ec_recover_evm_address(signature, digest).unwrap();
+    let signer = ec_recover_evm_address(signature, digest).expect("validator signature recovery failed");
     require(validator == signer, "validator is not the signer");
 
     upsert_validator(validator);

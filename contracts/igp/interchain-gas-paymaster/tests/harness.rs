@@ -83,7 +83,10 @@ const TEST_NON_BASE_ASSET_ID: [u8; 32] = [1u8; 32];
 
 const TOKEN_EXCHANGE_RATE_SCALE: u128 = 1e19 as u128;
 
-async fn get_contract_instances() -> (InterchainGasPaymaster<WalletUnlocked>, StorageGasOracle<WalletUnlocked>) {
+async fn get_contract_instances() -> (
+    InterchainGasPaymaster<WalletUnlocked>,
+    StorageGasOracle<WalletUnlocked>,
+) {
     let non_base_asset_id = AssetId::new(TEST_NON_BASE_ASSET_ID);
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(

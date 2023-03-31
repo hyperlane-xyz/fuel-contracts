@@ -33,7 +33,10 @@ const TEST_REFUND_ADDRESS: &str =
     "0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe";
 const TEST_GAS_OVERHEAD_AMOUNT: u64 = 100000;
 
-async fn get_contract_instances() -> (OverheadIgp<WalletUnlocked>, TestInterchainGasPaymaster<WalletUnlocked>) {
+async fn get_contract_instances() -> (
+    OverheadIgp<WalletUnlocked>,
+    TestInterchainGasPaymaster<WalletUnlocked>,
+) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -211,7 +214,9 @@ async fn test_quote_gas_payment() {
 async fn test_set_destination_gas_overheads() {
     let (overhead_igp, _) = get_contract_instances().await;
 
-    let owner_wallet = initial_owner_account(&overhead_igp.account()).await.unwrap();
+    let owner_wallet = initial_owner_account(&overhead_igp.account())
+        .await
+        .unwrap();
 
     let configs = vec![
         GasOverheadConfig {

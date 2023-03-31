@@ -320,7 +320,10 @@ async fn test_get_announced_storage_location_reverts_if_index_out_of_bounds() {
         .simulate()
         .await;
     assert!(storage_location.is_err());
-    // TODO when `expect` is used in get_announced_storage_location, ensure the revert string is correct
+    assert_eq!(
+        get_revert_string(storage_location.err().unwrap()),
+        "storage location index out of bounds"
+    );
 }
 
 // ================ get_announced_storage_location_count ================
