@@ -1,3 +1,4 @@
+use ethers::prelude::rand;
 use fuels::{prelude::*, tx::{ContractId, Receipt}, types::{B512, Bits256, EvmAddress}, programs::logs};
 
 use hyperlane_ethereum::Signers;
@@ -261,63 +262,72 @@ async fn test_verify() {
 
     let mailbox = deploy_mailbox(wallet).await;
 
-    let body = vec![10u8; 100];
-    let dispatch_call = mailbox.methods().dispatch(
-        TEST_REMOTE_DOMAIN,
-        Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
-        body,
-    )
-    .call()
-    .await.unwrap();
-
-    // The log is expected to be the second receipt
-    let log_receipt = &dispatch_call.receipts[1];
-    let log_data = if let Receipt::LogData { data, .. } = log_receipt {
-        data
-    } else {
-        panic!("Expected LogData receipt. Receipt: {:?}", log_receipt);
-    };
-
-    let message = HyperlaneMessage::read_from(&mut log_data.as_slice()).unwrap();
-
     let depth = 32;
     let mut tree = MerkleTree::create(&[], depth);
-    let _ = tree.push_leaf(message.id(), depth);
 
-    let (root, index) = mailbox.methods().latest_checkpoint().simulate().await.unwrap().value;
+    // test 32 message verifications
+    for _ in 0..32 {
+        // randomize the message body
+        let body: Vec<u8> = (0..2048).map(|_| { rand::random::<u8>() }).collect();
+        let dispatch_call = mailbox.methods().dispatch(
+            TEST_REMOTE_DOMAIN,
+            Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
+            body,
+        )
+        .call()
+        .await.unwrap();
 
-    let checkpoint = Checkpoint {
-        mailbox_address: TEST_MAILBOX_ADDRESS,
-        mailbox_domain: TEST_LOCAL_DOMAIN,
-        root: bits256_to_h256(root),
-        index,
-    };
+        // recover message from receipt log data
+        let log_receipt = &dispatch_call.receipts[1];
+        let log_data = if let Receipt::LogData { data, .. } = log_receipt {
+            data
+        } else {
+            panic!("Expected LogData receipt. Receipt: {:?}", log_receipt);
+        };
 
-    let mut signatures: Vec<B512> = Vec::new();
+        let message = HyperlaneMessage::read_from(&mut log_data.as_slice()).unwrap();
 
-    for signer in signers.iter() {
-        let compact = sign_compact(signer, checkpoint).await;
-        signatures.push(compact);
+        // push the message commitment to the merkle tree
+        let _ = tree.push_leaf(message.id(), depth);
+
+        let (root, index) = mailbox.methods().latest_checkpoint().simulate().await.unwrap().value;
+
+        // sign the checkpoint
+        let checkpoint = Checkpoint {
+            mailbox_address: TEST_MAILBOX_ADDRESS,
+            mailbox_domain: TEST_LOCAL_DOMAIN,
+            root: bits256_to_h256(root),
+            index,
+        };
+
+        let mut signatures: Vec<B512> = Vec::new();
+
+        for signer in signers.iter() {
+            let compact = sign_compact(signer, checkpoint).await;
+            signatures.push(compact);
+        }
+
+        // generate merkle proof
+        let (leaf, proof) = tree.generate_proof(index as usize, depth);
+        assert_eq!(leaf, message.id());
+
+        // build metadata from signatures and proof
+        let metadata = MultisigMetadata {
+            root: h256_to_bits256(checkpoint.root),
+            index: checkpoint.index,
+            mailbox: h256_to_bits256(checkpoint.mailbox_address),
+            proof: proof.iter().map(|p| h256_to_bits256(*p)).collect::<Vec<_>>().as_slice().try_into().unwrap(),
+            signatures,
+        };
+
+        let result = instance.methods().verify(
+            metadata,
+            message.into()
+        ).simulate().await;
+
+        let verified = result.unwrap().value;
+        assert!(verified);
     }
-
-    let (leaf, proof) = tree.generate_proof(index as usize, depth);
-    assert_eq!(leaf, message.id());
-
-    let metadata = MultisigMetadata {
-        root: h256_to_bits256(checkpoint.root),
-        index: checkpoint.index,
-        mailbox: h256_to_bits256(checkpoint.mailbox_address),
-        proof: proof.iter().map(|p| h256_to_bits256(*p)).collect::<Vec<_>>().as_slice().try_into().unwrap(),
-        signatures,
-    };
-
-    let result = instance.methods().verify(
-        metadata,
-        message.into()
-    ).simulate().await;
-
-    let verified = result.unwrap().value;
-    assert!(verified);
 }
 
 // TODO: dedupe with mailbox tests
