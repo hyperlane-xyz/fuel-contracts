@@ -1,9 +1,16 @@
 use ethers::prelude::rand;
-use fuels::{prelude::*, tx::{ContractId, Receipt}, types::{B512, Bits256, EvmAddress}, programs::logs};
+use fuels::{
+    prelude::*,
+    tx::{ContractId, Receipt},
+    types::{Bits256, EvmAddress, B512},
+};
 
+use hyperlane_core::{accumulator::merkle::MerkleTree, Checkpoint, Decode, HyperlaneMessage, H256};
 use hyperlane_ethereum::Signers;
-use hyperlane_core::{Checkpoint, H256, HyperlaneSigner, Signable, HyperlaneMessage, Decode, accumulator::merkle::MerkleTree};
-use test_utils::{evm_address, h256_to_bits256, get_revert_string, zero_address, get_signer, bits256_to_h256, sign_compact};
+use test_utils::{
+    bits256_to_h256, evm_address, get_revert_string, get_signer, h256_to_bits256, sign_compact,
+    zero_address,
+};
 
 mod mailbox_contract {
     use fuels::prelude::abigen;
@@ -97,7 +104,10 @@ async fn setup() -> (Vec<u32>, Vec<EvmAddress>, Vec<Signers>, Vec<u8>) {
         .map(|signer| evm_address(signer))
         .collect::<Vec<_>>();
 
-    let thresholds = domains.iter().map(|_| addresses.len() as u8).collect::<Vec<_>>();
+    let thresholds = domains
+        .iter()
+        .map(|_| addresses.len() as u8)
+        .collect::<Vec<_>>();
 
     return (domains, addresses, signers, thresholds);
 }
@@ -105,118 +115,175 @@ async fn setup() -> (Vec<u32>, Vec<EvmAddress>, Vec<Signers>, Vec<u8>) {
 #[tokio::test]
 async fn test_enroll_validator() {
     let (instance, _id, _) = get_contract_instance().await;
-    
+
     let (domains, addresses, _, _) = setup().await;
 
     // validator cannot be zero address
-    let call = instance.methods().enroll_validator(domains[0], zero_address()).call().await;
+    let call = instance
+        .methods()
+        .enroll_validator(domains[0], zero_address())
+        .call()
+        .await;
     assert!(call.is_err());
-    assert_eq!(
-        get_revert_string(call.err().unwrap()),
-        "zero address"
-    );
+    assert_eq!(get_revert_string(call.err().unwrap()), "zero address");
 
-    let call = instance.methods().enroll_validator(domains[0], addresses[0]).call().await;
+    let call = instance
+        .methods()
+        .enroll_validator(domains[0], addresses[0])
+        .call()
+        .await;
     assert!(call.is_ok());
 
-    let result = instance.methods().is_enrolled(domains[0], addresses[0]).simulate().await.unwrap();
+    let result = instance
+        .methods()
+        .is_enrolled(domains[0], addresses[0])
+        .simulate()
+        .await
+        .unwrap();
     assert_eq!(true, result.value);
 
     // validator already enrolled
-    let call = instance.methods().enroll_validator(domains[0], addresses[0]).call().await;
+    let call = instance
+        .methods()
+        .enroll_validator(domains[0], addresses[0])
+        .call()
+        .await;
     assert!(call.is_err());
-    assert_eq!(
-        get_revert_string(call.err().unwrap()),
-        "enrolled"
-    );
+    assert_eq!(get_revert_string(call.err().unwrap()), "enrolled");
 }
 
 #[tokio::test]
 async fn test_unenroll_validator() {
     let (instance, _id, _) = get_contract_instance().await;
-    
+
     let (domains, mut addresses, _, _) = setup().await;
 
-    let call = instance.methods().unenroll_validator(domains[0], addresses[0]).call().await;
+    let call = instance
+        .methods()
+        .unenroll_validator(domains[0], addresses[0])
+        .call()
+        .await;
     assert!(call.is_err());
-    assert_eq!(
-        get_revert_string(call.err().unwrap()),
-        "!enrolled"
-    );
+    assert_eq!(get_revert_string(call.err().unwrap()), "!enrolled");
 
     for address in addresses.iter() {
-        let call = instance.methods().enroll_validator(domains[0], *address).call().await;
+        let call = instance
+            .methods()
+            .enroll_validator(domains[0], *address)
+            .call()
+            .await;
         assert!(call.is_ok());
     }
 
     // TODO: does ordering matter?
     let address = addresses.swap_remove(0);
-    let call = instance.methods().unenroll_validator(domains[0], address).call().await;
+    let call = instance
+        .methods()
+        .unenroll_validator(domains[0], address)
+        .call()
+        .await;
     assert!(call.is_ok());
 
-    let result = instance.methods().is_enrolled(domains[0], address).simulate().await.unwrap();
+    let result = instance
+        .methods()
+        .is_enrolled(domains[0], address)
+        .simulate()
+        .await
+        .unwrap();
     assert_eq!(false, result.value);
 
-    let actual_addresses = instance.methods().validators(domains[0]).simulate().await.unwrap();
+    let actual_addresses = instance
+        .methods()
+        .validators(domains[0])
+        .simulate()
+        .await
+        .unwrap();
     assert_eq!(addresses, actual_addresses.value);
 }
 
 #[tokio::test]
 async fn test_enroll_validators() {
     let (instance, _id, _) = get_contract_instance().await;
-    
+
     let (mut domains, addresses, _, _) = setup().await;
 
-    let validators = domains.iter().map(|_| addresses.clone()).collect::<Vec<_>>();
+    let validators = domains
+        .iter()
+        .map(|_| addresses.clone())
+        .collect::<Vec<_>>();
 
-    let call = instance.methods().enroll_validators(domains.clone(), validators.clone()).call().await;
+    let call = instance
+        .methods()
+        .enroll_validators(domains.clone(), validators.clone())
+        .call()
+        .await;
     assert!(call.is_ok());
 
     for domain in domains.iter() {
-        let result = instance.methods().validators(*domain).simulate().await.unwrap();
+        let result = instance
+            .methods()
+            .validators(*domain)
+            .simulate()
+            .await
+            .unwrap();
         assert_eq!(addresses, result.value);
     }
 
     // domains.length != validators.length
     domains.pop();
-    let call = instance.methods().enroll_validators(domains, validators).call().await;
+    let call = instance
+        .methods()
+        .enroll_validators(domains, validators)
+        .call()
+        .await;
     assert!(call.is_err());
-    assert_eq!(
-        get_revert_string(call.err().unwrap()),
-        "!length"
-    );
+    assert_eq!(get_revert_string(call.err().unwrap()), "!length");
 }
 
 #[tokio::test]
 async fn test_set_threshold() {
     let (instance, _id, _) = get_contract_instance().await;
-    
+
     let (domains, addresses, _, thresholds) = setup().await;
 
     // zero threshold
     let call = instance.methods().set_threshold(domains[0], 0).call().await;
     assert!(call.is_err());
-    assert_eq!(
-        get_revert_string(call.err().unwrap()),
-        "!range"
-    );
+    assert_eq!(get_revert_string(call.err().unwrap()), "!range");
 
     // threshold > validators[domain].length
-    let call = instance.methods().set_threshold(domains[0], thresholds[0]).call().await;
+    let call = instance
+        .methods()
+        .set_threshold(domains[0], thresholds[0])
+        .call()
+        .await;
     assert!(call.is_err());
-    assert_eq!(
-        get_revert_string(call.err().unwrap()),
-        "!range"
-    );
+    assert_eq!(get_revert_string(call.err().unwrap()), "!range");
 
-    let validators = domains.iter().map(|_| addresses.clone()).collect::<Vec<_>>();
-    let _ = instance.methods().enroll_validators(domains.clone(), validators).call().await;
+    let validators = domains
+        .iter()
+        .map(|_| addresses.clone())
+        .collect::<Vec<_>>();
+    let _ = instance
+        .methods()
+        .enroll_validators(domains.clone(), validators)
+        .call()
+        .await;
 
     for (i, domain) in domains.iter().enumerate() {
-        let call = instance.methods().set_threshold(*domain, thresholds[i]).call().await;
+        let call = instance
+            .methods()
+            .set_threshold(*domain, thresholds[i])
+            .call()
+            .await;
         assert!(call.is_ok());
-        
-        let result = instance.methods().threshold(*domain).simulate().await.unwrap();
+
+        let result = instance
+            .methods()
+            .threshold(*domain)
+            .simulate()
+            .await
+            .unwrap();
         assert_eq!(thresholds[i], result.value);
     }
 }
@@ -224,28 +291,45 @@ async fn test_set_threshold() {
 #[tokio::test]
 async fn test_set_thresholds() {
     let (instance, _id, _) = get_contract_instance().await;
-    
+
     let (mut domains, addresses, _, thresholds) = setup().await;
 
-    let validators = domains.iter().map(|_| addresses.clone()).collect::<Vec<_>>();
-    let _ = instance.methods().enroll_validators(domains.clone(), validators).call().await;
+    let validators = domains
+        .iter()
+        .map(|_| addresses.clone())
+        .collect::<Vec<_>>();
+    let _ = instance
+        .methods()
+        .enroll_validators(domains.clone(), validators)
+        .call()
+        .await;
 
-    let call = instance.methods().set_thresholds(domains.clone(), thresholds.clone()).call().await;
+    let call = instance
+        .methods()
+        .set_thresholds(domains.clone(), thresholds.clone())
+        .call()
+        .await;
     assert!(call.is_ok());
 
     for (i, domain) in domains.iter().enumerate() {
-        let result = instance.methods().threshold(*domain).simulate().await.unwrap();
+        let result = instance
+            .methods()
+            .threshold(*domain)
+            .simulate()
+            .await
+            .unwrap();
         assert_eq!(thresholds[i], result.value);
     }
 
     // domains.length != thresholds.length
     domains.pop();
-    let call = instance.methods().set_thresholds(domains, thresholds).call().await;
+    let call = instance
+        .methods()
+        .set_thresholds(domains, thresholds)
+        .call()
+        .await;
     assert!(call.is_err());
-    assert_eq!(
-        get_revert_string(call.err().unwrap()),
-        "!length"
-    );
+    assert_eq!(get_revert_string(call.err().unwrap()), "!length");
 }
 
 const TEST_MAILBOX_ADDRESS: H256 = H256::repeat_byte(0xau8);
@@ -256,9 +340,20 @@ async fn test_verify() {
 
     let (domains, addresses, signers, thresholds) = setup().await;
 
-    let validators = domains.iter().map(|_| addresses.clone()).collect::<Vec<_>>();
-    let _ = instance.methods().enroll_validators(domains.clone(), validators).call().await;
-    let _ = instance.methods().set_thresholds(domains.clone(), thresholds).call().await;
+    let validators = domains
+        .iter()
+        .map(|_| addresses.clone())
+        .collect::<Vec<_>>();
+    let _ = instance
+        .methods()
+        .enroll_validators(domains.clone(), validators)
+        .call()
+        .await;
+    let _ = instance
+        .methods()
+        .set_thresholds(domains.clone(), thresholds)
+        .call()
+        .await;
 
     let mailbox = deploy_mailbox(wallet).await;
 
@@ -268,14 +363,17 @@ async fn test_verify() {
     // test 32 message verifications
     for _ in 0..32 {
         // randomize the message body
-        let body: Vec<u8> = (0..2048).map(|_| { rand::random::<u8>() }).collect();
-        let dispatch_call = mailbox.methods().dispatch(
-            TEST_REMOTE_DOMAIN,
-            Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
-            body,
-        )
-        .call()
-        .await.unwrap();
+        let body: Vec<u8> = (0..2048).map(|_| rand::random::<u8>()).collect();
+        let dispatch_call = mailbox
+            .methods()
+            .dispatch(
+                TEST_REMOTE_DOMAIN,
+                Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
+                body,
+            )
+            .call()
+            .await
+            .unwrap();
 
         // recover message from receipt log data
         let log_receipt = &dispatch_call.receipts[1];
@@ -290,7 +388,13 @@ async fn test_verify() {
         // push the message commitment to the merkle tree
         let _ = tree.push_leaf(message.id(), depth);
 
-        let (root, index) = mailbox.methods().latest_checkpoint().simulate().await.unwrap().value;
+        let (root, index) = mailbox
+            .methods()
+            .latest_checkpoint()
+            .simulate()
+            .await
+            .unwrap()
+            .value;
 
         // sign the checkpoint
         let checkpoint = Checkpoint {
@@ -316,14 +420,21 @@ async fn test_verify() {
             root: h256_to_bits256(checkpoint.root),
             index: checkpoint.index,
             mailbox: h256_to_bits256(checkpoint.mailbox_address),
-            proof: proof.iter().map(|p| h256_to_bits256(*p)).collect::<Vec<_>>().as_slice().try_into().unwrap(),
+            proof: proof
+                .iter()
+                .map(|p| h256_to_bits256(*p))
+                .collect::<Vec<_>>()
+                .as_slice()
+                .try_into()
+                .unwrap(),
             signatures,
         };
 
-        let result = instance.methods().verify(
-            metadata,
-            message.into()
-        ).simulate().await;
+        let result = instance
+            .methods()
+            .verify(metadata, message.into())
+            .simulate()
+            .await;
 
         let verified = result.unwrap().value;
         assert!(verified);
