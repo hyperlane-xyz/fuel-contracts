@@ -187,6 +187,7 @@ async fn test_dispatch_logs_message() {
     let (mailbox, _, recipient, _) = get_contract_instance().await;
 
     let message = test_message(&mailbox, recipient, true);
+    let message_id = message.id();
 
     let dispatch_call = mailbox
         .methods()
@@ -209,7 +210,7 @@ async fn test_dispatch_logs_message() {
 
     let recovered_message = HyperlaneAgentMessage::read_from(&mut log_data.as_slice()).unwrap();
     // Assert equality of the message ID
-    assert_eq!(recovered_message.id(), message.id());
+    assert_eq!(recovered_message.id(), message_id);
 
     // Also make sure the DispatchIdEvent was logged
     let events = dispatch_call
@@ -218,7 +219,7 @@ async fn test_dispatch_logs_message() {
     assert_eq!(
         events,
         vec![DispatchIdEvent {
-            message_id: h256_to_bits256(message.id()),
+            message_id: h256_to_bits256(message_id),
         }],
     );
 }
