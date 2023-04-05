@@ -4,6 +4,21 @@ dep igp;
 
 use hyperlane_message::Message;
 
+/// Logged when a message is dispatched.
+/// Although the message ID can be calculated by hashing the message contents,
+/// this is also logged for convenience.
+pub struct DispatchIdEvent {
+    message_id: b256,
+}
+
+/// Logged when a message is processed.
+pub struct ProcessEvent {
+    message_id: b256,
+    origin: u32,
+    sender: b256,
+    recipient: b256,
+}
+
 abi Mailbox {
     /// Dispatches a message to the destination domain and recipient.
     /// Returns the message's ID.

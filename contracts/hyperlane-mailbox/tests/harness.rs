@@ -21,7 +21,9 @@ mod mailbox_contract {
     ));
 }
 
-use crate::mailbox_contract::{Mailbox, Message as ContractMessage, OwnershipTransferredEvent};
+use crate::mailbox_contract::{
+    DispatchIdEvent, Mailbox, Message as ContractMessage, OwnershipTransferredEvent, ProcessEvent,
+};
 
 mod test_interchain_security_module_contract {
     use fuels::prelude::abigen;
@@ -206,9 +208,19 @@ async fn test_dispatch_logs_message() {
     };
 
     let recovered_message = HyperlaneAgentMessage::read_from(&mut log_data.as_slice()).unwrap();
-
     // Assert equality of the message ID
     assert_eq!(recovered_message.id(), message.id());
+
+    // Also make sure the DispatchIdEvent was logged
+    let events = dispatch_call
+        .get_logs_with_type::<DispatchIdEvent>()
+        .unwrap();
+    assert_eq!(
+        events,
+        vec![DispatchIdEvent {
+            message_id: h256_to_bits256(message.id()),
+        }],
+    );
 }
 
 #[tokio::test]
@@ -413,10 +425,19 @@ async fn test_process_id() {
         .await
         .unwrap();
 
-    let message_id = &process_call.get_logs_with_type::<Bits256>().unwrap()[0];
+    let expected_message: ContractMessage = agent_message.into();
 
-    // Assert equality of the message ID
-    assert_eq!(agent_message_id, bits256_to_h256(*message_id));
+    // Also make sure the DispatchIdEvent was logged
+    let events = process_call.get_logs_with_type::<ProcessEvent>().unwrap();
+    assert_eq!(
+        events,
+        vec![ProcessEvent {
+            message_id: h256_to_bits256(agent_message_id),
+            origin: expected_message.origin,
+            sender: expected_message.sender,
+            recipient: expected_message.recipient,
+        }],
+    );
 }
 
 #[tokio::test]
