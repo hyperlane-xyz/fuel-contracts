@@ -87,6 +87,35 @@ dependencies = [
 ]
 
 [[package]]
+name = 'multisig-ism-metadata-test'
+source = 'member'
+dependencies = [
+    'multisig_ism_metadata',
+    'std',
+]
+
+[[package]]
+name = 'multisig_ism'
+source = 'member'
+dependencies = [
+    'hyperlane_interfaces',
+    'hyperlane_message',
+    'merkle',
+    'multisig_ism_metadata',
+    'std',
+    'std_lib_extended',
+    'storagemapvec git+https://github.com/FuelLabs/sway-libs?default-branch#416da643b80e25799ce299acda7f3e99a9173621',
+]
+
+[[package]]
+name = 'multisig_ism_metadata'
+source = 'member'
+dependencies = [
+    'std',
+    'std_lib_extended',
+]
+
+[[package]]
 name = 'overhead-igp'
 source = 'member'
 dependencies = [
@@ -121,6 +150,11 @@ dependencies = [
 
 [[package]]
 name = 'storagemapvec'
+source = 'git+https://github.com/FuelLabs/sway-libs?default-branch#416da643b80e25799ce299acda7f3e99a9173621'
+dependencies = ['std']
+
+[[package]]
+name = 'storagemapvec'
 source = 'git+https://github.com/FuelLabs/sway-libs?tag=v0.7.1#5700990f123be431e6df70f490a6a51fafac1daa'
 dependencies = ['std']
 
@@ -130,5 +164,5 @@ source = 'member'
 dependencies = [
     'std',
     'std_lib_extended',
-    'storagemapvec',
+    'storagemapvec git+https://github.com/FuelLabs/sway-libs?tag=v0.7.1#5700990f123be431e6df70f490a6a51fafac1daa',
 ]

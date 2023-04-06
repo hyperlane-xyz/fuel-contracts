@@ -7,6 +7,8 @@ members = [
     "contracts/igp/overhead-igp",
     "contracts/igp/storage-gas-oracle",
     "contracts/merkle-test",
+    "contracts/multisig-ism",
+    "contracts/multisig-ism-metadata-test",
     "contracts/validator-announce",
     "test-utils",
 ]

@@ -1,13 +1,20 @@
 use std::str::FromStr;
 
+use ethers::{
+    signers::Signer
+};
 use ethers::types::{Signature, H256, U256};
+use fuels::types::B512;
 use fuels::{
     accounts::{fuel_crypto::SecretKey, WalletUnlocked},
     prelude::{Account, Bech32Address, TxParameters},
     tx::{AssetId, Receipt},
-    types::{errors::Error, Bits256},
+    types::{errors::Error, Bits256, EvmAddress},
 };
+use hyperlane_core::Signable;
 use serde::{de::Deserializer, Deserialize};
+use hyperlane_ethereum::Signers;
+use hyperlane_core::HyperlaneSignerExt;
 
 pub fn h256_to_bits256(h: H256) -> Bits256 {
     Bits256(h.0)
@@ -15,6 +22,21 @@ pub fn h256_to_bits256(h: H256) -> Bits256 {
 
 pub fn bits256_to_h256(b: Bits256) -> H256 {
     H256(b.0)
+}
+
+pub fn evm_address(signer: &Signers) -> EvmAddress {
+    h256_to_bits256(signer.address().into()).into()
+}
+
+pub fn zero_address() -> EvmAddress {
+    EvmAddress::from(Bits256([0u8; 32]))
+}
+
+pub fn get_signer(private_key: &str) -> Signers {
+    return private_key
+        .parse::<ethers::signers::LocalWallet>()
+        .unwrap()
+        .into();
 }
 
 // Fuel uses compact serialization for signatures following EIP 2098
@@ -39,6 +61,11 @@ pub fn signature_to_compact(signature: &Signature) -> [u8; 64] {
     compact
 }
 
+pub async fn sign_compact<T: Signable + std::marker::Send>(signer: &Signers, signable: T) -> B512 {
+    let signed = signer.sign(signable).await.unwrap();
+    return B512::try_from(signature_to_compact(&signed.signature).as_slice()).unwrap();
+}
+
 // Given an Error from a call or simulation, returns the revert reason.
 // Panics if it's unable to find the revert reason.
 pub fn get_revert_string(call_error: Error) -> String {
@@ -54,6 +81,7 @@ pub fn get_revert_string(call_error: Error) -> String {
     // The receipts will be:
     // [any prior receipts..., LogData with reason, Revert, ScriptResult]
     // We want the LogData with the reason, which is utf-8 encoded as the `data`.
+
     let revert_reason_receipt = &receipts[receipts.len() - 3];
     let data = if let Receipt::LogData { data, .. } = revert_reason_receipt {
         data
