@@ -101,6 +101,11 @@ source = 'path+from-root-D26B060B9C691B9B'
 dependencies = ['std']
 
 [[package]]
+name = 'pause'
+source = 'member'
+dependencies = ['std']
+
+[[package]]
 name = 'std'
 source = 'git+https://github.com/fuellabs/sway?tag=v0.35.5#49eae2dd93a1957e2a2c2fb3f51b11eb3791fc24'
 dependencies = ['core']

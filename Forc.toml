@@ -13,6 +13,7 @@ members = [
   "contracts/igp/overhead-igp",
   "contracts/igp/storage-gas-oracle",
   "contracts/igp/interchain-gas-paymaster-test",
+  "contracts/pause",
   "contracts/validator-announce",
   "contracts/std-lib-extended",
 ]
