@@ -52,6 +52,7 @@ async fn get_contract_instance() -> (
     Bech32ContractId,
     Bech32ContractId,
     WalletUnlocked,
+    WalletUnlocked,
 ) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
@@ -114,7 +115,7 @@ async fn get_contract_instance() -> (
 
     let raw_ism_id: ContractId = ism_id.clone().into();
     mailbox
-        .with_account(initial_owner_wallet)
+        .with_account(initial_owner_wallet.clone())
         .unwrap()
         .methods()
         .set_default_ism(raw_ism_id)
@@ -130,7 +131,13 @@ async fn get_contract_instance() -> (
         .unwrap();
     assert_eq!(default_ism.value, raw_ism_id);
 
-    (mailbox, ism_id, msg_recipient_id, wallet)
+    (
+        mailbox,
+        ism_id,
+        msg_recipient_id,
+        wallet,
+        initial_owner_wallet,
+    )
 }
 
 // Gets the wallet address from the `Mailbox` instance, and
@@ -160,9 +167,11 @@ fn test_message(
     }
 }
 
+// ============ dispatch ============
+
 #[tokio::test]
 async fn test_dispatch_too_large_message() {
-    let (mailbox, _, _, _) = get_contract_instance().await;
+    let (mailbox, _, _, _, _) = get_contract_instance().await;
 
     let large_message_body = vec![0u8; 3000];
 
@@ -182,7 +191,7 @@ async fn test_dispatch_too_large_message() {
 
 #[tokio::test]
 async fn test_dispatch_logs_message() {
-    let (mailbox, _, recipient, _) = get_contract_instance().await;
+    let (mailbox, _, recipient, _, _) = get_contract_instance().await;
 
     let message = test_message(&mailbox, recipient, true);
 
@@ -213,7 +222,7 @@ async fn test_dispatch_logs_message() {
 
 #[tokio::test]
 async fn test_dispatch_returns_id() {
-    let (mailbox, _, recipient, _) = get_contract_instance().await;
+    let (mailbox, _, recipient, _, _) = get_contract_instance().await;
 
     let message = test_message(&mailbox, recipient, true);
 
@@ -233,7 +242,7 @@ async fn test_dispatch_returns_id() {
 
 #[tokio::test]
 async fn test_dispatch_inserts_into_tree() {
-    let (mailbox, _, _, _) = get_contract_instance().await;
+    let (mailbox, _, _, _, _) = get_contract_instance().await;
 
     let message_body = vec![10u8; 100];
 
@@ -254,8 +263,37 @@ async fn test_dispatch_inserts_into_tree() {
 }
 
 #[tokio::test]
+async fn test_dispatch_reverts_if_paused() {
+    let (mailbox, _, _, _, initial_owner_wallet) = get_contract_instance().await;
+
+    // First pause...
+    mailbox
+        .with_account(initial_owner_wallet.clone())
+        .unwrap()
+        .methods()
+        .pause()
+        .call()
+        .await
+        .unwrap();
+
+    let call = mailbox
+        .methods()
+        .dispatch(
+            TEST_REMOTE_DOMAIN,
+            Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
+            vec![10u8; 100],
+        )
+        .call()
+        .await;
+    assert!(call.is_err());
+    assert_eq!(get_revert_string(call.unwrap_err()), "contract is paused");
+}
+
+// ============ latest_checkpoint ============
+
+#[tokio::test]
 async fn test_latest_checkpoint() {
-    let (mailbox, _, _, _) = get_contract_instance().await;
+    let (mailbox, _, _, _, _) = get_contract_instance().await;
 
     let message_body = vec![10u8; 100];
 
@@ -282,120 +320,11 @@ async fn test_latest_checkpoint() {
     assert_eq!(index, 0u32);
 }
 
-#[tokio::test]
-async fn test_initial_owner() {
-    let (mailbox, _, _, _) = get_contract_instance().await;
-
-    let expected_owner: Option<Identity> = Some(Identity::Address(
-        Address::from_str(INITIAL_OWNER_ADDRESS).unwrap(),
-    ));
-
-    let owner = mailbox.methods().owner().simulate().await.unwrap().value;
-    assert_eq!(owner, expected_owner);
-}
-
-async fn transfer_ownership_test_helper(
-    mailbox: &Mailbox<WalletUnlocked>,
-    initial_owner: Option<Identity>,
-    new_owner: Option<Identity>,
-) {
-    let initial_owner_wallet =
-        funded_wallet_with_private_key(&mailbox.account(), INTIAL_OWNER_PRIVATE_KEY)
-            .await
-            .unwrap();
-
-    // From the current owner's wallet, transfer ownership
-    let transfer_ownership_call = mailbox
-        .with_account(initial_owner_wallet.clone())
-        .unwrap()
-        .methods()
-        .transfer_ownership(new_owner.clone())
-        .tx_params(TxParameters::default())
-        .call()
-        .await
-        .unwrap();
-
-    // Ensure the owner is now the new owner
-    let owner = mailbox.methods().owner().simulate().await.unwrap().value;
-    assert_eq!(owner, new_owner);
-
-    // Ensure an event about the ownership transfer was logged
-    let ownership_transferred_events = transfer_ownership_call
-        .get_logs_with_type::<OwnershipTransferredEvent>()
-        .unwrap();
-    assert_eq!(
-        ownership_transferred_events,
-        vec![OwnershipTransferredEvent {
-            previous_owner: initial_owner,
-            new_owner: new_owner.clone(),
-        }]
-    );
-
-    // Ensure the old owner can't transfer ownership anymore
-    let invalid_transfer_ownership_call = mailbox
-        .with_account(initial_owner_wallet)
-        .unwrap()
-        .methods()
-        .transfer_ownership(new_owner.clone())
-        .tx_params(TxParameters::default())
-        .call()
-        .await;
-    assert!(invalid_transfer_ownership_call.is_err());
-    assert_eq!(
-        get_revert_string(invalid_transfer_ownership_call.err().unwrap()),
-        "!owner"
-    );
-}
-
-#[tokio::test]
-async fn test_transfer_ownership_to_some() {
-    let (mailbox, _, _, _) = get_contract_instance().await;
-
-    // The current owner before the transfer / old owner after the transfer
-    let initial_owner: Option<Identity> = Some(Identity::Address(
-        Address::from_str(INITIAL_OWNER_ADDRESS).unwrap(),
-    ));
-    let new_owner: Option<Identity> = Some(Identity::Address(
-        Address::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
-            .unwrap(),
-    ));
-
-    transfer_ownership_test_helper(&mailbox, initial_owner, new_owner).await;
-}
-
-#[tokio::test]
-async fn test_transfer_ownership_to_none() {
-    let (mailbox, _, _, _) = get_contract_instance().await;
-
-    // The current owner before the transfer / old owner after the transfer
-    let initial_owner: Option<Identity> = Some(Identity::Address(
-        Address::from_str(INITIAL_OWNER_ADDRESS).unwrap(),
-    ));
-    let new_owner: Option<Identity> = None;
-
-    transfer_ownership_test_helper(&mailbox, initial_owner, new_owner).await;
-}
-
-#[tokio::test]
-async fn test_transfer_ownership_reverts_if_not_owner() {
-    let (mailbox, _, _, _) = get_contract_instance().await;
-    // The default wallet in Mailbox is not the owner
-    let invalid_transfer_ownership_call = mailbox
-        .methods()
-        .transfer_ownership(None)
-        .tx_params(TxParameters::default())
-        .call()
-        .await;
-    assert!(invalid_transfer_ownership_call.is_err());
-    assert_eq!(
-        get_revert_string(invalid_transfer_ownership_call.err().unwrap()),
-        "!owner"
-    );
-}
+// ============ process ============
 
 #[tokio::test]
 async fn test_process_id() {
-    let (mailbox, ism_id, recipient_id, _) = get_contract_instance().await;
+    let (mailbox, ism_id, recipient_id, _, _) = get_contract_instance().await;
 
     let metadata = vec![5u8; 100];
 
@@ -421,7 +350,7 @@ async fn test_process_id() {
 
 #[tokio::test]
 async fn test_process_handle() {
-    let (mailbox, ism_id, recipient_id, wallet) = get_contract_instance().await;
+    let (mailbox, ism_id, recipient_id, wallet, _) = get_contract_instance().await;
 
     let metadata = vec![5u8; 100];
 
@@ -445,7 +374,7 @@ async fn test_process_handle() {
 
 #[tokio::test]
 async fn test_process_deliver_twice() {
-    let (mailbox, ism_id, recipient_id, _) = get_contract_instance().await;
+    let (mailbox, ism_id, recipient_id, _, _) = get_contract_instance().await;
 
     let metadata = vec![5u8; 100];
 
@@ -487,7 +416,7 @@ async fn test_process_deliver_twice() {
 
 #[tokio::test]
 async fn test_process_module_reject() {
-    let (mailbox, ism_id, recipient_id, wallet) = get_contract_instance().await;
+    let (mailbox, ism_id, recipient_id, wallet, _) = get_contract_instance().await;
 
     let metadata = vec![5u8; 100];
 
@@ -508,6 +437,242 @@ async fn test_process_module_reject() {
         .unwrap_err();
 
     assert_eq!(get_revert_string(process_module_error), "!module");
+}
+
+#[tokio::test]
+async fn test_process_reverts_if_paused() {
+    let (mailbox, ism_id, recipient_id, _, initial_owner_wallet) = get_contract_instance().await;
+
+    // Pause the contract
+    mailbox
+        .with_account(initial_owner_wallet)
+        .unwrap()
+        .methods()
+        .pause()
+        .call()
+        .await
+        .unwrap();
+
+    let metadata = vec![5u8; 100];
+
+    let agent_message = test_message(&mailbox, recipient_id.clone(), false);
+    let contract_inputs = vec![ism_id.clone(), recipient_id];
+
+    let call = mailbox
+        .methods()
+        .process(metadata, agent_message.into())
+        .set_contract_ids(&contract_inputs)
+        .tx_params(TxParameters::default().set_gas_limit(1_200_000))
+        .call()
+        .await;
+    assert!(call.is_err());
+    assert_eq!(get_revert_string(call.unwrap_err()), "contract is paused");
+}
+
+// ===================================
+// ============ ownership ============
+// ===================================
+
+#[tokio::test]
+async fn test_initial_owner() {
+    let (mailbox, _, _, _, _) = get_contract_instance().await;
+
+    let expected_owner: Option<Identity> = Some(Identity::Address(
+        Address::from_str(INITIAL_OWNER_ADDRESS).unwrap(),
+    ));
+
+    let owner = mailbox.methods().owner().simulate().await.unwrap().value;
+    assert_eq!(owner, expected_owner);
+}
+
+async fn transfer_ownership_test_helper(
+    mailbox: &Mailbox<WalletUnlocked>,
+    initial_owner_wallet: &WalletUnlocked,
+    initial_owner_identity: Option<Identity>,
+    new_owner: Option<Identity>,
+) {
+    // From the current owner's wallet, transfer ownership
+    let transfer_ownership_call = mailbox
+        .with_account(initial_owner_wallet.clone())
+        .unwrap()
+        .methods()
+        .transfer_ownership(new_owner.clone())
+        .tx_params(TxParameters::default())
+        .call()
+        .await
+        .unwrap();
+
+    // Ensure the owner is now the new owner
+    let owner = mailbox.methods().owner().simulate().await.unwrap().value;
+    assert_eq!(owner, new_owner);
+
+    // Ensure an event about the ownership transfer was logged
+    let ownership_transferred_events = transfer_ownership_call
+        .get_logs_with_type::<OwnershipTransferredEvent>()
+        .unwrap();
+    assert_eq!(
+        ownership_transferred_events,
+        vec![OwnershipTransferredEvent {
+            previous_owner: initial_owner_identity,
+            new_owner: new_owner.clone(),
+        }]
+    );
+
+    // Ensure the old owner can't transfer ownership anymore
+    let invalid_transfer_ownership_call = mailbox
+        .with_account(initial_owner_wallet.clone())
+        .unwrap()
+        .methods()
+        .transfer_ownership(new_owner.clone())
+        .tx_params(TxParameters::default())
+        .call()
+        .await;
+    assert!(invalid_transfer_ownership_call.is_err());
+    assert_eq!(
+        get_revert_string(invalid_transfer_ownership_call.err().unwrap()),
+        "!owner"
+    );
+}
+
+#[tokio::test]
+async fn test_transfer_ownership_to_some() {
+    let (mailbox, _, _, _, initial_owner_wallet) = get_contract_instance().await;
+
+    // The current owner before the transfer / old owner after the transfer
+    let initial_owner: Option<Identity> = Some(Identity::Address(
+        Address::from_str(INITIAL_OWNER_ADDRESS).unwrap(),
+    ));
+    let new_owner: Option<Identity> = Some(Identity::Address(
+        Address::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
+            .unwrap(),
+    ));
+
+    transfer_ownership_test_helper(&mailbox, &initial_owner_wallet, initial_owner, new_owner).await;
+}
+
+#[tokio::test]
+async fn test_transfer_ownership_to_none() {
+    let (mailbox, _, _, _, initial_owner_wallet) = get_contract_instance().await;
+
+    // The current owner before the transfer / old owner after the transfer
+    let initial_owner: Option<Identity> = Some(Identity::Address(
+        Address::from_str(INITIAL_OWNER_ADDRESS).unwrap(),
+    ));
+    let new_owner: Option<Identity> = None;
+
+    transfer_ownership_test_helper(&mailbox, &initial_owner_wallet, initial_owner, new_owner).await;
+}
+
+#[tokio::test]
+async fn test_transfer_ownership_reverts_if_not_owner() {
+    let (mailbox, _, _, _, _) = get_contract_instance().await;
+    // The default wallet in Mailbox is not the owner
+    let invalid_transfer_ownership_call = mailbox
+        .methods()
+        .transfer_ownership(None)
+        .tx_params(TxParameters::default())
+        .call()
+        .await;
+    assert!(invalid_transfer_ownership_call.is_err());
+    assert_eq!(
+        get_revert_string(invalid_transfer_ownership_call.err().unwrap()),
+        "!owner"
+    );
+}
+
+// ==================================
+// ============ pausable ============
+// ==================================
+
+// ============ pause ============
+
+#[tokio::test]
+async fn test_pause() {
+    let (mailbox, _, _, _, initial_owner_wallet) = get_contract_instance().await;
+
+    mailbox
+        .with_account(initial_owner_wallet.clone())
+        .unwrap()
+        .methods()
+        .pause()
+        .call()
+        .await
+        .unwrap();
+
+    let paused: bool = mailbox
+        .methods()
+        .is_paused()
+        .simulate()
+        .await
+        .unwrap()
+        .value;
+
+    assert!(paused);
+}
+
+#[tokio::test]
+async fn test_pause_reverts_if_not_owner() {
+    let (mailbox, _, _, _, _) = get_contract_instance().await;
+
+    let call = mailbox.methods().pause().call().await;
+    assert!(call.is_err());
+    assert!(get_revert_string(call.err().unwrap()).contains("!owner"));
+}
+
+// ============ unpause ============
+
+#[tokio::test]
+async fn test_unpause() {
+    let (mailbox, _, _, _, initial_owner_wallet) = get_contract_instance().await;
+
+    // First pause...
+    mailbox
+        .with_account(initial_owner_wallet.clone())
+        .unwrap()
+        .methods()
+        .pause()
+        .call()
+        .await
+        .unwrap();
+
+    // Now unpause!
+    mailbox
+        .with_account(initial_owner_wallet.clone())
+        .unwrap()
+        .methods()
+        .unpause()
+        .call()
+        .await
+        .unwrap();
+
+    let paused: bool = mailbox
+        .methods()
+        .is_paused()
+        .simulate()
+        .await
+        .unwrap()
+        .value;
+
+    assert!(!paused);
+}
+
+#[tokio::test]
+async fn test_unpause_reverts_if_not_owner() {
+    let (mailbox, _, _, _, initial_owner_wallet) = get_contract_instance().await;
+
+    // First pause...
+    mailbox
+        .with_account(initial_owner_wallet.clone())
+        .unwrap()
+        .methods()
+        .pause()
+        .call()
+        .await
+        .unwrap();
+
+    let call = mailbox.methods().unpause().call().await;
+    assert!(call.is_err());
+    assert!(get_revert_string(call.err().unwrap()).contains("!owner"));
 }
 
 impl From<HyperlaneAgentMessage> for ContractMessage {

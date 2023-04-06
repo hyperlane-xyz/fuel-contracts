@@ -122,3 +122,23 @@ async fn test_unpause() {
         "contract is not paused"
     );
 }
+
+#[tokio::test]
+async fn test_require_unpaused() {
+    let (contract, _id) = get_contract_instance().await;
+
+    // If the contract is not paused, expect no error!
+    let result = contract.methods().require_unpaused().simulate().await;
+    assert!(result.is_ok());
+
+    // Now pause
+    contract.methods().pause().call().await.unwrap();
+
+    // And now expect a revert
+    let result = contract.methods().require_unpaused().simulate().await;
+    assert!(result.is_err());
+    assert_eq!(
+        get_revert_string(result.err().unwrap()),
+        "contract is paused"
+    );
+}

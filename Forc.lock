@@ -19,6 +19,8 @@ dependencies = [
     'hyperlane_message',
     'merkle',
     'ownership',
+    'pause',
+    'reentrancy',
     'std',
 ]
 
@@ -112,6 +114,11 @@ dependencies = [
     'pause',
     'std',
 ]
+
+[[package]]
+name = 'reentrancy'
+source = 'git+https://github.com/FuelLabs/sway-libs?tag=v0.7.1#5700990f123be431e6df70f490a6a51fafac1daa'
+dependencies = ['std']
 
 [[package]]
 name = 'std'

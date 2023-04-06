@@ -1,6 +1,11 @@
 contract;
 
-use pause::{interface::Pausable, is_paused, pause, unpause};
+use pause::{interface::Pausable, is_paused, pause, unpause, require_unpaused};
+
+abi PausableTest {
+    #[storage(read)]
+    fn require_unpaused();
+}
 
 /// A contract that can be paused, exists only to test the `pause` library.
 impl Pausable for Contract {
@@ -17,5 +22,12 @@ impl Pausable for Contract {
     #[storage(read, write)]
     fn unpause() {
         unpause()
+    }
+}
+
+impl PausableTest for Contract {
+    #[storage(read)]
+    fn require_unpaused() {
+        require_unpaused();
     }
 }

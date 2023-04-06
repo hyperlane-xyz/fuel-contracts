@@ -9,3 +9,5 @@ hyperlane_interfaces = { path = "../hyperlane-interfaces" }
 hyperlane_message = { path = "../hyperlane-message" }
 merkle = { path = "../merkle" }
 ownership = { path = "../ownership" }
+pause = { path = "../pause" }
+reentrancy = { git = "https://github.com/FuelLabs/sway-libs", tag = "v0.7.1" }

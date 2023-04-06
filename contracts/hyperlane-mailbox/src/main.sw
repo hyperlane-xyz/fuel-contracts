@@ -12,6 +12,8 @@ use ownership::{
     log_ownership_transferred,
     interface::Ownable,
 };
+use pause::{interface::Pausable, is_paused, pause, unpause, require_unpaused};
+use reentrancy::reentrancy_guard;
 
 use hyperlane_interfaces::{Mailbox, MessageRecipient, InterchainSecurityModule};
 use hyperlane_message::{Message, EncodedMessage};
@@ -63,6 +65,9 @@ impl Mailbox for Contract {
         recipient: b256,
         message_body: Vec<u8>,
     ) -> b256 {
+        // Prevent messages from being dispatched when the mailbox is paused.
+        require_unpaused();
+
         require(message_body.len() <= MAX_MESSAGE_BODY_BYTES, "msg too long");
 
         let message = EncodedMessage::new(
@@ -103,6 +108,11 @@ impl Mailbox for Contract {
 
     #[storage(read, write)]
     fn process(metadata: Vec<u8>, _message: Message) {
+        // Prevent reentrancy.
+        reentrancy_guard();
+        // Prevent messages from being processed when the mailbox is paused.
+        require_unpaused();
+
         // TODO: revert once abigen handles Bytes
         let message = EncodedMessage::from(_message);
         
@@ -163,6 +173,26 @@ impl Ownable for Contract {
 
         storage.owner = new_owner;
         log_ownership_transferred(old_owner, new_owner);
+    }
+}
+
+/// A contract that can be paused, exists only to test the `pause` library.
+impl Pausable for Contract {
+    #[storage(read)]
+    fn is_paused() -> bool {
+        is_paused()
+    }
+
+    #[storage(read, write)]
+    fn pause() {
+        require_msg_sender(storage.owner);
+        pause()
+    }
+
+    #[storage(read, write)]
+    fn unpause() {
+        require_msg_sender(storage.owner);
+        unpause()
     }
 }
 

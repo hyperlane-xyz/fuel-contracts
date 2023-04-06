@@ -13,6 +13,11 @@ enum PausedState {
     Paused: (),
 }
 
+#[storage(read)]
+pub fn require_unpaused() {
+    require(!is_paused(), "contract is paused");
+}
+
 /// Returns whether the contract is paused.
 #[storage(read)]
 pub fn is_paused() -> bool {
