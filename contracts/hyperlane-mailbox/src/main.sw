@@ -176,19 +176,23 @@ impl Ownable for Contract {
     }
 }
 
-/// A contract that can be paused, exists only to test the `pause` library.
 impl Pausable for Contract {
+    /// Returns whether the contract has been paused.
     #[storage(read)]
     fn is_paused() -> bool {
         is_paused()
     }
 
+    /// Pauses the contract if it is not already paused.
+    /// Reverts if the msg_sender is not the current owner.
     #[storage(read, write)]
     fn pause() {
         require_msg_sender(storage.owner);
         pause()
     }
 
+    /// Unpauses the contract if it is paused.
+    /// Reverts if the msg_sender is not the current owner.
     #[storage(read, write)]
     fn unpause() {
         require_msg_sender(storage.owner);
