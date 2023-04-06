@@ -94,7 +94,9 @@ pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedM
         }
 
         // Fail if we didn't find a match
-        require(validator_index < validator_count, "!threshold");
+        if (validator_index >= validator_count) {
+            return false;
+        }
         validator_index += 1;
         signature_index += 1;
     }

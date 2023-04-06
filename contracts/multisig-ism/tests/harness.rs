@@ -355,7 +355,6 @@ async fn test_verify() {
         .await;
 
     let mailbox = deploy_mailbox(wallet).await;
-
     let depth = 32;
     let mut tree = MerkleTree::create(&[], depth);
 
@@ -411,7 +410,7 @@ async fn test_verify() {
         }
 
         // generate merkle proof
-        let (leaf, proof) = tree.generate_proof(index as usize, depth);
+        let (leaf, mut proof) = tree.generate_proof(index as usize, depth);
         assert_eq!(leaf, message.id());
 
         // build metadata from checkpoint, signatures, and proof
@@ -420,23 +419,71 @@ async fn test_verify() {
             root: h256_to_bits256(checkpoint.root),
             mailbox: h256_to_bits256(checkpoint.mailbox_address),
             proof: proof
+                .clone()
                 .iter()
                 .map(|p| h256_to_bits256(*p))
                 .collect::<Vec<_>>()
                 .as_slice()
                 .try_into()
                 .unwrap(),
-            signatures,
+            signatures: signatures.clone(),
         };
 
         let result = instance
             .methods()
-            .verify(metadata, message.into())
+            .verify(metadata.clone(), message.clone().into())
             .simulate()
             .await;
 
         let verified = result.unwrap().value;
         assert!(verified);
+
+        proof.reverse();
+        let bad_merkle = instance
+            .methods()
+            .verify(
+                MultisigMetadata {
+                    index: metadata.index,
+                    root: metadata.root,
+                    mailbox: metadata.mailbox,
+                    signatures: signatures.clone(),
+                    proof: proof
+                        .clone()
+                        .iter()
+                        .map(|p| h256_to_bits256(*p))
+                        .collect::<Vec<_>>()
+                        .as_slice()
+                        .try_into()
+                        .unwrap(),
+                },
+                message.clone().into(),
+            )
+            .simulate()
+            .await;
+
+        assert!(bad_merkle.is_err());
+        let reason = get_revert_string(bad_merkle.err().unwrap());
+        assert_eq!(reason, "!merkle");
+
+        signatures.reverse();
+        let bad_sigs = instance
+            .methods()
+            .verify(
+                MultisigMetadata {
+                    index: metadata.index,
+                    root: metadata.root,
+                    mailbox: metadata.mailbox,
+                    signatures,
+                    proof: metadata.proof,
+                },
+                message.into(),
+            )
+            .simulate()
+            .await;
+
+        assert!(bad_sigs.is_err());
+        let reason = get_revert_string(bad_sigs.err().unwrap());
+        assert_eq!(reason, "!signatures");
     }
 }
 
