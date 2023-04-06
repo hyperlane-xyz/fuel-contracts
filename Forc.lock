@@ -106,6 +106,14 @@ source = 'member'
 dependencies = ['std']
 
 [[package]]
+name = 'pause-test'
+source = 'member'
+dependencies = [
+    'pause',
+    'std',
+]
+
+[[package]]
 name = 'std'
 source = 'git+https://github.com/fuellabs/sway?tag=v0.35.5#49eae2dd93a1957e2a2c2fb3f51b11eb3791fc24'
 dependencies = ['core']

@@ -3,10 +3,7 @@ library pause;
 dep interface;
 dep r#storage;
 
-use std::{
-    logging::log,
-    storage::{get, store},
-};
+use std::{logging::log, storage::{get, store}};
 
 use interface::{PausedEvent, UnpausedEvent};
 use storage::PAUSED_STORAGE_KEY;
