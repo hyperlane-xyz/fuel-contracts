@@ -8,5 +8,6 @@ name = "multisig_ism"
 merkle = { path = "../merkle" }
 multisig_ism_metadata = { path = "../multisig-ism-metadata" }
 hyperlane_message = { path = "../hyperlane-message" }
+hyperlane_interfaces = { path = "../hyperlane-interfaces" }
 std_lib_extended = { path = "../std-lib-extended" }
 storagemapvec = { git = "https://github.com/FuelLabs/sway-libs" }

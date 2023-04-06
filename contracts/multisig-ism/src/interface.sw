@@ -6,20 +6,25 @@ use hyperlane_message::Message;
 
 use multisig_ism_metadata::MultisigMetadata;
 
+use hyperlane_interfaces::ModuleType;
+
 abi MultisigIsm {
+    // TODO: make generic with hyperlane_interfaces::InterchainSecurityModule
+    // #[storage(read)]
+    // fn verify(metadata: Vec<u8>, message: Message) -> bool;
+    #[storage(read)]
+    fn module_type() -> ModuleType;
+
     #[storage(read)]
     fn verify(metadata: MultisigMetadata, message: Message) -> bool;
-
-    // #[storage(read)]
-    // fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedMessage) -> bool;
-
     #[storage(read)]
     fn threshold(domain: u32) -> u8;
     #[storage(read)]
-    fn is_enrolled(domain: u32, validator: EvmAddress) -> bool;
-
-    #[storage(read)]
     fn validators(domain: u32) -> Vec<EvmAddress>;
+    #[storage(read)]
+    fn validators_and_threshold(message: Message) -> (Vec<EvmAddress>, u8);
+    #[storage(read)]
+    fn is_enrolled(domain: u32, validator: EvmAddress) -> bool;
 
     #[storage(read, write)]
     fn enroll_validator(domain: u32, validator: EvmAddress);

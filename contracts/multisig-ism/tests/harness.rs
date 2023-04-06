@@ -175,7 +175,6 @@ async fn test_unenroll_validator() {
         assert!(call.is_ok());
     }
 
-    // TODO: does ordering matter?
     let address = addresses.swap_remove(0);
     let call = instance
         .methods()
@@ -415,10 +414,10 @@ async fn test_verify() {
         let (leaf, proof) = tree.generate_proof(index as usize, depth);
         assert_eq!(leaf, message.id());
 
-        // build metadata from signatures and proof
+        // build metadata from checkpoint, signatures, and proof
         let metadata = MultisigMetadata {
-            root: h256_to_bits256(checkpoint.root),
             index: checkpoint.index,
+            root: h256_to_bits256(checkpoint.root),
             mailbox: h256_to_bits256(checkpoint.mailbox_address),
             proof: proof
                 .iter()

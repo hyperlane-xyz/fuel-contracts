@@ -1,6 +1,6 @@
 contract;
 
-use hyperlane_interfaces::InterchainSecurityModule;
+use hyperlane_interfaces::{InterchainSecurityModule, ModuleType};
 use hyperlane_message::Message;
 
 storage {
@@ -26,5 +26,10 @@ impl InterchainSecurityModule for Contract {
         storage.accept = storage.accept;
 
         return storage.accept;
+    }
+
+    #[storage(read)]
+    fn module_type() -> ModuleType {
+        return ModuleType::UNUSED_0;
     }
 }

@@ -98,12 +98,13 @@ dependencies = [
 name = 'multisig_ism'
 source = 'member'
 dependencies = [
+    'hyperlane_interfaces',
     'hyperlane_message',
     'merkle',
     'multisig_ism_metadata',
     'std',
     'std_lib_extended',
-    'storagemapvec git+https://github.com/FuelLabs/sway-libs?default-branch#4c0c99aa98194475671fd1571ab99488c4cdd4e1',
+    'storagemapvec git+https://github.com/FuelLabs/sway-libs?default-branch#416da643b80e25799ce299acda7f3e99a9173621',
 ]
 
 [[package]]
@@ -149,7 +150,7 @@ dependencies = [
 
 [[package]]
 name = 'storagemapvec'
-source = 'git+https://github.com/FuelLabs/sway-libs?default-branch#4c0c99aa98194475671fd1571ab99488c4cdd4e1'
+source = 'git+https://github.com/FuelLabs/sway-libs?default-branch#416da643b80e25799ce299acda7f3e99a9173621'
 dependencies = ['std']
 
 [[package]]

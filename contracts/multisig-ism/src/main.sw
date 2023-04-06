@@ -19,6 +19,11 @@ use merkle::StorageMerkleTree;
 
 use interface::MultisigIsm;
 
+use hyperlane_interfaces::{
+    ModuleType,
+    InterchainSecurityModule
+};
+
 use multisig_ism_metadata::MultisigMetadata;
 
 use std_lib_extended::{
@@ -29,34 +34,32 @@ use std_lib_extended::{
 /// See https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/isms/MultisigIsm.sol
 /// for the reference implementation.
 
-// TODO: consider u32 => struct
 storage {
     validators: StorageMapVec<u32, EvmAddress> = StorageMapVec {},
     threshold: StorageMap<u32, u8> = StorageMap {},
 }
 
 /// Returns index of the validator on the multisig for the domain
-/// /// Currently O(n) but could be O(log(n)) with a set data structure
+/// Currently O(n) but could be O(1) with a set data structure
 #[storage(read)]
-fn index_of(domain: u32, validator: EvmAddress) -> u32 {
+fn index_of(domain: u32, validator: EvmAddress) -> Option<u32> {
     let validators = storage.validators.to_vec(domain);
-    let mut i = 0;
+    let mut i: u32 = 0;
     let len = validators.len();
     while i < len {
         if validators.get(i).unwrap() == validator {
-            return i;
+            return Option::Some(i);
         }
         i += 1;
     }
-    return i;
+    return Option::None;
 }
 
 /// Returns true if the validator is on the multisig for the domain
 #[storage(read)]
 fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
     let len = storage.validators.len(domain);
-    let index = index_of(domain, validator);
-    return index < len;
+    return index_of(domain, validator).is_some();
 }
 
 /// Returns true if the metadata merkle proof verifies the inclusion of the message in the root.
@@ -101,8 +104,7 @@ pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedM
 /// Enrolls a validator without updating the commitment.
 #[storage(read,write)]
 fn enroll_validator(domain: u32, validator: EvmAddress) {
-    let ZERO_ADDRESS = EvmAddress::from(ZERO_B256);
-    require(validator != ZERO_ADDRESS, "zero address");
+    require(validator != EvmAddress::from(ZERO_B256), "zero address");
     require(!is_enrolled(domain, validator), "enrolled");
     storage.validators.push(domain, validator);
 }
@@ -114,6 +116,17 @@ fn set_threshold(domain: u32, threshold: u8) {
     storage.threshold.insert(domain, threshold);
 }
 
+#[storage(read)]
+fn threshold(domain: u32) -> u8 {
+    storage.threshold.get(domain).unwrap()
+}
+
+/// Returns the validator set enrolled for the domain.
+#[storage(read)]
+fn validators(domain: u32) -> Vec<EvmAddress> {
+    return storage.validators.to_vec(domain);
+}
+
 // TODO: implement with generic ISM abi
 // impl InterchainSecurityModule for Contract {
 //     #[storage(read, write)]
@@ -121,6 +134,11 @@ fn set_threshold(domain: u32, threshold: u8) {
 // }
 
 impl MultisigIsm for Contract {
+    #[storage(read)]
+    fn module_type() -> ModuleType {
+        ModuleType::MULTISIG
+    }
+
     #[storage(read)]
     fn verify(metadata: MultisigMetadata, _message: Message) -> bool {
         // TODO: revert once abigen handles Bytes
@@ -133,13 +151,21 @@ impl MultisigIsm for Contract {
     /// Returns the threshold for the domain.
     #[storage(read)]
     fn threshold(domain: u32) -> u8 {
-        storage.threshold.get(domain).unwrap()
+        threshold(domain)
     }
 
     /// Returns the validator set enrolled for the domain.
     #[storage(read)]
     fn validators(domain: u32) -> Vec<EvmAddress> {
-        return storage.validators.to_vec(domain);
+        validators(domain)
+    }
+
+    #[storage(read)]
+    fn validators_and_threshold(_message: Message) -> (Vec<EvmAddress>, u8) {
+        // TODO: revert once abigen handles Bytes
+        let message = EncodedMessage::from(_message);
+        let domain = message.origin();
+        return (validators(domain), threshold(domain));
     }
 
     /// Returns true if the validator is enrolled for the domain.
@@ -200,9 +226,9 @@ impl MultisigIsm for Contract {
     /// Unenrolls a validator for the domain (and updates commitment).
     #[storage(read, write)]
     fn unenroll_validator(domain: u32, validator: EvmAddress) {
-        require(is_enrolled(domain, validator), "!enrolled");
         let index = index_of(domain, validator);
-        let removed = storage.validators.swap_remove(domain, index);
+        require(index.is_some(), "!enrolled");
+        let removed = storage.validators.swap_remove(domain, index.unwrap());
         assert(removed == validator);
     }
 }
