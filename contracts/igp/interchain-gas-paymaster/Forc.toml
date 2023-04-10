@@ -6,5 +6,5 @@ name = "interchain-gas-paymaster"
 
 [dependencies]
 hyperlane_interfaces = { path = "../../hyperlane-interfaces" }
-ownership = { path = "../../ownership" }
 std_lib_extended = { path = "../../std-lib-extended" }
+ownership = { git = "https://github.com/fuellabs/sway-libs", rev = "82a1eea" }

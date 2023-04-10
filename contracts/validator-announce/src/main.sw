@@ -4,7 +4,6 @@ mod digest;
 mod storable_string;
 mod interface;
 
-
 use std::{
     b512::B512,
     bytes::Bytes,

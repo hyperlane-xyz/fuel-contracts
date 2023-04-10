@@ -6,8 +6,6 @@ use std::{logging::log, u128::U128};
 
 use hyperlane_interfaces::igp::{GasOracle, RemoteGasData};
 
-// use ownership::{interface::Ownable, log_ownership_transferred, require_msg_sender};
-
 use ownership::{
     data_structures::State,
     only_owner,
