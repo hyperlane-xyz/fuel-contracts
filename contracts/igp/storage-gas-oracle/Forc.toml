@@ -6,4 +6,4 @@ name = "storage-gas-oracle"
 
 [dependencies]
 hyperlane_interfaces = { path = "../../hyperlane-interfaces" }
-ownership = { path = "../../ownership" }
+ownership = { git = "https://github.com/fuellabs/sway-libs", rev = "82a1eea" }
