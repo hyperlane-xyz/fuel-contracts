@@ -259,7 +259,7 @@ async fn test_body() {
 
     let messages = test_messages_varying_bodies();
     for msg in messages.into_iter() {
-        let expected_body = msg.body.clone();
+        let expected_body = Bytes(msg.body.clone());
 
         let body = instance
             .methods()
@@ -268,7 +268,7 @@ async fn test_body() {
             .await
             .unwrap();
 
-        assert_eq!(body, &expected_body);
+        assert_eq!(body.value, expected_body);
     }
 }
 
