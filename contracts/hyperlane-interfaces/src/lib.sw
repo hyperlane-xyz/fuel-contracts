@@ -2,6 +2,8 @@ library hyperlane_interfaces;
 
 dep igp;
 
+use std::bytes::Bytes;
+
 use hyperlane_message::Message;
 
 abi Mailbox {
@@ -14,7 +16,7 @@ abi Mailbox {
     /// * `recipient` - Address of the recipient on the destination chain.
     /// * `message_body` - Raw bytes content of the message body.
     #[storage(read, write)]
-    fn dispatch(destination_domain: u32, recipient: b256, message_body: Vec<u8>) -> b256;
+    fn dispatch(destination_domain: u32, recipient: b256, message_body: Bytes) -> b256;
 
     /// Processes a message.
     ///
@@ -23,7 +25,7 @@ abi Mailbox {
     /// * `metadata` - The metadata for ISM verification.
     /// * `message` - The message as emitted by dispatch.
     #[storage(read, write)]
-    fn process(metadata: Vec<u8>, message: Message);
+    fn process(metadata: Bytes, message: Bytes);
 
     /// Returns true if the message has been processed.
     ///
@@ -75,7 +77,7 @@ abi InterchainSecurityModule {
     /// /// * `metadata` - The metadata for ISM verification.
     /// /// * `message` - The message as emitted by dispatch.
     #[storage(read, write)]
-    fn verify(metadata: Vec<u8>, message: Message) -> bool;
+    fn verify(metadata: Bytes, message: Bytes) -> bool;
 
 
     /// Returns an enum that represents the type of security model
@@ -93,7 +95,7 @@ abi MessageRecipient {
     /// * `sender` - The sender address on the origin chain.
     /// * `message_body` - Raw bytes content of the message body.
     #[storage(read, write)]
-    fn handle(origin: u32, sender: b256, message_body: Vec<u8>);
+    fn handle(origin: u32, sender: b256, message_body: Bytes);
 
     /// Returns the address of the ISM used for message verification.
     /// If zero address is returned, the mailbox default ISM is used.

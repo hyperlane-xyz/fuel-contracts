@@ -2,7 +2,10 @@ contract;
 
 use hyperlane_interfaces::MessageRecipient;
 
-use std::logging::log;
+use std::{
+    logging::log,
+    bytes::Bytes,
+};
 
 abi TestMessageRecipient {
     #[storage(read)]
@@ -20,7 +23,7 @@ storage {
 
 impl MessageRecipient for Contract {
     #[storage(read, write)]
-    fn handle(origin: u32, sender: b256, message_body: Vec<u8>) {
+    fn handle(origin: u32, sender: b256, message_body: Bytes) {
         // To ignore a compiler warning that no storage reads are made.
         let _ = storage.module;
 

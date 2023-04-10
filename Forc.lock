@@ -20,6 +20,7 @@ dependencies = [
     'merkle',
     'ownership',
     'std',
+    'std_lib_extended',
 ]
 
 [[package]]
@@ -45,6 +46,7 @@ source = 'member'
 dependencies = [
     'hyperlane_message',
     'std',
+    'std_lib_extended',
 ]
 
 [[package]]
@@ -104,7 +106,7 @@ dependencies = [
     'multisig_ism_metadata',
     'std',
     'std_lib_extended',
-    'storagemapvec git+https://github.com/FuelLabs/sway-libs?default-branch#416da643b80e25799ce299acda7f3e99a9173621',
+    'storagemapvec git+https://github.com/FuelLabs/sway-libs?default-branch#2e25453eb2b8050996b9d3143d02821a3ed1632e',
 ]
 
 [[package]]
@@ -150,7 +152,7 @@ dependencies = [
 
 [[package]]
 name = 'storagemapvec'
-source = 'git+https://github.com/FuelLabs/sway-libs?default-branch#416da643b80e25799ce299acda7f3e99a9173621'
+source = 'git+https://github.com/FuelLabs/sway-libs?default-branch#2e25453eb2b8050996b9d3143d02821a3ed1632e'
 dependencies = ['std']
 
 [[package]]

@@ -2,6 +2,7 @@ contract;
 
 use hyperlane_interfaces::{InterchainSecurityModule, ModuleType};
 use hyperlane_message::Message;
+use std::bytes::Bytes;
 
 storage {
     accept: bool = true,
@@ -21,7 +22,7 @@ impl TestISM for Contract {
 
 impl InterchainSecurityModule for Contract {
     #[storage(read, write)]
-    fn verify(metadata: Vec<u8>, message: Message) -> bool {
+    fn verify(metadata: Bytes, message: Bytes) -> bool {
         // To ignore a compiler warning that no storage writes are made.
         storage.accept = storage.accept;
 

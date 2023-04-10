@@ -4,7 +4,10 @@ use std::{
     auth::msg_sender,
     call_frames::contract_id,
     logging::log,
+    bytes::Bytes
 };
+
+use std_lib_extended::bytes::*;
 
 use merkle::StorageMerkleTree;
 use ownership::{
@@ -61,7 +64,7 @@ impl Mailbox for Contract {
     fn dispatch(
         destination_domain: u32,
         recipient: b256,
-        message_body: Vec<u8>,
+        message_body: Bytes,
     ) -> b256 {
         require(message_body.len() <= MAX_MESSAGE_BODY_BYTES, "msg too long");
 
@@ -102,9 +105,8 @@ impl Mailbox for Contract {
     }
 
     #[storage(read, write)]
-    fn process(metadata: Vec<u8>, _message: Message) {
-        // TODO: revert once abigen handles Bytes
-        let message = EncodedMessage::from(_message);
+    fn process(metadata: Bytes, _message: Bytes) {
+        let message = EncodedMessage { bytes: _message };
         
         require(message.version() == VERSION, "!version");
         require(message.destination() == LOCAL_DOMAIN, "!destination");
@@ -122,7 +124,7 @@ impl Mailbox for Contract {
         let ism = abi(InterchainSecurityModule, ism_id.into());
         require(ism.verify(metadata, _message), "!module");
 
-        msg_recipient.handle(message.origin(), message.sender(), message.body().into_vec_u8());
+        msg_recipient.handle(message.origin(), message.sender(), message.body());
 
         log(id);
     }
