@@ -1,8 +1,6 @@
 use std::str::FromStr;
 
-use ethers::{
-    signers::Signer
-};
+use ethers::signers::Signer;
 use ethers::types::{Signature, H256, U256};
 use fuels::types::B512;
 use fuels::{
@@ -11,10 +9,10 @@ use fuels::{
     tx::{AssetId, Receipt},
     types::{errors::Error, Bits256, EvmAddress},
 };
-use hyperlane_core::Signable;
-use serde::{de::Deserializer, Deserialize};
-use hyperlane_ethereum::Signers;
 use hyperlane_core::HyperlaneSignerExt;
+use hyperlane_core::Signable;
+use hyperlane_ethereum::Signers;
+use serde::{de::Deserializer, Deserialize};
 
 pub fn h256_to_bits256(h: H256) -> Bits256 {
     Bits256(h.0)
@@ -64,6 +62,20 @@ pub fn signature_to_compact(signature: &Signature) -> [u8; 64] {
 pub async fn sign_compact<T: Signable + std::marker::Send>(signer: &Signers, signable: T) -> B512 {
     let signed = signer.sign(signable).await.unwrap();
     return B512::try_from(signature_to_compact(&signed.signature).as_slice()).unwrap();
+}
+
+// TODO: figure out why this has different behavior than get_revert_string
+pub fn get_revert_reason(call_error: Error) -> String {
+    let reason = if let Error::RevertTransactionError { reason, .. } = call_error {
+        reason
+    } else {
+        panic!(
+            "Error is not a RevertTransactionError. Error: {:?}",
+            call_error
+        );
+    };
+
+    return reason;
 }
 
 // Given an Error from a call or simulation, returns the revert reason.

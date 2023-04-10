@@ -19,3 +19,6 @@ members = [
   "contracts/validator-announce",
   "contracts/std-lib-extended",
 ]
+
+[dependencies]
+ownership = { git = "https://github.com/fuellabs/sway-libs", rev = "82a1eea" }

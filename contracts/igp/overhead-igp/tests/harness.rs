@@ -21,10 +21,7 @@ mod test_igp_contract {
 }
 
 use test_igp_contract::TestInterchainGasPaymaster;
-use test_utils::{funded_wallet_with_private_key, get_revert_string};
-
-const INTIAL_OWNER_PRIVATE_KEY: &str =
-    "0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c";
+use test_utils::{funded_wallet_with_private_key, get_revert_reason};
 
 const TEST_DESTINATION_DOMAIN: u32 = 11111;
 const TEST_GAS_AMOUNT: u64 = 300000;
@@ -32,6 +29,8 @@ const TEST_MESSAGE_ID: &str = "0x6ae9a99190641b9ed0c07143340612dde0e9cb7deaa5fe0
 const TEST_REFUND_ADDRESS: &str =
     "0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe";
 const TEST_GAS_OVERHEAD_AMOUNT: u64 = 100000;
+const NON_OWNER_PRIVATE_KEY: &str =
+    "0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c";
 
 async fn get_contract_instances() -> (
     OverheadIgp<WalletUnlocked>,
@@ -80,11 +79,17 @@ async fn get_contract_instances() -> (
 
     let overhead_igp = OverheadIgp::new(overhead_igp_id.clone(), wallet.clone());
 
-    // Set the destination gas overhead for the test destination domain
-    let owner_wallet = initial_owner_account(&wallet).await.unwrap();
+    let owner_identity = Identity::Address(wallet.address().into());
+
     overhead_igp
-        .with_account(owner_wallet)
-        .unwrap()
+        .methods()
+        .set_ownership(owner_identity)
+        .call()
+        .await
+        .unwrap();
+
+    // Set the destination gas overhead for the test destination domain
+    overhead_igp
         .methods()
         .set_destination_gas_overheads(vec![GasOverheadConfig {
             domain: TEST_DESTINATION_DOMAIN,
@@ -95,10 +100,6 @@ async fn get_contract_instances() -> (
         .unwrap();
 
     (overhead_igp, test_igp)
-}
-
-async fn initial_owner_account(funder: &WalletUnlocked) -> Result<WalletUnlocked> {
-    funded_wallet_with_private_key(funder, INTIAL_OWNER_PRIVATE_KEY).await
 }
 
 #[tokio::test]
@@ -214,10 +215,6 @@ async fn test_quote_gas_payment() {
 async fn test_set_destination_gas_overheads() {
     let (overhead_igp, _) = get_contract_instances().await;
 
-    let owner_wallet = initial_owner_account(&overhead_igp.account())
-        .await
-        .unwrap();
-
     let configs = vec![
         GasOverheadConfig {
             domain: TEST_DESTINATION_DOMAIN + 1,
@@ -230,8 +227,6 @@ async fn test_set_destination_gas_overheads() {
     ];
 
     let call = overhead_igp
-        .with_account(owner_wallet)
-        .unwrap()
         .methods()
         .set_destination_gas_overheads(configs.clone())
         .estimate_tx_dependencies(Some(5))
@@ -270,7 +265,13 @@ async fn test_set_destination_gas_overheads() {
 async fn test_set_destination_gas_overheads_reverts_if_not_owner() {
     let (overhead_igp, _) = get_contract_instances().await;
 
+    let non_owner_wallet = funded_wallet_with_private_key(&overhead_igp.account(), NON_OWNER_PRIVATE_KEY)
+        .await
+        .unwrap();
+
     let call = overhead_igp
+        .with_account(non_owner_wallet)
+        .unwrap()
         .methods()
         .set_destination_gas_overheads(vec![GasOverheadConfig {
             domain: TEST_DESTINATION_DOMAIN,
@@ -280,5 +281,5 @@ async fn test_set_destination_gas_overheads_reverts_if_not_owner() {
         .await;
 
     assert!(call.is_err());
-    assert_eq!(get_revert_string(call.err().unwrap()), "!owner");
+    assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner");
 }

@@ -46,7 +46,6 @@ source = 'member'
 dependencies = [
     'hyperlane_message',
     'std',
-    'std_lib_extended',
 ]
 
 [[package]]
@@ -128,7 +127,7 @@ dependencies = [
 
 [[package]]
 name = 'ownership'
-source = 'path+from-root-D26B060B9C691B9B'
+source = 'git+https://github.com/fuellabs/sway-libs?rev#82a1eeaa4805e66ed452fa5ce3d7f3721993812d'
 dependencies = ['std']
 
 [[package]]

@@ -1,6 +1,6 @@
 use fuels::{prelude::*, tx::ContractId, types::Identity};
 
-use test_utils::{funded_wallet_with_private_key, get_revert_string};
+use test_utils::{funded_wallet_with_private_key, get_revert_reason, get_revert_string};
 
 // Load abi from json
 abigen!(Contract(
@@ -139,10 +139,17 @@ async fn test_exchange_rate_and_gas_price_unknown_domain() {
 #[tokio::test]
 async fn test_set_remote_gas_data_configs_reverts_if_not_owner() {
     let (oracle, _) = get_contract_instance().await;
-    let non_owner_wallet = funded_wallet_with_private_key(&oracle.account(), NON_OWNER_PRIVATE_KEY).await.unwrap();
+    let non_owner_wallet = funded_wallet_with_private_key(&oracle.account(), NON_OWNER_PRIVATE_KEY)
+        .await
+        .unwrap();
     let non_owner_identity = Identity::Address(non_owner_wallet.address().into());
 
-    oracle.methods().transfer_ownership(non_owner_identity).call().await.unwrap();
+    oracle
+        .methods()
+        .transfer_ownership(non_owner_identity)
+        .call()
+        .await
+        .unwrap();
 
     let configs = get_test_remote_gas_data_configs();
     let call = oracle
@@ -151,5 +158,5 @@ async fn test_set_remote_gas_data_configs_reverts_if_not_owner() {
         .call()
         .await;
     assert!(call.is_err());
-    assert_eq!(get_revert_string(call.err().unwrap()), "NotOwner");
+    assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner");
 }
