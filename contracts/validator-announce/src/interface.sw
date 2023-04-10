@@ -1,4 +1,4 @@
-library interface;
+library;
 
 use std::{
     bytes::Bytes,

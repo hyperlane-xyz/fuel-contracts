@@ -1,6 +1,6 @@
 contract;
 
-dep interface;
+mod interface;
 
 use std::{
     call_frames::msg_asset_id,

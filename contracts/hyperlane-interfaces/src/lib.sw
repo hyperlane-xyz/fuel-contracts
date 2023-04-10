@@ -1,6 +1,6 @@
-library hyperlane_interfaces;
+library;
 
-dep igp;
+mod igp;
 
 use std::bytes::Bytes;
 

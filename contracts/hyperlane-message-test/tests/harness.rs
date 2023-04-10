@@ -2,6 +2,7 @@ use ethers::{abi::AbiDecode, types::H256};
 use fuels::{
     prelude::*,
     tx::{ContractId, Receipt},
+    types::Bytes
 };
 use hex::FromHex;
 use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
@@ -260,24 +261,14 @@ async fn test_body() {
     for msg in messages.into_iter() {
         let expected_body = msg.body.clone();
 
-        let body_log_tx = instance
+        let body = instance
             .methods()
-            .log_body(msg.into())
-            // If the body is very large, a lot of gas is used!
-            .tx_params(TxParameters::default().set_gas_limit(100_000_000))
+            .body(msg.into())
             .simulate()
             .await
             .unwrap();
 
-        // The log is expected to be the second receipt
-        let body_log_receipt = &body_log_tx.receipts[1];
-        let body_log_data = if let Receipt::LogData { data, .. } = body_log_receipt {
-            data
-        } else {
-            panic!("Expected LogData receipt. Receipt: {:?}", body_log_receipt);
-        };
-
-        assert_eq!(body_log_data, &expected_body);
+        assert_eq!(body, &expected_body);
     }
 }
 
@@ -290,7 +281,7 @@ impl From<HyperlaneAgentMessage> for Message {
             sender: h256_to_bits256(m.sender),
             destination: m.destination,
             recipient: h256_to_bits256(m.recipient),
-            body: m.body,
+            body: Bytes(m.body),
         }
     }
 }

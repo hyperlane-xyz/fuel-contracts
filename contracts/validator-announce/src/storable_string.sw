@@ -1,4 +1,4 @@
-library storable_string;
+library;
 
 use std::bytes::Bytes;
 

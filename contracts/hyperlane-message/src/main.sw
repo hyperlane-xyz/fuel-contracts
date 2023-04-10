@@ -1,4 +1,4 @@
-library hyperlane_message;
+library;
 
 use std::alloc::alloc;
 use std::constants::ZERO_B256;

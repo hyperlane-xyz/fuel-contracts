@@ -1,6 +1,6 @@
 contract;
 
-dep interface;
+mod interface;
 
 use std::{logging::log, u128::U128};
 

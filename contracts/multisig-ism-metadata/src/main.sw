@@ -1,4 +1,4 @@
-library metadata;
+library;
 
 use std::{b512::B512, bytes::Bytes, hash::keccak256, vm::evm::evm_address::EvmAddress};
 

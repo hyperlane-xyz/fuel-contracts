@@ -1,6 +1,6 @@
 [[package]]
 name = 'core'
-source = 'path+from-root-2C66FC65A00ECA96'
+source = 'path+from-root-FDF4A5DCC6ECD181'
 
 [[package]]
 name = 'hyperlane-ism-test'
@@ -106,7 +106,7 @@ dependencies = [
     'multisig_ism_metadata',
     'std',
     'std_lib_extended',
-    'storagemapvec git+https://github.com/FuelLabs/sway-libs?default-branch#2e25453eb2b8050996b9d3143d02821a3ed1632e',
+    'storagemapvec',
 ]
 
 [[package]]
@@ -133,7 +133,7 @@ dependencies = ['std']
 
 [[package]]
 name = 'std'
-source = 'git+https://github.com/fuellabs/sway?tag=v0.35.5#49eae2dd93a1957e2a2c2fb3f51b11eb3791fc24'
+source = 'git+https://github.com/fuellabs/sway?tag=v0.37.0#607ac50176db8bef936f91bacf435d0ea37d041e'
 dependencies = ['core']
 
 [[package]]
@@ -152,12 +152,7 @@ dependencies = [
 
 [[package]]
 name = 'storagemapvec'
-source = 'git+https://github.com/FuelLabs/sway-libs?default-branch#2e25453eb2b8050996b9d3143d02821a3ed1632e'
-dependencies = ['std']
-
-[[package]]
-name = 'storagemapvec'
-source = 'git+https://github.com/FuelLabs/sway-libs?tag=v0.7.1#5700990f123be431e6df70f490a6a51fafac1daa'
+source = 'git+https://github.com/FuelLabs/sway-libs?rev#82a1eeaa4805e66ed452fa5ce3d7f3721993812d'
 dependencies = ['std']
 
 [[package]]
@@ -166,5 +161,5 @@ source = 'member'
 dependencies = [
     'std',
     'std_lib_extended',
-    'storagemapvec git+https://github.com/FuelLabs/sway-libs?tag=v0.7.1#5700990f123be431e6df70f490a6a51fafac1daa',
+    'storagemapvec',
 ]

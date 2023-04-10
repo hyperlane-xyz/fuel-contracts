@@ -1,8 +1,8 @@
 contract;
 
-dep digest;
-dep storable_string;
-dep interface;
+mod digest;
+mod storable_string;
+mod interface;
 
 
 use std::{

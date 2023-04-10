@@ -1,6 +1,6 @@
-library owner;
+library;
 
-dep interface;
+mod interface;
 
 use std::{auth::msg_sender, logging::log, storage::{get, store}};
 use interface::OwnershipTransferredEvent;

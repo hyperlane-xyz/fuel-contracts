@@ -1,4 +1,4 @@
-library digest;
+library;
 
 use std::{bytes::Bytes, vm::evm::evm_address::EvmAddress};
 

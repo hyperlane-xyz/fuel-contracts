@@ -1,4 +1,4 @@
-library bytes;
+library;
 
 use std::{
     bytes::Bytes,
