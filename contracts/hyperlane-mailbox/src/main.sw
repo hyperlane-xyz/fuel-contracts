@@ -1,20 +1,11 @@
 contract;
 
-use std::{
-    auth::msg_sender,
-    call_frames::contract_id,
-    logging::log,
-    bytes::Bytes
-};
+use std::{auth::msg_sender, bytes::Bytes, call_frames::contract_id, logging::log};
 
 use std_lib_extended::bytes::*;
 
 use merkle::StorageMerkleTree;
-use ownership::{
-    require_msg_sender,
-    log_ownership_transferred,
-    interface::Ownable,
-};
+use ownership::{interface::Ownable, log_ownership_transferred, require_msg_sender};
 
 use hyperlane_interfaces::{InterchainSecurityModule, Mailbox, MessageRecipient};
 use hyperlane_message::{EncodedMessage, Message};
@@ -28,9 +19,7 @@ const DISPATCHED_MESSAGE_LOG_ID: u64 = 0x687970u64;
 // TODO: set this at compile / deploy time.
 // NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
 // PRIVATE KEY, which is the first default account when running fuel-client locally.
-const INITIAL_OWNER: Option<Identity> = Option::Some(
-    Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e))
-);
+const INITIAL_OWNER: Option<Identity> = Option::Some(Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e)));
 
 const ZERO_ID: ContractId = ContractId {
     value: 0x0000000000000000000000000000000000000000000000000000000000000000,
@@ -70,9 +59,9 @@ impl Mailbox for Contract {
 
         let message = EncodedMessage::new(
             VERSION,
-            count(), // nonce
+            count(),
             LOCAL_DOMAIN,
-            msg_sender_b256(), // sender
+            msg_sender_b256(),
             destination_domain,
             recipient,
             message_body,
