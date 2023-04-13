@@ -1,10 +1,6 @@
 library;
 
-use std::{
-    bytes::Bytes,
-    constants::ZERO_B256,
-    vm::evm::evm_address::EvmAddress
-};
+use std::{bytes::Bytes, constants::ZERO_B256, vm::evm::evm_address::EvmAddress};
 use ::mem::CopyTypeWrapper;
 
 /// The number of bytes in a b256.
@@ -18,9 +14,8 @@ impl b256 {
 
     /// Gets a b256 from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        asm(ptr: ptr) {
-            ptr: b256 // Return ptr as a b256.
-        }
+        // Return ptr as a b256.
+        asm(ptr: ptr) { ptr: b256 }
     }
 }
 
@@ -108,7 +103,12 @@ impl Bytes {
     /// Copies `byte_count` bytes from `bytes_ptr` into self at the specified offset.
     /// Reverts if the bounds of self are violated.
     /// Returns the byte index after the last byte written.
-    pub fn write_packed_bytes(ref mut self, offset: u64, bytes_ptr: raw_ptr, byte_count: u64) -> u64 {
+    pub fn write_packed_bytes(
+        ref mut self,
+        offset: u64,
+        bytes_ptr: raw_ptr,
+        byte_count: u64,
+    ) -> u64 {
         let new_byte_offset = offset + byte_count;
         // Ensure that the written bytes will stay within the correct bounds.
         assert(new_byte_offset <= self.len);
@@ -131,128 +131,86 @@ impl Bytes {
 }
 
 impl Bytes {
-
     // ===== b256 ====
-
     /// Writes a b256 at the specified offset. Reverts if it violates the
     /// bounds of self.
     /// Returns the byte index after the end of the b256.
     pub fn write_b256(ref mut self, offset: u64, value: b256) -> u64 {
-        self.write_packed_bytes(
-            offset,
-            value.packed_bytes(),
-            B256_BYTE_COUNT,
-        )
+        self.write_packed_bytes(offset, value.packed_bytes(), B256_BYTE_COUNT)
     }
 
     /// Reads a b256 at the specified offset.
     /// Reverts if it violates the bounds of self.
     pub fn read_b256(self, offset: u64) -> b256 {
-        let read_ptr = self.get_read_ptr(
-            offset,
-            B256_BYTE_COUNT,
-        );
+        let read_ptr = self.get_read_ptr(offset, B256_BYTE_COUNT);
 
         b256::from_packed_bytes(read_ptr)
     }
 
     // ===== EvmAddress ====
-
     /// Writes an EvmAddress at the specified offset. Reverts if it violates the
     /// bounds of self.
     /// Returns the byte index after the end of the address.
     pub fn write_evm_address(ref mut self, offset: u64, value: EvmAddress) -> u64 {
-        self.write_packed_bytes(
-            offset,
-            value.packed_bytes(),
-            EVM_ADDRESS_BYTE_COUNT,
-        )
+        self.write_packed_bytes(offset, value.packed_bytes(), EVM_ADDRESS_BYTE_COUNT)
     }
 
     /// Reads an EvmAddress at the specified offset.
     pub fn read_evm_address(ref mut self, offset: u64) -> EvmAddress {
-        let read_ptr = self.get_read_ptr(
-            offset,
-            EVM_ADDRESS_BYTE_COUNT,
-        );
+        let read_ptr = self.get_read_ptr(offset, EVM_ADDRESS_BYTE_COUNT);
 
         EvmAddress::from_packed_bytes(read_ptr)
     }
 
     // ===== u64 ====
-
     /// Writes a u64 at the specified offset. Reverts if it violates the
     /// bounds of self.
     /// Returns the byte index after the end of the u64.
     pub fn write_u64(ref mut self, offset: u64, value: u64) -> u64 {
-        self.write_packed_bytes(
-            offset,
-            value.packed_bytes(),
-            U64_BYTE_COUNT,
-        )
+        self.write_packed_bytes(offset, value.packed_bytes(), U64_BYTE_COUNT)
     }
 
     /// Reads a u64 at the specified offset.
     /// Reverts if it violates the bounds of self.
     pub fn read_u64(self, offset: u64) -> u64 {
-        let read_ptr = self.get_read_ptr(
-            offset,
-            U64_BYTE_COUNT,
-        );
+        let read_ptr = self.get_read_ptr(offset, U64_BYTE_COUNT);
 
         u64::from_packed_bytes(read_ptr)
     }
 
     // ===== u32 ====
-
     /// Writes a u32 at the specified offset. Reverts if it violates the
     /// bounds of self.
     /// Returns the byte index after the end of the u32.
     pub fn write_u32(ref mut self, offset: u64, value: u32) -> u64 {
-        self.write_packed_bytes(
-            offset,
-            value.packed_bytes(),
-            U32_BYTE_COUNT,
-        )
+        self.write_packed_bytes(offset, value.packed_bytes(), U32_BYTE_COUNT)
     }
 
     /// Reads a u32 at the specified offset.
     /// Reverts if it violates the bounds of self.
     pub fn read_u32(self, offset: u64) -> u32 {
-        let read_ptr = self.get_read_ptr(
-            offset,
-            U32_BYTE_COUNT,
-        );
+        let read_ptr = self.get_read_ptr(offset, U32_BYTE_COUNT);
 
         u32::from_packed_bytes(read_ptr)
     }
 
     // ===== u16 ====
-
     /// Writes a u16 at the specified offset. Reverts if it violates the
     /// bounds of self.
     /// Returns the byte index after the end of the u16.
     pub fn write_u16(ref mut self, offset: u64, value: u16) -> u64 {
-        self.write_packed_bytes(
-            offset,
-            value.packed_bytes(),
-            U16_BYTE_COUNT,
-        )
+        self.write_packed_bytes(offset, value.packed_bytes(), U16_BYTE_COUNT)
     }
 
     /// Reads a u16 at the specified offset.
     /// Reverts if it violates the bounds of self.
     pub fn read_u16(self, offset: u64) -> u16 {
-        let read_ptr = self.get_read_ptr(
-            offset,
-            U16_BYTE_COUNT,
-        );
+        let read_ptr = self.get_read_ptr(offset, U16_BYTE_COUNT);
 
         u16::from_packed_bytes(read_ptr)
     }
 
     // ===== u8 ====
-
     /// Writes a u8 at the specified offset. Reverts if it violates the
     /// bounds of self.
     /// Returns the byte index after the end of the u8.
@@ -268,16 +226,11 @@ impl Bytes {
     }
 
     // ===== Bytes =====
-    
     /// Writes Bytes at the specified offset. Reverts if it violates the
     /// bounds of self.
     /// Returns the byte index after the end of the bytes written.
     pub fn write_bytes(ref mut self, offset: u64, value: Bytes) -> u64 {
-        self.write_packed_bytes(
-            offset,
-            value.buf.ptr(),
-            value.len(),
-        )
+        self.write_packed_bytes(offset, value.buf.ptr(), value.len())
     }
 
     /// Reads Bytes starting at the specified offset with the `len` number of bytes.
@@ -286,10 +239,7 @@ impl Bytes {
     /// of unintented consequences!
     /// Reverts if it violates the bounds of self.
     pub fn read_bytes(self, offset: u64, len: u64) -> Bytes {
-        let read_ptr = self.get_read_ptr(
-            offset,
-            len,
-        );
+        let read_ptr = self.get_read_ptr(offset, len);
 
         // Create an empty Bytes
         let mut bytes = Bytes::new();
@@ -528,9 +478,8 @@ fn test_write_and_read_bytes() {
 fn write_and_read_str(ref mut bytes: Bytes, offset: u64, value: str[30]) -> str[30] {
     let _ = bytes.write_packed_bytes(0u64, __addr_of(value), 30);
     let read_ptr = bytes.get_read_ptr(offset, 30);
-    asm(ptr: read_ptr) {
-        ptr: str[30] // convert the ptr to a str[30]
-    }
+    // convert the ptr to a str[30]
+    asm(ptr: read_ptr) { ptr: str[30] }
 }
 
 #[test()]
@@ -540,7 +489,5 @@ fn test_write_and_read_str() {
     let value = "\x19Ethereum Signed Message:\n";
     let value_len = 30u64;
 
-    assert(
-        std::hash::sha256(value) == std::hash::sha256(write_and_read_str(bytes, 0u64, value))
-    );
+    assert(std::hash::sha256(value) == std::hash::sha256(write_and_read_str(bytes, 0u64, value)));
 }

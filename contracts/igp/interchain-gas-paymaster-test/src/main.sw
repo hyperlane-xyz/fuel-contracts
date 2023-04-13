@@ -1,15 +1,8 @@
 contract;
 
-use std::{
-    call_frames::msg_asset_id,
-    constants::BASE_ASSET_ID,
-    context::msg_amount,
-};
+use std::{call_frames::msg_asset_id, constants::BASE_ASSET_ID, context::msg_amount};
 
-use hyperlane_interfaces::igp::{
-    GasPaymentEvent,
-    InterchainGasPaymaster,
-};
+use hyperlane_interfaces::igp::{GasPaymentEvent, InterchainGasPaymaster};
 
 /// Logged when `pay_for_gas` is called. Used to easily confirm the exact call made to the contract.
 struct PayForGasCalled {
@@ -32,7 +25,12 @@ struct QuoteGasPaymentCalled {
 impl InterchainGasPaymaster for Contract {
     #[storage(read, write)]
     #[payable]
-    fn pay_for_gas(message_id: b256, destination_domain: u32, gas_amount: u64, refund_address: Identity) {
+    fn pay_for_gas(
+        message_id: b256,
+        destination_domain: u32,
+        gas_amount: u64,
+        refund_address: Identity,
+    ) {
         require(msg_asset_id() == BASE_ASSET_ID, "Must pay interchain gas in base asset");
         require(msg_amount() > 0, "Must pay at least 1 token for interchain gas");
 

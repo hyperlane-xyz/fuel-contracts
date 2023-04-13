@@ -16,8 +16,8 @@ use ownership::{
     interface::Ownable,
 };
 
-use hyperlane_interfaces::{Mailbox, MessageRecipient, InterchainSecurityModule};
-use hyperlane_message::{Message, EncodedMessage};
+use hyperlane_interfaces::{InterchainSecurityModule, Mailbox, MessageRecipient};
+use hyperlane_message::{EncodedMessage, Message};
 
 /// The mailbox version.
 const VERSION: u8 = 0;
@@ -48,7 +48,7 @@ storage {
     /// A merkle tree that includes outbound message IDs as leaves.
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
     delivered: StorageMap<b256, bool> = StorageMap {},
-    default_ism: ContractId = ZERO_ID
+    default_ism: ContractId = ZERO_ID,
 }
 
 impl Mailbox for Contract {
@@ -88,7 +88,7 @@ impl Mailbox for Contract {
         message_id
     }
 
-    #[storage(read,write)]
+    #[storage(read, write)]
     fn set_default_ism(module: ContractId) {
         require_msg_sender(storage.owner);
         storage.default_ism = module;
@@ -106,8 +106,10 @@ impl Mailbox for Contract {
 
     #[storage(read, write)]
     fn process(metadata: Bytes, _message: Bytes) {
-        let message = EncodedMessage { bytes: _message };
-        
+        let message = EncodedMessage {
+            bytes: _message,
+        };
+
         require(message.version() == VERSION, "!version");
         require(message.destination() == LOCAL_DOMAIN, "!destination");
 
@@ -145,7 +147,9 @@ impl Mailbox for Contract {
     /// (root of merkle tree, index of the last element in the tree).
     #[storage(read)]
     fn latest_checkpoint() -> (b256, u32) {
-        (root(), count() - 1u32)
+        let count = count();
+        require(count > 0, "no messages dispatched");
+        (root(), count - 1u32)
     }
 }
 

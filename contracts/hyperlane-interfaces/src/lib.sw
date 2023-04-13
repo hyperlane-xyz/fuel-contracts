@@ -66,7 +66,7 @@ pub enum ModuleType {
     ROUTING: (),
     AGGREGATION: (),
     LEGACY_MULTISIG: (),
-    MULTISIG: ()
+    MULTISIG: (),
 }
 
 abi InterchainSecurityModule {
@@ -78,7 +78,6 @@ abi InterchainSecurityModule {
     /// /// * `message` - The message as emitted by dispatch.
     #[storage(read, write)]
     fn verify(metadata: Bytes, message: Bytes) -> bool;
-
 
     /// Returns an enum that represents the type of security model
     /// encoded by this ISM. Relayers infer how to fetch and format metadata.

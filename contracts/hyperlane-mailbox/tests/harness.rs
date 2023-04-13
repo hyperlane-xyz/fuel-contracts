@@ -4,9 +4,9 @@ use ethers::types::H256;
 use fuels::{
     prelude::*,
     tx::{ContractId, Receipt},
-    types::{Bits256, Identity, Bytes},
+    types::{Bits256, Bytes, Identity},
 };
-use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage, Encode};
+use hyperlane_core::{Decode, Encode, HyperlaneMessage as HyperlaneAgentMessage};
 use test_utils::{
     bits256_to_h256, funded_wallet_with_private_key, get_revert_string, h256_to_bits256,
 };
@@ -263,6 +263,14 @@ async fn test_latest_checkpoint() {
 
     let message_body = vec![10u8; 100];
 
+    // When no messages have been dispatched, the latest checkpoint fn should revert
+    let call = mailbox.methods().latest_checkpoint().simulate().await;
+    assert!(call.is_err());
+    assert_eq!(
+        get_revert_string(call.err().unwrap()),
+        "no messages dispatched"
+    );
+
     mailbox
         .methods()
         .dispatch(
@@ -515,4 +523,3 @@ async fn test_process_module_reject() {
 
     assert_eq!(get_revert_string(process_module_error), "!module");
 }
-

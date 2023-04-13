@@ -1,10 +1,6 @@
 library;
 
-use std::{
-    bytes::Bytes,
-    b512::B512,
-    vm::evm::evm_address::EvmAddress,
-};
+use std::{b512::B512, bytes::Bytes, vm::evm::evm_address::EvmAddress};
 
 use ::storable_string::StorableString;
 

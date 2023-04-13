@@ -2,7 +2,7 @@ use ethers::prelude::rand;
 use fuels::{
     prelude::*,
     tx::{ContractId, Receipt},
-    types::{Bits256, EvmAddress, B512, Bytes},
+    types::{Bits256, Bytes, EvmAddress, B512},
 };
 
 use hyperlane_core::{accumulator::merkle::MerkleTree, Checkpoint, Decode, HyperlaneMessage, H256};

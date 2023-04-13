@@ -38,6 +38,7 @@ dependencies = [
     'hyperlane_interfaces',
     'hyperlane_message',
     'std',
+    'std_lib_extended',
 ]
 
 [[package]]
@@ -152,7 +153,7 @@ dependencies = [
 
 [[package]]
 name = 'storagemapvec'
-source = 'git+https://github.com/FuelLabs/sway-libs?rev#82a1eeaa4805e66ed452fa5ce3d7f3721993812d'
+source = 'git+https://github.com/FuelLabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a'
 dependencies = ['std']
 
 [[package]]
