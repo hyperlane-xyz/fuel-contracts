@@ -47,7 +47,6 @@ source = 'member'
 dependencies = [
     'hyperlane_message',
     'std',
-    'std_lib_extended',
 ]
 
 [[package]]
