@@ -57,15 +57,7 @@ impl Mailbox for Contract {
     ) -> b256 {
         require(message_body.len() <= MAX_MESSAGE_BODY_BYTES, "msg too long");
 
-        let message = EncodedMessage::new(
-            VERSION,
-            count(),
-            LOCAL_DOMAIN,
-            msg_sender_b256(),
-            destination_domain,
-            recipient,
-            message_body,
-        );
+        let message = EncodedMessage::new(VERSION, count(), LOCAL_DOMAIN, msg_sender_b256(), destination_domain, recipient, message_body);
 
         // Get the message's ID and insert it into the merkle tree.
         let message_id = message.id();
