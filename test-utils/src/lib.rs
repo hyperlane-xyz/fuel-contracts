@@ -1,8 +1,6 @@
 use std::str::FromStr;
 
-use ethers::{
-    signers::Signer
-};
+use ethers::signers::Signer;
 use ethers::types::{Signature, H256, U256};
 use fuels::types::B512;
 use fuels::{
@@ -11,10 +9,10 @@ use fuels::{
     tx::{AssetId, Receipt},
     types::{errors::Error, Bits256, EvmAddress},
 };
-use hyperlane_core::Signable;
-use serde::{de::Deserializer, Deserialize};
-use hyperlane_ethereum::Signers;
 use hyperlane_core::HyperlaneSignerExt;
+use hyperlane_core::Signable;
+use hyperlane_ethereum::Signers;
+use serde::{de::Deserializer, Deserialize};
 
 pub fn h256_to_bits256(h: H256) -> Bits256 {
     Bits256(h.0)

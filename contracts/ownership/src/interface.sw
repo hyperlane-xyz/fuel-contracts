@@ -1,4 +1,4 @@
-library interface;
+library;
 
 /// Intended to be logged when ownership is transferred from
 /// `previous_owner` to `new_owner`.

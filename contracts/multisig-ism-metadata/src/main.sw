@@ -1,12 +1,30 @@
-library metadata;
+library;
 
-use std::{b512::B512, bytes::Bytes, hash::keccak256, vm::evm::evm_address::EvmAddress};
+use std::
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{b512::B512, bytes::Bytes, hash::keccak256, vm::evm::evm_address::EvmAddress};
 
 use std_lib_extended::bytes::*;
 
 /// See https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/libs/isms/MultisigIsmMetadata.sol
 /// for the reference implementation.
-
 pub struct MultisigMetadata {
     root: b256,
     index: u32,
@@ -77,12 +95,11 @@ const TEST_DOMAIN_DATA: [TestDomainData; 3] = [
         domain: 3,
         mailbox: 0x0000000000000000000000002222222222222222222222222222222222222222,
         hash: 0xffb4fbe5142f55e07b5d44b3c7f565c5ef4b016551cbd7c23a92c91621aca06f,
-    }
+    },
 ];
 
 #[test()]
 fn test_domain_hash() {
-
     let mut index = 0;
     while index < 3 {
         let test_data = TEST_DOMAIN_DATA[index];
@@ -99,7 +116,7 @@ struct TestCheckpointData {
     index: u32,
     mailbox: b256,
     root: b256,
-    hash: b256
+    hash: b256,
 }
 
 // from monorepo/vectors/signedCheckpoint.json
@@ -124,21 +141,15 @@ const TEST_CHECKPOINT_DATA: [TestCheckpointData; 3] = [
         mailbox: 0x0000000000000000000000002222222222222222222222222222222222222222,
         root: 0x0404040404040404040404040404040404040404040404040404040404040404,
         hash: 0x134d65c32fac6ddf3fb9ac312552312d303b24b7b3614a9496f4de33bf412055,
-    }
+    },
 ]
-
 #[test()]
 fn test_checkpoint_hash() {
     let mut index = 0;
     while index < 3 {
         let test_data = TEST_CHECKPOINT_DATA[index];
 
-        let computed_checkpoint_hash = checkpoint_hash(
-            test_data.domain,
-            test_data.mailbox,
-            test_data.root,
-            test_data.index
-        );
+        let computed_checkpoint_hash = checkpoint_hash(test_data.domain, test_data.mailbox, test_data.root, test_data.index);
 
         assert(computed_checkpoint_hash == test_data.hash);
 

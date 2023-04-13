@@ -4,6 +4,8 @@ use hyperlane_message::{EncodedMessage, Message};
 
 use std::logging::log;
 
+use std::bytes::Bytes;
+
 abi TestMessage {
     fn id(message: Message) -> b256;
 
@@ -21,7 +23,7 @@ abi TestMessage {
 
     fn recipient(message: Message) -> b256;
 
-    fn log_body(message: Message);
+    fn body(message: Message) -> Bytes;
 }
 
 impl TestMessage for Contract {
@@ -57,10 +59,7 @@ impl TestMessage for Contract {
         EncodedMessage::from(message).recipient()
     }
 
-    /// Vec/Bytes return types aren't supported by the Rust SDK.
-    /// Instead, we log the body and read that in our tests.
-    fn log_body(message: Message) {
-        let body = EncodedMessage::from(message).body();
-        body.log_with_id(0u64);
+    fn body(message: Message) -> Bytes {
+        EncodedMessage::from(message).body()
     }
 }

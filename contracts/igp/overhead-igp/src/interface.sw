@@ -1,4 +1,4 @@
-library interface;
+library;
 
 /// A configuration for a domain and its gas overhead.
 pub struct GasOverheadConfig {

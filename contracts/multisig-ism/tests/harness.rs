@@ -2,7 +2,7 @@ use ethers::prelude::rand;
 use fuels::{
     prelude::*,
     tx::{ContractId, Receipt},
-    types::{Bits256, EvmAddress, B512},
+    types::{Bits256, Bytes, EvmAddress, B512},
 };
 
 use hyperlane_core::{accumulator::merkle::MerkleTree, Checkpoint, Decode, HyperlaneMessage, H256};
@@ -367,7 +367,7 @@ async fn test_verify() {
             .dispatch(
                 TEST_REMOTE_DOMAIN,
                 Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
-                body,
+                Bytes(body),
             )
             .call()
             .await
@@ -497,7 +497,7 @@ impl From<HyperlaneMessage> for Message {
             sender: h256_to_bits256(agent_msg.sender),
             destination: agent_msg.destination,
             recipient: h256_to_bits256(agent_msg.recipient),
-            body: agent_msg.body,
+            body: Bytes(agent_msg.body),
         }
     }
 }

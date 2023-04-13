@@ -1,6 +1,6 @@
-library std_lib_extended;
+library;
 
-dep mem;
-dep bytes;
-dep option;
-dep result;
+mod mem;
+mod bytes;
+mod option;
+mod result;

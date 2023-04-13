@@ -1,14 +1,16 @@
-use fuels::{prelude::*, tx::ContractId, types::{Bits256, B512}};
-use hyperlane_core::{utils::domain_hash, Checkpoint, H256, Signable};
+use fuels::{
+    prelude::*,
+    tx::ContractId,
+    types::{Bits256, B512},
+};
+use hyperlane_core::{utils::domain_hash, Checkpoint, Signable, H256};
 use test_utils::{bits256_to_h256, h256_to_bits256};
 
 // Load abi from json
-abigen!(
-    Contract(
-        name = "TestMultisigIsmMetadata",
-        abi = "contracts/multisig-ism-metadata-test/out/debug/multisig-ism-metadata-test-abi.json"
-    )
-);
+abigen!(Contract(
+    name = "TestMultisigIsmMetadata",
+    abi = "contracts/multisig-ism-metadata-test/out/debug/multisig-ism-metadata-test-abi.json"
+));
 
 const TEST_MAILBOX_ADDRESS: H256 = H256::repeat_byte(0xau8);
 const TEST_MAILBOX_DOMAIN: u32 = 420u32;

@@ -1,4 +1,4 @@
-library digest;
+library;
 
 use std::{bytes::Bytes, vm::evm::evm_address::EvmAddress};
 
@@ -41,9 +41,9 @@ fn domain_hash(mailbox_id: b256, local_domain: u32) -> b256 {
 /// The announcement digest.
 /// Equivalent of Solidity's:
 /// ```
-// ECDSA.toEthSignedMessageHash(
-//     keccak256(abi.encodePacked(_domainHash, _storageLocation))
-// );
+/// ECDSA.toEthSignedMessageHash(
+///     keccak256(abi.encodePacked(_domainHash, _storageLocation))
+/// );
 /// ```
 /// Found here: https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/0b60a32e9cf0fc98c203379b6100b6b9aa61dac9/solidity/contracts/libs/ValidatorAnnouncements.sol#L30-L33
 const DIGEST_DOMAIN_HASH_OFFSET: u64 = 0;

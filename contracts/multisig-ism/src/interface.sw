@@ -1,4 +1,4 @@
-library interface;
+library;
 
 use std::vm::evm::evm_address::EvmAddress;
 

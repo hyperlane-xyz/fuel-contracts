@@ -10,7 +10,7 @@ use fuels::{
 
 use hyperlane_core::{Announcement, H256};
 use hyperlane_ethereum::Signers;
-use test_utils::{get_revert_string, evm_address, get_signer, sign_compact};
+use test_utils::{evm_address, get_revert_string, get_signer, sign_compact};
 
 // Load abi from json
 abigen!(Contract(
@@ -97,7 +97,7 @@ async fn sign_and_announce(
         .announce_vec(
             evm_address(signer),
             storage_location.as_bytes().into(),
-            compact_signed
+            compact_signed,
         )
         .call()
         .await
