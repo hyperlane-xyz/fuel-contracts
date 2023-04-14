@@ -21,7 +21,9 @@ mod mailbox_contract {
     ));
 }
 
-use crate::mailbox_contract::{Mailbox, OwnershipTransferredEvent};
+use crate::mailbox_contract::{
+    DefaultIsmSetEvent, DispatchIdEvent, Mailbox, OwnershipTransferredEvent, ProcessEvent,
+};
 
 mod test_interchain_security_module_contract {
     use fuels::prelude::abigen;
@@ -187,8 +189,7 @@ async fn test_dispatch_logs_message() {
     let (mailbox, _, recipient, _) = get_contract_instance().await;
 
     let message = test_message(&mailbox, recipient, true);
-
-    let id = message.id();
+    let message_id = message.id();
 
     let dispatch_call = mailbox
         .methods()
@@ -210,9 +211,19 @@ async fn test_dispatch_logs_message() {
     };
 
     let recovered_message = HyperlaneAgentMessage::read_from(&mut log_data.as_slice()).unwrap();
-
     // Assert equality of the message ID
-    assert_eq!(recovered_message.id(), id);
+    assert_eq!(recovered_message.id(), message_id);
+
+    // Also make sure the DispatchIdEvent was logged
+    let events = dispatch_call
+        .get_logs_with_type::<DispatchIdEvent>()
+        .unwrap();
+    assert_eq!(
+        events,
+        vec![DispatchIdEvent {
+            message_id: h256_to_bits256(message_id),
+        }],
+    );
 }
 
 #[tokio::test]
@@ -334,7 +345,6 @@ async fn test_process_id() {
     let metadata = vec![5u8; 100];
 
     let agent_message = test_message(&mailbox, recipient_id.clone(), false);
-    let agent_message_id = agent_message.id();
 
     let contract_inputs = vec![ism_id.clone(), recipient_id];
 
@@ -347,10 +357,17 @@ async fn test_process_id() {
         .await
         .unwrap();
 
-    let message_id = &process_call.get_logs_with_type::<Bits256>().unwrap()[0];
-
-    // Assert equality of the message ID
-    assert_eq!(agent_message_id, bits256_to_h256(*message_id));
+    // Also make sure the ProcessEvent was logged
+    let events = process_call.get_logs_with_type::<ProcessEvent>().unwrap();
+    assert_eq!(
+        events,
+        vec![ProcessEvent {
+            message_id: h256_to_bits256(agent_message.id()),
+            origin: agent_message.origin,
+            sender: h256_to_bits256(agent_message.sender),
+            recipient: h256_to_bits256(agent_message.recipient),
+        }],
+        );
 }
 
 #[tokio::test]
@@ -678,4 +695,70 @@ async fn test_unpause_reverts_if_not_owner() {
     let call = mailbox.methods().unpause().call().await;
     assert!(call.is_err());
     assert!(get_revert_string(call.err().unwrap()).contains("!owner"));
+}
+
+#[tokio::test]
+async fn test_set_default_ism() {
+    let (mailbox, ism_id, _, _) = get_contract_instance().await;
+
+    // Sanity check the current default ISM is the one we expect
+    let default_ism = mailbox
+        .methods()
+        .get_default_ism()
+        .simulate()
+        .await
+        .unwrap()
+        .value;
+    assert_eq!(default_ism, ism_id.into());
+
+    let new_default_ism =
+        ContractId::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
+            .unwrap();
+    assert_ne!(default_ism, new_default_ism);
+
+    let initial_owner_wallet =
+        funded_wallet_with_private_key(&mailbox.account(), INTIAL_OWNER_PRIVATE_KEY)
+            .await
+            .unwrap();
+
+    let call = mailbox
+        .with_account(initial_owner_wallet)
+        .unwrap()
+        .methods()
+        .set_default_ism(new_default_ism)
+        .call()
+        .await
+        .unwrap();
+    // Ensure the event was logged
+    assert_eq!(
+        call.get_logs_with_type::<DefaultIsmSetEvent>().unwrap(),
+        vec![DefaultIsmSetEvent {
+            module: new_default_ism,
+        }]
+    );
+    // And make sure the default ISM was really updated
+    let default_ism = mailbox
+        .methods()
+        .get_default_ism()
+        .simulate()
+        .await
+        .unwrap()
+        .value;
+    assert_eq!(default_ism, new_default_ism);
+}
+
+#[tokio::test]
+async fn test_set_default_ism_reverts_if_not_owner() {
+    let (mailbox, _, _, _) = get_contract_instance().await;
+    let new_default_ism =
+        ContractId::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
+            .unwrap();
+
+    let call = mailbox
+        .methods()
+        .set_default_ism(new_default_ism)
+        .call()
+        .await;
+    assert!(call.is_err());
+    assert_eq!(get_revert_string(call.err().unwrap()), "!owner",);
 }
