@@ -265,9 +265,10 @@ async fn test_set_destination_gas_overheads() {
 async fn test_set_destination_gas_overheads_reverts_if_not_owner() {
     let (overhead_igp, _) = get_contract_instances().await;
 
-    let non_owner_wallet = funded_wallet_with_private_key(&overhead_igp.account(), NON_OWNER_PRIVATE_KEY)
-        .await
-        .unwrap();
+    let non_owner_wallet =
+        funded_wallet_with_private_key(&overhead_igp.account(), NON_OWNER_PRIVATE_KEY)
+            .await
+            .unwrap();
 
     let call = overhead_igp
         .with_account(non_owner_wallet)
