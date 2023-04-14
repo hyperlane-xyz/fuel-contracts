@@ -21,6 +21,11 @@ pub struct ProcessEvent {
     recipient: b256,
 }
 
+/// Logged when the default ISM is set.
+pub struct DefaultIsmSetEvent {
+    module: ContractId,
+}
+
 abi Mailbox {
     /// Dispatches a message to the destination domain and recipient.
     /// Returns the message's ID.

@@ -8,6 +8,7 @@ use merkle::StorageMerkleTree;
 use ownership::{interface::Ownable, log_ownership_transferred, require_msg_sender};
 
 use hyperlane_interfaces::{
+    DefaultIsmSetEvent,
     DispatchIdEvent,
     InterchainSecurityModule,
     Mailbox,
@@ -81,6 +82,8 @@ impl Mailbox for Contract {
     fn set_default_ism(module: ContractId) {
         require_msg_sender(storage.owner);
         storage.default_ism = module;
+
+        log(DefaultIsmSetEvent { module });
     }
 
     #[storage(read)]
