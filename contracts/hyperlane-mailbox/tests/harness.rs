@@ -367,7 +367,7 @@ async fn test_process_id() {
             sender: h256_to_bits256(agent_message.sender),
             recipient: h256_to_bits256(agent_message.recipient),
         }],
-        );
+    );
 }
 
 #[tokio::test]
