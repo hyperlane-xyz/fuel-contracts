@@ -33,7 +33,7 @@ impl EvmAddress {
     /// Gets an EvmAddress from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
         // The EvmAddress value will be written to this b256.
-        let value: b256 = ZERO_B256;
+        let mut value: b256 = ZERO_B256;
         // Point to 12 bytes into the 32 byte b256, where the EVM address
         // contents are expected to start.
         let value_ptr = __addr_of(value).add_uint_offset(EVM_ADDRESS_B256_BYTE_OFFSET);

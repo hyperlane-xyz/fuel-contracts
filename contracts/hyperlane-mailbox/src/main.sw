@@ -7,7 +7,14 @@ use std_lib_extended::bytes::*;
 use merkle::StorageMerkleTree;
 use ownership::{interface::Ownable, log_ownership_transferred, require_msg_sender};
 
-use hyperlane_interfaces::{InterchainSecurityModule, Mailbox, MessageRecipient};
+use hyperlane_interfaces::{
+    DefaultIsmSetEvent,
+    DispatchIdEvent,
+    InterchainSecurityModule,
+    Mailbox,
+    MessageRecipient,
+    ProcessEvent,
+};
 use hyperlane_message::{EncodedMessage, Message};
 
 /// The mailbox version.
@@ -63,8 +70,10 @@ impl Mailbox for Contract {
         let message_id = message.id();
         storage.merkle_tree.insert(message_id);
 
-        // Log the message with a log ID.
+        // Log the entire encoded message with a log ID so it can be identified.
         message.log_with_id(DISPATCHED_MESSAGE_LOG_ID);
+        // Log the dispatched message ID for easy identification.
+        log(DispatchIdEvent { message_id });
 
         message_id
     }
@@ -73,6 +82,8 @@ impl Mailbox for Contract {
     fn set_default_ism(module: ContractId) {
         require_msg_sender(storage.owner);
         storage.default_ism = module;
+
+        log(DefaultIsmSetEvent { module });
     }
 
     #[storage(read)]
@@ -98,7 +109,9 @@ impl Mailbox for Contract {
         require(!delivered(id), "delivered");
         storage.delivered.insert(id, true);
 
-        let msg_recipient = abi(MessageRecipient, message.recipient());
+        let recipient = message.recipient();
+
+        let msg_recipient = abi(MessageRecipient, recipient);
         let mut ism_id = msg_recipient.interchain_security_module();
         if (ism_id == ZERO_ID) {
             ism_id = storage.default_ism;
@@ -107,9 +120,17 @@ impl Mailbox for Contract {
         let ism = abi(InterchainSecurityModule, ism_id.into());
         require(ism.verify(metadata, _message), "!module");
 
-        msg_recipient.handle(message.origin(), message.sender(), message.body());
+        let origin = message.origin();
+        let sender = message.sender();
 
-        log(id);
+        msg_recipient.handle(origin, sender, message.body());
+
+        log(ProcessEvent {
+            message_id: id,
+            origin,
+            sender,
+            recipient,
+        });
     }
 
     /// Returns the number of inserted leaves (i.e. messages) in the merkle tree.
