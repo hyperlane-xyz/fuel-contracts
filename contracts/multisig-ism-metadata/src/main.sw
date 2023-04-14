@@ -1,25 +1,12 @@
 library;
 
-use std::
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-{b512::B512, bytes::Bytes, hash::keccak256, vm::evm::evm_address::EvmAddress};
+use std::{
+    b512::B512,
+    bytes::Bytes,
+    constants::ZERO_B256,
+    hash::keccak256,
+    vm::evm::evm_address::EvmAddress,
+};
 
 use std_lib_extended::bytes::*;
 
@@ -61,6 +48,44 @@ pub fn checkpoint_hash(origin: u32, mailbox: b256, root: b256, index: u32) -> b2
 }
 
 impl MultisigMetadata {
+    pub fn from_bytes(bytes: Bytes, threshold: u64) -> MultisigMetadata {
+        let mut offset = 0;
+
+        let root = bytes.read_b256(offset);
+        offset += B256_BYTE_COUNT;
+
+        let index = bytes.read_u32(offset);
+        offset += U32_BYTE_COUNT;
+
+        let mailbox = bytes.read_b256(offset);
+        offset += B256_BYTE_COUNT;
+
+        let mut proof: [b256; 32] = [ZERO_B256; 32];
+        let mut proof_index = 0;
+        while proof_index < 32 {
+            proof[proof_index] = bytes.read_b256(offset);
+            offset += B256_BYTE_COUNT;
+            proof_index += 1;
+        }
+
+        let mut signatures = Vec::with_capacity(threshold);
+        let mut signature_index = 0;
+        while signature_index < threshold {
+            let signature = bytes.read_b512(offset);
+            offset += B512_BYTE_COUNT;
+            signatures.push(signature);
+            signature_index += 1;
+        }
+
+        MultisigMetadata {
+            root,
+            index,
+            mailbox,
+            proof,
+            signatures,
+        }
+    }
+
     pub fn checkpoint_digest(self, origin: u32) -> b256 {
         let _checkpoint_hash = checkpoint_hash(origin, self.mailbox, self.root, self.index);
         Bytes::with_ethereum_prefix(_checkpoint_hash).keccak256()
