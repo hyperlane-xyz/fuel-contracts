@@ -4,9 +4,9 @@ use ethers::types::H256;
 use fuels::{
     prelude::*,
     tx::{ContractId, Receipt},
-    types::{Bits256, Identity},
+    types::{Bits256, Bytes, Identity},
 };
-use hyperlane_core::{Decode, HyperlaneMessage as HyperlaneAgentMessage};
+use hyperlane_core::{Decode, Encode, HyperlaneMessage as HyperlaneAgentMessage};
 use test_utils::{
     bits256_to_h256, funded_wallet_with_private_key, get_revert_string, h256_to_bits256,
 };
@@ -173,7 +173,7 @@ async fn test_dispatch_too_large_message() {
         .dispatch(
             TEST_REMOTE_DOMAIN,
             Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
-            large_message_body,
+            Bytes(large_message_body),
         )
         .call()
         .await
@@ -189,12 +189,14 @@ async fn test_dispatch_logs_message() {
     let message = test_message(&mailbox, recipient, true);
     let message_id = message.id();
 
+    let id = message.id();
+
     let dispatch_call = mailbox
         .methods()
         .dispatch(
             message.destination,
             h256_to_bits256(message.recipient),
-            message.body.clone(),
+            Bytes(message.body),
         )
         .call()
         .await
@@ -230,18 +232,20 @@ async fn test_dispatch_returns_id() {
 
     let message = test_message(&mailbox, recipient, true);
 
+    let id = message.id();
+
     let dispatch_call = mailbox
         .methods()
         .dispatch(
             message.destination,
             h256_to_bits256(message.recipient),
-            message.body.clone(),
+            Bytes(message.body),
         )
         .call()
         .await
         .unwrap();
 
-    assert_eq!(bits256_to_h256(dispatch_call.value), message.id());
+    assert_eq!(bits256_to_h256(dispatch_call.value), id);
 }
 
 #[tokio::test]
@@ -255,7 +259,7 @@ async fn test_dispatch_inserts_into_tree() {
         .dispatch(
             TEST_REMOTE_DOMAIN,
             Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
-            message_body,
+            Bytes(message_body),
         )
         .call()
         .await
@@ -272,12 +276,20 @@ async fn test_latest_checkpoint() {
 
     let message_body = vec![10u8; 100];
 
+    // When no messages have been dispatched, the latest checkpoint fn should revert
+    let call = mailbox.methods().latest_checkpoint().simulate().await;
+    assert!(call.is_err());
+    assert_eq!(
+        get_revert_string(call.err().unwrap()),
+        "no messages dispatched"
+    );
+
     mailbox
         .methods()
         .dispatch(
             TEST_REMOTE_DOMAIN,
             Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
-            message_body,
+            Bytes(message_body),
         )
         .call()
         .await
@@ -419,7 +431,7 @@ async fn test_process_id() {
 
     let process_call = mailbox
         .methods()
-        .process(metadata.clone(), agent_message.clone().into())
+        .process(Bytes(metadata), Bytes(agent_message.to_vec()))
         .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::default().set_gas_limit(1_200_000))
         .call()
@@ -453,7 +465,7 @@ async fn test_process_handle() {
 
     mailbox
         .methods()
-        .process(metadata.clone(), agent_message.clone().into())
+        .process(Bytes(metadata), Bytes(agent_message.to_vec()))
         .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::default().set_gas_limit(1_200_000))
         .call()
@@ -469,16 +481,18 @@ async fn test_process_handle() {
 async fn test_process_deliver_twice() {
     let (mailbox, ism_id, recipient_id, _) = get_contract_instance().await;
 
-    let metadata = vec![5u8; 100];
+    let metadata = Bytes(vec![5u8; 100]);
 
     let agent_message = test_message(&mailbox, recipient_id.clone(), false);
     let agent_message_id = agent_message.id();
+
+    let raw_message = Bytes(agent_message.to_vec());
 
     let contract_inputs = vec![ism_id.clone(), recipient_id];
 
     mailbox
         .methods()
-        .process(metadata.clone(), agent_message.clone().into())
+        .process(metadata.clone(), raw_message.clone())
         .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::default().set_gas_limit(1_200_000))
         .call()
@@ -497,7 +511,7 @@ async fn test_process_deliver_twice() {
 
     let process_delivered_error = mailbox
         .methods()
-        .process(metadata.clone(), agent_message.clone().into())
+        .process(metadata, raw_message)
         .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::default().set_gas_limit(1_200_000))
         .call()
@@ -522,7 +536,7 @@ async fn test_process_module_reject() {
 
     let process_module_error = mailbox
         .methods()
-        .process(metadata, agent_message.into())
+        .process(Bytes(metadata), Bytes(agent_message.to_vec()))
         .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::default().set_gas_limit(1_200_000))
         .call()
@@ -530,18 +544,4 @@ async fn test_process_module_reject() {
         .unwrap_err();
 
     assert_eq!(get_revert_string(process_module_error), "!module");
-}
-
-impl From<HyperlaneAgentMessage> for ContractMessage {
-    fn from(agent_msg: HyperlaneAgentMessage) -> Self {
-        Self {
-            version: agent_msg.version,
-            nonce: agent_msg.nonce,
-            origin: agent_msg.origin,
-            sender: h256_to_bits256(agent_msg.sender),
-            destination: agent_msg.destination,
-            recipient: h256_to_bits256(agent_msg.recipient),
-            body: agent_msg.body,
-        }
-    }
 }

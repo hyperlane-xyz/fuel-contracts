@@ -1,4 +1,4 @@
-library interface;
+library;
 
 /// Logged when the benficiary is set.
 pub struct BeneficiarySetEvent {

@@ -1,0 +1,19 @@
+[package]
+name = "multisig-ism-metadata-test"
+description = "A cargo-generate template for Rust + Sway integration testing."
+version = "0.1.0"
+edition = "2021"
+authors = ["Trevor Porter <trevor@hyperlane.xyz>"]
+license = "Apache-2.0"
+
+[dev-dependencies]
+fuels = { workspace = true, features = ["fuel-core-lib"] }
+hyperlane-core = { workspace = true }
+test-utils = { path = "../../test-utils" }
+tokio = { workspace = true, features = ["rt", "macros"] }
+sha3 = "0.9.1"
+
+[[test]]
+harness = true
+name = "integration_tests"
+path = "tests/harness.rs"

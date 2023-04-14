@@ -1,4 +1,4 @@
-library hyperlane_message;
+library;
 
 use std::alloc::alloc;
 use std::constants::ZERO_B256;
@@ -17,8 +17,7 @@ pub struct Message {
     sender: b256,
     destination: u32,
     recipient: b256,
-    // Not a `Bytes` because Vec<u8> has bindings to SDKs.
-    body: Vec<u8>,
+    body: Bytes,
 }
 
 /// A heap-allocated tightly packed Hyperlane message.
@@ -54,7 +53,7 @@ impl EncodedMessage {
         sender: b256,
         destination: u32,
         recipient: b256,
-        ref mut body: Vec<u8>,
+        ref mut body: Bytes,
     ) -> Self {
         let bytes_len = BODY_BYTE_OFFSET + body.len();
 
@@ -67,7 +66,7 @@ impl EncodedMessage {
         let _ = bytes.write_u32(DESTINATION_BYTE_OFFSET, destination);
         let _ = bytes.write_b256(RECIPIENT_BYTE_OFFSET, recipient);
         if body.len() > 0 {
-            let _ = bytes.write_bytes(BODY_BYTE_OFFSET, Bytes::from_vec_u8(body));
+            let _ = bytes.write_bytes(BODY_BYTE_OFFSET, body);
         }
 
         Self { bytes }
@@ -139,7 +138,7 @@ impl From<Message> for EncodedMessage {
             sender: self.sender(),
             destination: self.destination(),
             recipient: self.recipient(),
-            body: self.body().into_vec_u8(),
+            body: self.body(),
         }
     }
 }

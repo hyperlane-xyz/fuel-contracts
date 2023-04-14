@@ -1,4 +1,4 @@
-library interface;
+library;
 
 use hyperlane_interfaces::igp::{RemoteGasData};
 

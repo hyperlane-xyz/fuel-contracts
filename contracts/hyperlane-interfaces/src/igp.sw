@@ -1,4 +1,4 @@
-library igp;
+library;
 
 use std::u128::U128;
 

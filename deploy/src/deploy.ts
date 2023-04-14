@@ -4,11 +4,13 @@ import {
   ContractFactory,
   ContractUtils,
   Provider,
+  StorageSlot,
   Wallet,
   WalletUnlocked,
 } from 'fuels';
 
 import { HyperlaneMailboxAbi__factory } from '../types/factories/HyperlaneMailboxAbi__factory';
+import { HyperlaneMsgRecipientTestAbi__factory } from '../types/factories/HyperlaneMsgRecipientTestAbi__factory';
 
 // First default account from running fuel-client locally:
 //   Address: 0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e
@@ -33,14 +35,16 @@ async function main() {
   const wallet = Wallet.fromPrivateKey(PRIVATE_KEY, provider);
 
   const mailbox = await deployOrGetMailbox(wallet);
+  const testRecipient = await deployOrGetTestRecipient(wallet);
 
-  console.log('Contract ID:');
+  console.log('Contract IDs:');
   console.log({
     mailbox: mailbox.id.toHexString(),
+    testRecipient: testRecipient.id.toHexString(),
   });
 
   if (SEND_MESSAGE) {
-    await dispatchMessage(mailbox);
+    await dispatchMessage(mailbox, testRecipient);
   }
 
   try {
@@ -55,33 +59,27 @@ async function main() {
   }
 }
 
-async function deployOrGetMailbox(wallet: WalletUnlocked): Promise<Contract> {
-  const bytecode = readFileSync(
-    '../contracts/hyperlane-mailbox/out/debug/hyperlane-mailbox.bin',
-  );
-
-  const factory = new ContractFactory(
-    bytecode,
-    HyperlaneMailboxAbi__factory.abi,
-    wallet,
-  );
-
-  const expectedMailboxContractId = ContractUtils.getContractId(
-    bytecode,
+async function deployOrGetContract(
+  wallet: WalletUnlocked,
+  factory: ContractFactory,
+  storageSlots: StorageSlot[] = [],
+): Promise<Contract> {
+  const expectedId = ContractUtils.getContractId(
+    factory.bytecode,
     CONTRACT_SALT,
-    ContractUtils.getContractStorageRoot([]),
+    ContractUtils.getContractStorageRoot(storageSlots),
   );
 
   const maybeDeployedContract = await wallet.provider.getContract(
-    expectedMailboxContractId,
+    expectedId,
   );
 
   // If the contract's already been deployed, just get the existing one without deploying
   if (maybeDeployedContract) {
     console.log('Contract already deployed');
     return new Contract(
-      expectedMailboxContractId,
-      HyperlaneMailboxAbi__factory.abi,
+      expectedId,
+      factory.interface.abi!,
       wallet,
     );
   }
@@ -92,14 +90,48 @@ async function deployOrGetMailbox(wallet: WalletUnlocked): Promise<Contract> {
   });
 }
 
-async function dispatchMessage(mailbox: Contract) {
-  const dispatchTx = mailbox.functions.dispatch(
+async function deployOrGetMailbox(wallet: WalletUnlocked): Promise<Contract> {
+  const factory = new ContractFactory(
+    readFileSync(
+      '../contracts/hyperlane-mailbox/out/debug/hyperlane-mailbox.bin',
+    ),
+    HyperlaneMailboxAbi__factory.abi,
+    wallet,
+  );
+
+  return deployOrGetContract(
+    wallet,
+    factory,
+  );
+}
+
+async function deployOrGetTestRecipient(wallet: WalletUnlocked): Promise<Contract> {
+  const factory = new ContractFactory(
+    readFileSync(
+      '../contracts/hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test.bin',
+    ),
+    HyperlaneMsgRecipientTestAbi__factory.abi,
+    wallet,
+  );
+
+  return deployOrGetContract(
+    wallet,
+    factory,
+  );
+}
+
+async function dispatchMessage(mailbox: Contract, testRecipient: Contract) {
+  // Dispatch a message via the testRecipient, which takes in a Vec<u8> body
+  // instead of the Mailbox's Bytes body, which isn't supported by fuels-ts yet.
+  const dispatchTx = testRecipient.functions.dispatch(
+    // fuels-ts only encodes Vecs correctly when they are the first parameter (lol)
+    // See https://github.com/FuelLabs/fuels-ts/issues/881
+    [1, 2, 3, 5, 6],
+    mailbox.id.toB256(),
     420,
     '0x6900000000000000000000000000000000000000000000000000000000000069',
-    // TODO: it seems like fuels-ts may not be accurately
-    // encoding this array into Vec<u8>, we should investigate
-    [1, 2, 3, 5, 6],
-  );
+  )
+  .addContracts([mailbox]);
 
   // To avoid issues with fuels-ts trying to decode logs that it's unable to yet,
   // send the transaction request rather than using `dispatchTx.call()`.

@@ -1,4 +1,4 @@
-library storable_string;
+library;
 
 use std::bytes::Bytes;
 
@@ -41,7 +41,6 @@ pub fn bytes_to_str_128(bytes: Bytes) -> str[128] {
     let _ = copy.write_bytes(0u64, bytes);
 
     let read_ptr = copy.get_read_ptr(0, 128);
-    asm(ptr: read_ptr) {
-        ptr: str[128] // convert the ptr to a str[128]
-    }
+    // convert the ptr to a str[128]
+    asm(ptr: read_ptr) { ptr: str[128] }
 }
