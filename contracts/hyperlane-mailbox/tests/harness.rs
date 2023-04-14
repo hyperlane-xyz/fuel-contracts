@@ -435,7 +435,7 @@ async fn test_process_id() {
         .await
         .unwrap();
 
-    // Also make sure the DispatchIdEvent was logged
+    // Also make sure the ProcessEvent was logged
     let events = process_call.get_logs_with_type::<ProcessEvent>().unwrap();
     assert_eq!(
         events,
