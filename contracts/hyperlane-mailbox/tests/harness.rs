@@ -256,6 +256,14 @@ async fn test_latest_checkpoint() {
 
     let message_body = vec![10u8; 100];
 
+    // When no messages have been dispatched, the latest checkpoint fn should revert
+    let call = mailbox.methods().latest_checkpoint().simulate().await;
+    assert!(call.is_err());
+    assert_eq!(
+        get_revert_string(call.err().unwrap()),
+        "no messages dispatched"
+    );
+
     mailbox
         .methods()
         .dispatch(

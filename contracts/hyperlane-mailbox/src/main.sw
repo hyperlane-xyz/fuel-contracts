@@ -1,11 +1,6 @@
 contract;
 
-use std::{
-    auth::msg_sender,
-    call_frames::contract_id,
-    logging::log,
-    bytes::Bytes
-};
+use std::{auth::msg_sender, bytes::Bytes, call_frames::contract_id, logging::log};
 
 use std_lib_extended::bytes::*;
 
@@ -52,7 +47,7 @@ storage {
     /// A merkle tree that includes outbound message IDs as leaves.
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
     delivered: StorageMap<b256, bool> = StorageMap {},
-    default_ism: ContractId = ZERO_ID
+    default_ism: ContractId = ZERO_ID,
 }
 
 impl Mailbox for Contract {
@@ -72,15 +67,7 @@ impl Mailbox for Contract {
     ) -> b256 {
         require(message_body.len() <= MAX_MESSAGE_BODY_BYTES, "msg too long");
 
-        let message = EncodedMessage::new(
-            VERSION,
-            count(), // nonce
-            LOCAL_DOMAIN,
-            msg_sender_b256(), // sender
-            destination_domain,
-            recipient,
-            message_body,
-        );
+        let message = EncodedMessage::new(VERSION, count(), LOCAL_DOMAIN, msg_sender_b256(), destination_domain, recipient, message_body);
 
         // Get the message's ID and insert it into the merkle tree.
         let message_id = message.id();
@@ -92,7 +79,7 @@ impl Mailbox for Contract {
         message_id
     }
 
-    #[storage(read,write)]
+    #[storage(read, write)]
     fn set_default_ism(module: ContractId) {
         only_owner();
         storage.default_ism = module;
@@ -110,8 +97,10 @@ impl Mailbox for Contract {
 
     #[storage(read, write)]
     fn process(metadata: Bytes, _message: Bytes) {
-        let message = EncodedMessage { bytes: _message };
-        
+        let message = EncodedMessage {
+            bytes: _message,
+        };
+
         require(message.version() == VERSION, "!version");
         require(message.destination() == LOCAL_DOMAIN, "!destination");
 
@@ -149,7 +138,9 @@ impl Mailbox for Contract {
     /// (root of merkle tree, index of the last element in the tree).
     #[storage(read)]
     fn latest_checkpoint() -> (b256, u32) {
-        (root(), count() - 1u32)
+        let count = count();
+        require(count > 0, "no messages dispatched");
+        (root(), count - 1u32)
     }
 }
 

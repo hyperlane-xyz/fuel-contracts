@@ -35,13 +35,7 @@ abi Ownable {
 
 use hyperlane_interfaces::igp::{GasOracle, GasPaymentEvent, InterchainGasPaymaster, RemoteGasData};
 
-use interface::{
-    BeneficiarySetEvent,
-    Claimable,
-    ClaimEvent,
-    GasOracleSetEvent,
-    OnChainFeeQuoting,
-};
+use interface::{BeneficiarySetEvent, Claimable, ClaimEvent, GasOracleSetEvent, OnChainFeeQuoting};
 
 /// The scale of a token exchange rate. 1e19.
 const TOKEN_EXCHANGE_RATE_SCALE: u64 = 10_000_000_000_000_000_000;
@@ -130,9 +124,7 @@ impl Claimable for Contract {
         only_owner();
 
         storage.beneficiary = beneficiary;
-        log(BeneficiarySetEvent {
-            beneficiary,
-        });
+        log(BeneficiarySetEvent { beneficiary });
     }
 
     /// Sends all base asset funds to the beneficiary. Callable by anyone.

@@ -30,7 +30,7 @@ storage {
 }
 
 impl GasOracle for Contract {
-    /// Gets the gas data from storage. 
+    /// Gets the gas data from storage.
     #[storage(read)]
     fn get_exchange_rate_and_gas_price(domain: u32) -> RemoteGasData {
         storage.remote_gas_data.get(domain).unwrap_or(RemoteGasData::default())

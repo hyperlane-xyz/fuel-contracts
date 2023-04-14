@@ -3,37 +3,30 @@ contract;
 mod interface;
 
 use std::{
-    vm::evm::{
-        evm_address::EvmAddress,
-        ecr::ec_recover_evm_address
-    },
+    constants::ZERO_B256,
     logging::log,
-    constants::ZERO_B256
+    vm::evm::{
+        ecr::ec_recover_evm_address,
+        evm_address::EvmAddress,
+    },
 };
 
 use storagemapvec::StorageMapVec;
 
-use hyperlane_message::{Message, EncodedMessage};
+use hyperlane_message::{EncodedMessage, Message};
 
 use merkle::StorageMerkleTree;
 
 use interface::MultisigIsm;
 
-use hyperlane_interfaces::{
-    ModuleType,
-    InterchainSecurityModule
-};
+use hyperlane_interfaces::{InterchainSecurityModule, ModuleType};
 
 use multisig_ism_metadata::MultisigMetadata;
 
-use std_lib_extended::{
-    option::*,
-    result::*
-};
+use std_lib_extended::{option::*, result::*};
 
 /// See https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/isms/MultisigIsm.sol
 /// for the reference implementation.
-
 storage {
     validators: StorageMapVec<u32, EvmAddress> = StorageMapVec {},
     threshold: StorageMap<u32, u8> = StorageMap {},
@@ -104,7 +97,7 @@ pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedM
 }
 
 /// Enrolls a validator without updating the commitment.
-#[storage(read,write)]
+#[storage(read, write)]
 fn enroll_validator(domain: u32, validator: EvmAddress) {
     require(validator != EvmAddress::from(ZERO_B256), "zero address");
     require(!is_enrolled(domain, validator), "enrolled");
@@ -112,7 +105,7 @@ fn enroll_validator(domain: u32, validator: EvmAddress) {
 }
 
 /// Sets the threshold for the domain. Must be less than or equal to the number of validators.
-#[storage(read,write)]
+#[storage(read, write)]
 fn set_threshold(domain: u32, threshold: u8) {
     require(threshold > 0 && threshold <= storage.validators.len(domain), "!range");
     storage.threshold.insert(domain, threshold);
@@ -128,6 +121,7 @@ fn threshold(domain: u32) -> u8 {
 fn validators(domain: u32) -> Vec<EvmAddress> {
     return storage.validators.to_vec(domain);
 }
+
 
 // TODO: implement with generic ISM abi
 // impl InterchainSecurityModule for Contract {
