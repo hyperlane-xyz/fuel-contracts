@@ -14,7 +14,7 @@ use hyperlane_interfaces::{
     MessageRecipient,
     ProcessEvent,
 };
-use hyperlane_message::{Message, EncodedMessage};
+use hyperlane_message::{EncodedMessage, Message};
 
 /// The mailbox version.
 const VERSION: u8 = 0;
@@ -72,9 +72,7 @@ impl Mailbox for Contract {
         // Log the entire encoded message with a log ID so it can be identified.
         message.log_with_id(DISPATCHED_MESSAGE_LOG_ID);
         // Log the dispatched message ID for easy identification.
-        log(DispatchIdEvent {
-            message_id,
-        });
+        log(DispatchIdEvent { message_id });
 
         message_id
     }
