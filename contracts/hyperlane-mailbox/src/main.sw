@@ -6,13 +6,7 @@ use std_lib_extended::bytes::*;
 
 use merkle::StorageMerkleTree;
 
-use ownership::{
-    data_structures::State,
-    only_owner,
-    owner,
-    transfer_ownership,
-    set_ownership,
-};
+use ownership::{data_structures::State, only_owner, owner, set_ownership, transfer_ownership};
 
 abi Ownable {
     #[storage(read)]
@@ -23,8 +17,8 @@ abi Ownable {
     fn set_ownership(new_owner: Identity);
 }
 
-use hyperlane_interfaces::{Mailbox, MessageRecipient, InterchainSecurityModule};
-use hyperlane_message::{Message, EncodedMessage};
+use hyperlane_interfaces::{InterchainSecurityModule, Mailbox, MessageRecipient};
+use hyperlane_message::{EncodedMessage, Message};
 
 /// The mailbox version.
 const VERSION: u8 = 0;

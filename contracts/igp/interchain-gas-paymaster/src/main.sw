@@ -16,13 +16,7 @@ use std::{
 
 use std_lib_extended::{option::*, result::*};
 
-use ownership::{
-    data_structures::State,
-    only_owner,
-    owner,
-    transfer_ownership,
-    set_ownership,
-};
+use ownership::{data_structures::State, only_owner, owner, set_ownership, transfer_ownership};
 
 abi Ownable {
     #[storage(read)]

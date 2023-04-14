@@ -6,13 +6,7 @@ use std::{call_frames::msg_asset_id, constants::ZERO_B256, context::msg_amount};
 
 use hyperlane_interfaces::igp::InterchainGasPaymaster;
 
-use ownership::{
-    data_structures::State,
-    only_owner,
-    owner,
-    transfer_ownership,
-    set_ownership,
-};
+use ownership::{data_structures::State, only_owner, owner, set_ownership, transfer_ownership};
 
 abi Ownable {
     #[storage(read)]

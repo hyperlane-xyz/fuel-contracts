@@ -1,9 +1,6 @@
 contract;
 
-use std::{
-    logging::log,
-    bytes::Bytes,
-};
+use std::{bytes::Bytes, logging::log};
 use hyperlane_interfaces::{Mailbox, MessageRecipient};
 use std_lib_extended::bytes::*;
 
