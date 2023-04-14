@@ -1,0 +1,13 @@
+[project]
+authors = ["Yorke Rhodes"]
+entry = "main.sw"
+license = "Apache-2.0"
+name = "multisig_ism"
+
+[dependencies]
+hyperlane_interfaces = { path = "../hyperlane-interfaces" }
+hyperlane_message = { path = "../hyperlane-message" }
+merkle = { path = "../merkle" }
+multisig_ism_metadata = { path = "../multisig-ism-metadata" }
+std_lib_extended = { path = "../std-lib-extended" }
+storagemapvec = { git = "https://github.com/FuelLabs/sway-libs", tag = "v0.8.0" }

@@ -1,9 +1,8 @@
 contract;
 
-dep digest;
-dep storable_string;
-dep interface;
-
+mod digest;
+mod storable_string;
+mod interface;
 
 use std::{
     b512::B512,
@@ -18,20 +17,10 @@ use std::{
 use storagemapvec::StorageMapVec;
 
 use digest::{get_announcement_digest, get_replay_id};
-use interface::{
-    ValidatorAnnounce,
-    ValidatorAnnouncementEvent,
-};
-use storable_string::{
-    StorableString,
-    MAX_STORABLE_STRING_CHARS,
-};
+use interface::{ValidatorAnnounce, ValidatorAnnouncementEvent};
+use storable_string::{MAX_STORABLE_STRING_CHARS, StorableString};
 
-use std_lib_extended::{
-    bytes::*,
-    option::*,
-    result::*,
-};
+use std_lib_extended::{bytes::*, option::*, result::*};
 
 /// Configurable constants to be set at deploy time.
 configurable {
@@ -45,12 +34,10 @@ storage {
     /// Replay id -> whether it has been used.
     /// Used for ensuring a storage location for a validator cannot be announced more than once.
     replay_protection: StorageMap<b256, bool> = StorageMap {},
-
     /// Lookup table for whether a validator has made any announcements.
     validators_map: StorageMap<EvmAddress, bool> = StorageMap {},
     /// Unique validators that have made announcements.
     validators_vec: StorageVec<EvmAddress> = StorageVec {},
-
     /// Storage locations announced by each validator.
     storage_locations: StorageMapVec<EvmAddress, StorableString> = StorageMapVec {},
 }
@@ -60,7 +47,6 @@ storage {
 /// This is due to immature support in tooling surrounding Fuel's String type. The String
 /// type is just a thin wrapper around Bytes, but heap types (like Bytes) are not yet
 /// supported by libraries like fuels-rs when they are composed with other types (like in structs or tuples).
-
 impl ValidatorAnnounce for Contract {
     /// TODO: remove this function when Bytes can be passed in.
     /// Until https://github.com/FuelLabs/fuels-rs/pull/904 gets in, fuels-rs
@@ -78,7 +64,11 @@ impl ValidatorAnnounce for Contract {
 
     /// Announces a validator's storage location.
     #[storage(read, write)]
-    fn announce(validator: EvmAddress, storage_location: Bytes, signature: B512) {
+    fn announce(
+        validator: EvmAddress,
+        storage_location: Bytes,
+        signature: B512,
+    ) {
         announce(validator, storage_location, signature);
     }
 
@@ -109,7 +99,10 @@ impl ValidatorAnnounce for Contract {
     }
 
     #[storage(read)]
-    fn get_announced_storage_location(validator: EvmAddress, storage_location_index: Option<u64>) -> Bytes {
+    fn get_announced_storage_location(
+        validator: EvmAddress,
+        storage_location_index: Option<u64>,
+    ) -> Bytes {
         let storage_location_count = storage.storage_locations.len(validator);
         // If no storage locations have been announced for this validator, return empty Bytes.
         // Note ideally this would be an `Option::None`, but fuels-rs doesn't support nested
@@ -120,9 +113,7 @@ impl ValidatorAnnounce for Contract {
 
         // If the index isn't specified, default to the last announced storage location.
         let storage_location_index = storage_location_index.unwrap_or(storage_location_count - 1);
-        let storage_location = storage.storage_locations
-            .get(validator, storage_location_index)
-            .expect("storage location index out of bounds");
+        let storage_location = storage.storage_locations.get(validator, storage_location_index).expect("storage location index out of bounds");
 
         storage_location.into()
     }

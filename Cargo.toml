@@ -7,6 +7,8 @@ members = [
     "contracts/igp/overhead-igp",
     "contracts/igp/storage-gas-oracle",
     "contracts/merkle-test",
+    "contracts/multisig-ism",
+    "contracts/multisig-ism-metadata-test",
     "contracts/pause-test",
     "contracts/validator-announce",
     "test-utils",
@@ -28,7 +30,7 @@ authors = ["Abacus Works"]
 
 [workspace.dependencies]
 ethers = { git = "https://github.com/hyperlane-xyz/ethers-rs", tag = "2023-02-10-01" }
-fuels = { git = "https://github.com/FuelLabs/fuels-rs", rev = "09ee117" }
+fuels = { git = "https://github.com/FuelLabs/fuels-rs", rev = "f5d08d6" }
 hyperlane-core = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "930cded" }
 hyperlane-ethereum = { git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "930cded" }
 tokio = { version = "1.12" }

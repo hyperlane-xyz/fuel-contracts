@@ -7,3 +7,4 @@ name = "hyperlane-msg-recipient-test"
 [dependencies]
 hyperlane_interfaces = { path = "../hyperlane-interfaces" }
 hyperlane_message = { path = "../hyperlane-message" }
+std_lib_extended = { path = "../std-lib-extended" }

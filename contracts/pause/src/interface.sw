@@ -1,4 +1,4 @@
-library interface;
+library;
 
 pub struct PausedEvent {}
 

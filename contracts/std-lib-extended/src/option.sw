@@ -1,4 +1,4 @@
-library option;
+library;
 
 impl<T> Option<T> {
     pub fn expect<M>(self, message: M) -> T {

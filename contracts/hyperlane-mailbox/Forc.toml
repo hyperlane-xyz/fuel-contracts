@@ -10,4 +10,5 @@ hyperlane_message = { path = "../hyperlane-message" }
 merkle = { path = "../merkle" }
 ownership = { path = "../ownership" }
 pause = { path = "../pause" }
-reentrancy = { git = "https://github.com/FuelLabs/sway-libs", tag = "v0.7.1" }
+reentrancy = { git = "https://github.com/FuelLabs/sway-libs", tag = "v0.8.0" }
+std_lib_extended = { path = "../std-lib-extended" }

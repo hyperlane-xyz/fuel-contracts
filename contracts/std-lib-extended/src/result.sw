@@ -1,4 +1,4 @@
-library result;
+library;
 
 struct ResultErrRevert<M, E> {
     message: M,

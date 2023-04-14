@@ -1,4 +1,4 @@
-library merkle;
+library;
 
 use std::{constants::ZERO_B256, hash::{keccak256, sha256}, storage::{get, store}};
 

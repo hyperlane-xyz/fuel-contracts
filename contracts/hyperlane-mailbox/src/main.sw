@@ -1,10 +1,8 @@
 contract;
 
-use std::{
-    auth::msg_sender,
-    call_frames::contract_id,
-    logging::log,
-};
+use std::{auth::msg_sender, bytes::Bytes, call_frames::contract_id, logging::log};
+
+use std_lib_extended::bytes::*;
 
 use merkle::StorageMerkleTree;
 use ownership::{
@@ -15,8 +13,8 @@ use ownership::{
 use pause::{interface::Pausable, is_paused, pause, unpause, require_unpaused};
 use reentrancy::reentrancy_guard;
 
-use hyperlane_interfaces::{Mailbox, MessageRecipient, InterchainSecurityModule};
-use hyperlane_message::{Message, EncodedMessage};
+use hyperlane_interfaces::{InterchainSecurityModule, Mailbox, MessageRecipient};
+use hyperlane_message::{EncodedMessage, Message};
 
 /// The mailbox version.
 const VERSION: u8 = 0;
@@ -27,9 +25,7 @@ const DISPATCHED_MESSAGE_LOG_ID: u64 = 0x687970u64;
 // TODO: set this at compile / deploy time.
 // NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
 // PRIVATE KEY, which is the first default account when running fuel-client locally.
-const INITIAL_OWNER: Option<Identity> = Option::Some(
-    Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e))
-);
+const INITIAL_OWNER: Option<Identity> = Option::Some(Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e)));
 
 const ZERO_ID: ContractId = ContractId {
     value: 0x0000000000000000000000000000000000000000000000000000000000000000,
@@ -47,7 +43,7 @@ storage {
     /// A merkle tree that includes outbound message IDs as leaves.
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
     delivered: StorageMap<b256, bool> = StorageMap {},
-    default_ism: ContractId = ZERO_ID
+    default_ism: ContractId = ZERO_ID,
 }
 
 impl Mailbox for Contract {
@@ -63,22 +59,14 @@ impl Mailbox for Contract {
     fn dispatch(
         destination_domain: u32,
         recipient: b256,
-        message_body: Vec<u8>,
+        message_body: Bytes,
     ) -> b256 {
         // Prevent messages from being dispatched when the mailbox is paused.
         require_unpaused();
 
         require(message_body.len() <= MAX_MESSAGE_BODY_BYTES, "msg too long");
 
-        let message = EncodedMessage::new(
-            VERSION,
-            count(), // nonce
-            LOCAL_DOMAIN,
-            msg_sender_b256(), // sender
-            destination_domain,
-            recipient,
-            message_body,
-        );
+        let message = EncodedMessage::new(VERSION, count(), LOCAL_DOMAIN, msg_sender_b256(), destination_domain, recipient, message_body);
 
         // Get the message's ID and insert it into the merkle tree.
         let message_id = message.id();
@@ -90,7 +78,7 @@ impl Mailbox for Contract {
         message_id
     }
 
-    #[storage(read,write)]
+    #[storage(read, write)]
     fn set_default_ism(module: ContractId) {
         require_msg_sender(storage.owner);
         storage.default_ism = module;
@@ -107,15 +95,16 @@ impl Mailbox for Contract {
     }
 
     #[storage(read, write)]
-    fn process(metadata: Vec<u8>, _message: Message) {
+    fn process(metadata: Bytes, _message: Bytes) {
         // Prevent reentrancy.
         reentrancy_guard();
         // Prevent messages from being processed when the mailbox is paused.
         require_unpaused();
 
-        // TODO: revert once abigen handles Bytes
-        let message = EncodedMessage::from(_message);
-        
+        let message = EncodedMessage {
+            bytes: _message,
+        };
+
         require(message.version() == VERSION, "!version");
         require(message.destination() == LOCAL_DOMAIN, "!destination");
 
@@ -132,7 +121,7 @@ impl Mailbox for Contract {
         let ism = abi(InterchainSecurityModule, ism_id.into());
         require(ism.verify(metadata, _message), "!module");
 
-        msg_recipient.handle(message.origin(), message.sender(), message.body().into_vec_u8());
+        msg_recipient.handle(message.origin(), message.sender(), message.body());
 
         log(id);
     }
@@ -153,7 +142,9 @@ impl Mailbox for Contract {
     /// (root of merkle tree, index of the last element in the tree).
     #[storage(read)]
     fn latest_checkpoint() -> (b256, u32) {
-        (root(), count() - 1u32)
+        let count = count();
+        require(count > 0, "no messages dispatched");
+        (root(), count - 1u32)
     }
 }
 

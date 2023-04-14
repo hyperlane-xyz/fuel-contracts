@@ -1,7 +1,7 @@
-library pause;
+library;
 
-dep interface;
-dep r#storage;
+mod interface;
+mod r#storage;
 
 use std::{logging::log, storage::{get, store}};
 

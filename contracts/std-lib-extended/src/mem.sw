@@ -1,4 +1,4 @@
-library mem;
+library;
 
 /// The number of bytes in a 64-bit Fuel VM word.
 const BYTES_PER_WORD: u64 = 8u64;
