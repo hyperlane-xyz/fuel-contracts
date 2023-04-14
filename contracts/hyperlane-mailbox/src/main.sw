@@ -5,12 +5,8 @@ use std::{auth::msg_sender, bytes::Bytes, call_frames::contract_id, logging::log
 use std_lib_extended::bytes::*;
 
 use merkle::StorageMerkleTree;
-use ownership::{
-    require_msg_sender,
-    log_ownership_transferred,
-    interface::Ownable,
-};
-use pause::{interface::Pausable, is_paused, pause, unpause, require_unpaused};
+use ownership::{interface::Ownable, log_ownership_transferred, require_msg_sender};
+use pause::{interface::Pausable, is_paused, pause, require_unpaused, unpause};
 use reentrancy::reentrancy_guard;
 
 use hyperlane_interfaces::{InterchainSecurityModule, Mailbox, MessageRecipient};

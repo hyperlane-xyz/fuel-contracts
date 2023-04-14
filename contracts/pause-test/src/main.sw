@@ -1,6 +1,6 @@
 contract;
 
-use pause::{interface::Pausable, is_paused, pause, unpause, require_unpaused};
+use pause::{interface::Pausable, is_paused, pause, require_unpaused, unpause};
 
 abi PausableTest {
     #[storage(read)]
