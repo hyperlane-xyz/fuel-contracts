@@ -48,6 +48,17 @@ pub fn checkpoint_hash(origin: u32, mailbox: b256, root: b256, index: u32) -> b2
 }
 
 impl MultisigMetadata {
+    /// Constructs a new MultisigMetadata instance from packed bytes and a threshold.
+    /// Format (bytes):
+    /// - root: [0:32] (32 bytes)
+    /// - index: [32:36] (4 bytes)
+    /// - mailbox: [36:68] (32 bytes)
+    /// - proof: [68:1092] (1024 bytes)
+    /// - signatures: [1092:...] (64 * threshold bytes)
+    ///
+    /// The number of signatures is expected to equal the threshold.
+    /// Note that signatures are provided as their EIP-2098 64-byte compact
+    /// representation.
     pub fn from_bytes(bytes: Bytes, threshold: u64) -> MultisigMetadata {
         let mut offset = 0;
 
