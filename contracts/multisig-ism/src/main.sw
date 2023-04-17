@@ -64,7 +64,11 @@ pub fn verify_merkle_proof(metadata: MultisigMetadata, message: EncodedMessage) 
 
 /// Returns true if a threshold of metadata signatures match the stored validator set and threshold.
 #[storage(read)]
-pub fn verify_validator_signatures(threshold: u64, metadata: MultisigMetadata, message: EncodedMessage) -> bool {
+pub fn verify_validator_signatures(
+    threshold: u64,
+    metadata: MultisigMetadata,
+    message: EncodedMessage,
+) -> bool {
     let origin = message.origin();
 
     let digest = metadata.checkpoint_digest(origin);
