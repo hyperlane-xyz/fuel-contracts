@@ -2,10 +2,14 @@ library;
 
 use std::u128::U128;
 
+/// Default to the same number of decimals as the local base asset.
+const DEFAULT_TOKEN_DECIMALS: u8 = 9u8;
+
 /// Gas data for a remote domain.
 pub struct RemoteGasData {
     token_exchange_rate: U128,
     gas_price: U128,
+    token_decimals: u8,
 }
 
 impl RemoteGasData {
@@ -13,6 +17,7 @@ impl RemoteGasData {
         Self {
             token_exchange_rate: U128::new(),
             gas_price: U128::new(),
+            token_decimals: DEFAULT_TOKEN_DECIMALS,
         }
     }
 }

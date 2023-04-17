@@ -82,6 +82,7 @@ const TEST_REFUND_ADDRESS: &str =
 const TEST_NON_BASE_ASSET_ID: [u8; 32] = [1u8; 32];
 
 const TOKEN_EXCHANGE_RATE_SCALE: u128 = 1e19 as u128;
+const BASE_ASSET_DECIMALS: u8 = 9;
 
 async fn get_contract_instances() -> (
     InterchainGasPaymaster<WalletUnlocked>,
@@ -185,17 +186,6 @@ async fn get_contract_balance(
         .await
 }
 
-/// Gets a decimal-adjusted token exchange rate.
-/// exchange_rate is the exchange rate with a scale of TOKEN_EXCHANGE_RATE_SCALE as if
-/// the local and remote tokens both have the same decimals
-fn get_token_exchange_rate(exchange_rate: u128, local_decimals: u32, remote_decimals: u32) -> u128 {
-    if local_decimals > remote_decimals {
-        exchange_rate * (10u128.pow(local_decimals - remote_decimals))
-    } else {
-        exchange_rate / (10u128.pow(remote_decimals - local_decimals))
-    }
-}
-
 #[tokio::test]
 async fn test_initial_owner_and_beneficiary() {
     let (igp, _) = get_contract_instances().await;
@@ -226,6 +216,7 @@ async fn test_pay_for_gas() {
             remote_gas_data: gas_oracle::RemoteGasData {
                 token_exchange_rate: TOKEN_EXCHANGE_RATE_SCALE.into(), // 1.0 exchange rate (remote token has exact same value as local)
                 gas_price: 1u64.into(),                                // 1 wei gas price
+                token_decimals: BASE_ASSET_DECIMALS,                   // same decimals as local
             },
         },
     )
@@ -313,6 +304,7 @@ async fn test_pay_for_gas_reverts_if_insufficient_payment() {
             remote_gas_data: gas_oracle::RemoteGasData {
                 token_exchange_rate: TOKEN_EXCHANGE_RATE_SCALE.into(), // 1.0 exchange rate (remote token has exact same value as local)
                 gas_price: 1u64.into(),                                // 1 wei gas price
+                token_decimals: BASE_ASSET_DECIMALS,                   // same decimals as local
             },
         },
     )
@@ -366,6 +358,7 @@ async fn test_pay_for_gas_reverts_if_not_base_asset() {
             remote_gas_data: gas_oracle::RemoteGasData {
                 token_exchange_rate: TOKEN_EXCHANGE_RATE_SCALE.into(), // 1.0 exchange rate (remote token has exact same value as local)
                 gas_price: 1u64.into(),                                // 1 wei gas price
+                token_decimals: BASE_ASSET_DECIMALS,                   // same decimals as local
             },
         },
     )
@@ -415,17 +408,17 @@ async fn test_quote_gas_payment() {
     let (igp, oracle) = get_contract_instances().await;
 
     // Testing when exchange rates are relatively close.
-    // The base asset has 9 decimals, and a 1:1 exchange rate
-    // means the remote asset would also have 9 decimals.
+    // The base asset has 9 decimals, there's a 1:1 exchange rate,
+    // and the remote asset also has 9 decimals.
     set_remote_gas_data(
         &oracle,
         RemoteGasDataConfig {
             domain: TEST_DESTINATION_DOMAIN,
             remote_gas_data: gas_oracle::RemoteGasData {
-                // 0.2 exchange rate (remote token less valuable, local and remote both have 9 decimals)
-                token_exchange_rate: get_token_exchange_rate(TOKEN_EXCHANGE_RATE_SCALE / 5, 9, 9)
-                    .into(),
-                gas_price: 150u64.into(), // 150 gas price
+                // 0.2 exchange rate (remote token less valuable)
+                token_exchange_rate: (TOKEN_EXCHANGE_RATE_SCALE / 5).into(),
+                gas_price: 150u64.into(),            // 150 gas price
+                token_decimals: BASE_ASSET_DECIMALS, // same decimals as local
             },
         },
     )
@@ -447,7 +440,7 @@ async fn test_quote_gas_payment() {
     // Using the 0.2 token exchange rate, meaning the local native token
     // is 5x more valuable than the remote token:
     // 45000000 * 0.2 = 9000000 (0.009 local tokens w/ 9 decimals)
-    assert_eq!(quote, 9000000u64,);
+    assert_eq!(quote, 9000000u64);
 
     // Testing when the remote token is much more valuable, has higher decimals, & there's a super high gas price
     set_remote_gas_data(
@@ -455,14 +448,10 @@ async fn test_quote_gas_payment() {
         RemoteGasDataConfig {
             domain: TEST_DESTINATION_DOMAIN,
             remote_gas_data: gas_oracle::RemoteGasData {
-                // 5000 * (1e9 / 1e18) exchange rate (remote token 5000x more valuable, but has 18 decimals)
-                token_exchange_rate: get_token_exchange_rate(
-                    5000 * TOKEN_EXCHANGE_RATE_SCALE,
-                    9,
-                    18,
-                )
-                .into(),
+                // remote token 5000x more valuable
+                token_exchange_rate: (5000 * TOKEN_EXCHANGE_RATE_SCALE).into(),
                 gas_price: 1500000000000u64.into(), // 150 gwei gas price
+                token_decimals: 18,                 // remote has 18 decimals
             },
         },
     )
@@ -481,10 +470,10 @@ async fn test_quote_gas_payment() {
     // 300,000 destination gas
     // 1500 gwei = 1500000000000 wei
     // 300,000 * 1500000000000 = 450000000000000000 (0.45 remote tokens w/ 18 decimals)
-    // Using the 5000 * (1e9 / 1e18) token exchange rate, meaning the remote native token
-    // is 5000x more valuable than the local token but has 18 decimals:
-    // 450000000000000000 * (5000 * (1e9 / 1e18)) = 2250000000000 (2250 local tokens w/ 9 decimals)
-    assert_eq!(quote, 2250000000000u64,);
+    // Using the 5000 * 1e19 token exchange rate, meaning the remote native token
+    // is 5000x more valuable than the local token, and adjusting for decimals:
+    // 450000000000000000 * 5000 * 1e-9 = 2250000000000 (2250 local tokens w/ 9 decimals)
+    assert_eq!(quote, 2250000000000u64);
 
     // Testing when the remote token is much less valuable & there's a low gas price, but has 18 decimals
     set_remote_gas_data(
@@ -492,14 +481,10 @@ async fn test_quote_gas_payment() {
         RemoteGasDataConfig {
             domain: TEST_DESTINATION_DOMAIN,
             remote_gas_data: gas_oracle::RemoteGasData {
-                // 4 * (1e7 / 1e18) exchange rate (remote token 0.04x the price, but has 18 decimals)
-                token_exchange_rate: get_token_exchange_rate(
-                    4 * TOKEN_EXCHANGE_RATE_SCALE / 100,
-                    9,
-                    18,
-                )
-                .into(),
+                // remote token 0.04x the price
+                token_exchange_rate: (4 * TOKEN_EXCHANGE_RATE_SCALE / 100).into(),
                 gas_price: 100000000u64.into(), // 0.1 gwei gas price
+                token_decimals: 18,             // remote has 18 decimals
             },
         },
     )
@@ -518,10 +503,10 @@ async fn test_quote_gas_payment() {
     // 300,000 destination gas
     // 0.1 gwei = 100000000 wei
     // 300,000 * 100000000 = 30000000000000 (0.00003 remote tokens w/ 18 decimals)
-    // Using the 4 * (1e7 / 1e18) token exchange rate, meaning the remote native token
-    // is 0.04x the price of the local token but has 18 decimals:
-    // 30000000000000 * (4 * (1e7 / 1e18)) = 1200 (0.0000012 local tokens w/ 9 decimals)
-    assert_eq!(quote, 1200u64,);
+    // Using the 0.04 * 1e19 token exchange rate, meaning the remote native token
+    // is 0.04x the price of the local token, and adjusting for decimals:
+    // 30000000000000 * 0.04 * 1e-9 = 1200 (0.0000012 local tokens w/ 9 decimals)
+    assert_eq!(quote, 1200u64);
 
     // Testing when the remote token is much less valuable & there's a low gas price, but has 4 decimals
     set_remote_gas_data(
@@ -529,10 +514,10 @@ async fn test_quote_gas_payment() {
         RemoteGasDataConfig {
             domain: TEST_DESTINATION_DOMAIN,
             remote_gas_data: gas_oracle::RemoteGasData {
-                // 10 * 1e5 exchange rate (remote token 10x the price, but has 4 decimals)
-                token_exchange_rate: get_token_exchange_rate(10 * TOKEN_EXCHANGE_RATE_SCALE, 9, 4)
-                    .into(),
+                // remote token 10x the price
+                token_exchange_rate: (10 * TOKEN_EXCHANGE_RATE_SCALE).into(),
                 gas_price: 10u64.into(), // 10 gas price
+                token_decimals: 4u8,     // remote has 4 decimals
             },
         },
     )
@@ -550,11 +535,11 @@ async fn test_quote_gas_payment() {
 
     // 300,000 destination gas
     // 10 gas price
-    // 300,000 * 10 = 3000000 (300 remote tokens w/ 4 decimals)
-    // Using the 10 * 1e5 token exchange rate, meaning the remote native token
-    // is 10x the price of the local token but has 4 decimals:
-    // 3000000 * (10 * 1e5) = 3000000000000 (3000 local tokens w/ 9 decimals)
-    assert_eq!(quote, 3000000000000u64,);
+    // 300,000 * 10 = 3000000 (300.0000 remote tokens w/ 4 decimals)
+    // Using the 10 * 1e19 token exchange rate, meaning the remote native token
+    // is 10x the price of the local token, and adjusting for decimals:
+    // 3000000 * 10 * 1e5 = 3000000000000 (3000 local tokens w/ 9 decimals)
+    assert_eq!(quote, 3000000000000u64);
 }
 
 #[tokio::test]
@@ -757,6 +742,7 @@ async fn test_get_exchange_rate_and_gas_price() {
         remote_gas_data: gas_oracle::RemoteGasData {
             token_exchange_rate: TOKEN_EXCHANGE_RATE_SCALE.into(), // 1.0 exchange rate (remote token has exact same value as local)
             gas_price: 1u64.into(),                                // 1 wei gas price
+            token_decimals: BASE_ASSET_DECIMALS,                   // same decimals as local
         },
     };
 
@@ -767,6 +753,7 @@ async fn test_get_exchange_rate_and_gas_price() {
     let RemoteGasData {
         token_exchange_rate,
         gas_price,
+        token_decimals,
     } = igp
         .methods()
         .get_exchange_rate_and_gas_price(TEST_DESTINATION_DOMAIN)
@@ -786,6 +773,10 @@ async fn test_get_exchange_rate_and_gas_price() {
     assert_eq!(
         gas_price,
         remote_gas_data_config.remote_gas_data.gas_price.into()
+    );
+    assert_eq!(
+        token_decimals,
+        remote_gas_data_config.remote_gas_data.token_decimals
     );
 }
 

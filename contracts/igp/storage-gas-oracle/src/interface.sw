@@ -1,6 +1,6 @@
 library;
 
-use hyperlane_interfaces::igp::{RemoteGasData};
+use hyperlane_interfaces::igp::RemoteGasData;
 
 /// A config for setting remote gas data.
 pub struct RemoteGasDataConfig {
