@@ -4,7 +4,7 @@ use fuels::{
     types::{Bits256, B512},
 };
 use hyperlane_core::{utils::domain_hash, Checkpoint, Signable, H256};
-use test_utils::{bits256_to_h256, h256_to_bits256};
+use test_utils::{bits256_to_h256, encode_multisig_metadata, h256_to_bits256};
 
 // Load abi from json
 abigen!(Contract(
@@ -162,69 +162,21 @@ async fn test_bytes_to_multisig_metadata() {
     );
 }
 
+/// Encodes a MultisigMetadata struct into a Vec<u8>
+/// with the format expected by the Sway contracts.
 impl Into<Vec<u8>> for MultisigMetadata {
     fn into(self) -> Vec<u8> {
-        let mut bytes = Vec::new();
-        bytes.extend_from_slice(&self.root.0);
-        bytes.extend_from_slice(&self.index.to_be_bytes());
-        bytes.extend_from_slice(&self.mailbox.0);
-        for proof in self.proof.iter() {
-            bytes.extend_from_slice(&proof.0);
-        }
-        for signature in self.signatures.iter() {
-            for b256 in signature.bytes.iter() {
-                bytes.extend_from_slice(&b256.0);
-            }
-        }
-        bytes
+        encode_multisig_metadata(
+            &bits256_to_h256(self.root),
+            self.index,
+            &bits256_to_h256(self.mailbox),
+            &self
+                .proof
+                .iter()
+                .cloned()
+                .map(|p| bits256_to_h256(p))
+                .collect::<Vec<_>>(),
+            &self.signatures,
+        )
     }
 }
-
-// /// Returns the metadata needed by the contract's verify function
-// fn format_metadata(
-//     &self,
-//     validators: &[H256],
-//     threshold: u8,
-//     checkpoint: &MultisigSignedCheckpoint,
-//     proof: &Proof,
-// ) -> Vec<u8> {
-//     assert_eq!(threshold as usize, checkpoint.signatures.len());
-//     let root_bytes = checkpoint.checkpoint.root.to_fixed_bytes().into();
-//     let index_bytes = checkpoint.checkpoint.index.to_be_bytes().into();
-//     let proof_tokens: Vec<Token> = proof
-//         .path
-//         .iter()
-//         .map(|x| Token::FixedBytes(x.to_fixed_bytes().into()))
-//         .collect();
-//     let mailbox_and_proof_bytes = ethers::abi::encode(&[
-//         Token::FixedBytes(
-//             checkpoint
-//                 .checkpoint
-//                 .mailbox_address
-//                 .to_fixed_bytes()
-//                 .into(),
-//         ),
-//         Token::FixedArray(proof_tokens),
-//     ]);
-
-//     // The ethers encoder likes to zero-pad non word-aligned byte arrays.
-//     // Thus, we pack the signatures, which are not word-aligned, ourselves.
-//     let signature_vecs: Vec<Vec<u8>> = order_signatures(validators, &checkpoint.signatures);
-//     let signature_bytes = signature_vecs.concat();
-
-//     let validator_tokens: Vec<Token> = validators
-//         .iter()
-//         .map(|x| Token::FixedBytes(x.to_fixed_bytes().into()))
-//         .collect();
-//     let validator_bytes = ethers::abi::encode(&[Token::FixedArray(validator_tokens)]);
-
-//     [
-//         root_bytes,
-//         index_bytes,
-//         mailbox_and_proof_bytes,
-//         Vec::from([threshold]),
-//         signature_bytes,
-//         validator_bytes,
-//     ]
-//     .concat()
-// }

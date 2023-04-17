@@ -5,11 +5,13 @@ use fuels::{
     types::{Bits256, Bytes, EvmAddress, B512},
 };
 
-use hyperlane_core::{accumulator::merkle::MerkleTree, Checkpoint, Decode, HyperlaneMessage, H256};
+use hyperlane_core::{
+    accumulator::merkle::MerkleTree, Checkpoint, Decode, Encode, HyperlaneMessage, H256,
+};
 use hyperlane_ethereum::Signers;
 use test_utils::{
-    bits256_to_h256, evm_address, get_revert_string, get_signer, h256_to_bits256, sign_compact,
-    zero_address,
+    bits256_to_h256, encode_multisig_metadata, evm_address, get_revert_string, get_signer,
+    sign_compact, zero_address,
 };
 
 mod mailbox_contract {
@@ -413,50 +415,39 @@ async fn test_verify() {
         let (leaf, mut proof) = tree.generate_proof(index as usize, depth);
         assert_eq!(leaf, message.id());
 
-        // build metadata from checkpoint, signatures, and proof
-        let metadata = MultisigMetadata {
-            index: checkpoint.index,
-            root: h256_to_bits256(checkpoint.root),
-            mailbox: h256_to_bits256(checkpoint.mailbox_address),
-            proof: proof
-                .clone()
-                .iter()
-                .map(|p| h256_to_bits256(*p))
-                .collect::<Vec<_>>()
-                .as_slice()
-                .try_into()
-                .unwrap(),
-            signatures: signatures.clone(),
-        };
+        let message_bytes = Bytes(message.to_vec());
 
         let result = instance
             .methods()
-            .verify(metadata.clone(), message.clone().into())
+            .verify(
+                Bytes(encode_multisig_metadata(
+                    &checkpoint.root,
+                    checkpoint.index,
+                    &checkpoint.mailbox_address,
+                    &proof,
+                    &signatures,
+                )),
+                message_bytes.clone(),
+            )
             .simulate()
             .await;
 
         let verified = result.unwrap().value;
         assert!(verified);
 
+        // Reverse the proof to test an invalid proof
         proof.reverse();
         let bad_merkle = instance
             .methods()
             .verify(
-                MultisigMetadata {
-                    index: metadata.index,
-                    root: metadata.root,
-                    mailbox: metadata.mailbox,
-                    signatures: signatures.clone(),
-                    proof: proof
-                        .clone()
-                        .iter()
-                        .map(|p| h256_to_bits256(*p))
-                        .collect::<Vec<_>>()
-                        .as_slice()
-                        .try_into()
-                        .unwrap(),
-                },
-                message.clone().into(),
+                Bytes(encode_multisig_metadata(
+                    &checkpoint.root,
+                    checkpoint.index,
+                    &checkpoint.mailbox_address,
+                    &proof,
+                    &signatures,
+                )),
+                message_bytes.clone(),
             )
             .simulate()
             .await;
@@ -465,18 +456,21 @@ async fn test_verify() {
         let reason = get_revert_string(bad_merkle.err().unwrap());
         assert_eq!(reason, "!merkle");
 
+        // Proof was previously reversed, so reverse it back to the original
+        proof.reverse();
+        // Now reverse the sigs to test an invalid signature vec
         signatures.reverse();
         let bad_sigs = instance
             .methods()
             .verify(
-                MultisigMetadata {
-                    index: metadata.index,
-                    root: metadata.root,
-                    mailbox: metadata.mailbox,
-                    signatures,
-                    proof: metadata.proof,
-                },
-                message.into(),
+                Bytes(encode_multisig_metadata(
+                    &checkpoint.root,
+                    checkpoint.index,
+                    &checkpoint.mailbox_address,
+                    &proof,
+                    &signatures,
+                )),
+                message_bytes,
             )
             .simulate()
             .await;
@@ -484,20 +478,5 @@ async fn test_verify() {
         assert!(bad_sigs.is_err());
         let reason = get_revert_string(bad_sigs.err().unwrap());
         assert_eq!(reason, "!signatures");
-    }
-}
-
-// TODO: dedupe with mailbox tests
-impl From<HyperlaneMessage> for Message {
-    fn from(agent_msg: HyperlaneMessage) -> Self {
-        Self {
-            version: agent_msg.version,
-            nonce: agent_msg.nonce,
-            origin: agent_msg.origin,
-            sender: h256_to_bits256(agent_msg.sender),
-            destination: agent_msg.destination,
-            recipient: h256_to_bits256(agent_msg.recipient),
-            body: Bytes(agent_msg.body),
-        }
     }
 }
