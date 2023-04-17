@@ -102,8 +102,8 @@ impl GasOracle for Contract {
     /// configured gas oracle.
     /// Reverts if no gas oracle is set.
     #[storage(read)]
-    fn get_exchange_rate_and_gas_price(destination_domain: u32) -> RemoteGasData {
-        get_exchange_rate_and_gas_price(destination_domain)
+    fn get_remote_gas_data(destination_domain: u32) -> RemoteGasData {
+        get_remote_gas_data(destination_domain)
     }
 }
 
@@ -182,11 +182,11 @@ impl OnChainFeeQuoting for Contract {
 /// configured gas oracle.
 /// Reverts if no gas oracle is set.
 #[storage(read)]
-fn get_exchange_rate_and_gas_price(destination_domain: u32) -> RemoteGasData {
+fn get_remote_gas_data(destination_domain: u32) -> RemoteGasData {
     let gas_oracle_id = storage.gas_oracles.get(destination_domain).expect("no gas oracle set for destination domain");
 
     let gas_oracle = abi(GasOracle, gas_oracle_id);
-    gas_oracle.get_exchange_rate_and_gas_price(destination_domain)
+    gas_oracle.get_remote_gas_data(destination_domain)
 }
 
 /// Quotes the required interchain gas payment to be paid in the base asset.
@@ -198,7 +198,7 @@ fn quote_gas_payment(destination_domain: u32, gas_amount: u64) -> u64 {
         token_exchange_rate,
         gas_price,
         token_decimals,
-    } = get_exchange_rate_and_gas_price(destination_domain);
+    } = get_remote_gas_data(destination_domain);
 
     // All arithmetic is done using U256 to avoid overflows.
 

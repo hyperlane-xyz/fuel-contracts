@@ -6,6 +6,7 @@ use std::u128::U128;
 const DEFAULT_TOKEN_DECIMALS: u8 = 9u8;
 
 /// Gas data for a remote domain.
+/// TODO: consider packing data to reduce storage costs.
 pub struct RemoteGasData {
     token_exchange_rate: U128,
     gas_price: U128,
@@ -25,7 +26,7 @@ impl RemoteGasData {
 /// An oracle that provides gas data for a remote domain.
 abi GasOracle {
     #[storage(read)]
-    fn get_exchange_rate_and_gas_price(domain: u32) -> RemoteGasData;
+    fn get_remote_gas_data(domain: u32) -> RemoteGasData;
 }
 
 /// Logged when a gas payment is made.

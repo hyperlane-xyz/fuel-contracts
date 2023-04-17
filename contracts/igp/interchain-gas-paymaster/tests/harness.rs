@@ -731,10 +731,10 @@ async fn test_claim() {
     );
 }
 
-// ============ get_exchange_rate_and_gas_price ============
+// ============ get_remote_gas_data ============
 
 #[tokio::test]
-async fn test_get_exchange_rate_and_gas_price() {
+async fn test_get_remote_gas_data() {
     let (igp, oracle) = get_contract_instances().await;
 
     let remote_gas_data_config = RemoteGasDataConfig {
@@ -756,7 +756,7 @@ async fn test_get_exchange_rate_and_gas_price() {
         token_decimals,
     } = igp
         .methods()
-        .get_exchange_rate_and_gas_price(TEST_DESTINATION_DOMAIN)
+        .get_remote_gas_data(TEST_DESTINATION_DOMAIN)
         .set_contract_ids(&[oracle.contract_id().clone()])
         .simulate()
         .await
@@ -781,12 +781,12 @@ async fn test_get_exchange_rate_and_gas_price() {
 }
 
 #[tokio::test]
-async fn test_get_exchange_rate_and_gas_price_reverts_if_no_gas_oracle_set() {
+async fn test_get_remote_gas_data_reverts_if_no_gas_oracle_set() {
     let (igp, _) = get_contract_instances().await;
 
     let call = igp
         .methods()
-        .get_exchange_rate_and_gas_price(TEST_DESTINATION_DOMAIN + 1)
+        .get_remote_gas_data(TEST_DESTINATION_DOMAIN + 1)
         .simulate()
         .await;
 

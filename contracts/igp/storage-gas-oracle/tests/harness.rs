@@ -94,7 +94,7 @@ async fn test_initial_owner() {
 }
 
 #[tokio::test]
-async fn test_set_remote_gas_data_configs_and_get_exchange_rate_and_gas_price() {
+async fn test_set_remote_gas_data_configs_and_get_remote_gas_data() {
     let (oracle, _) = get_contract_instance().await;
     let owner_wallet = initial_owner_account(&oracle.account()).await.unwrap();
 
@@ -120,12 +120,12 @@ async fn test_set_remote_gas_data_configs_and_get_exchange_rate_and_gas_price() 
             .collect::<Vec<_>>(),
     );
 
-    // Ensure now `get_exchange_rate_and_gas_price` returns
+    // Ensure now `get_remote_gas_data` returns
     // the newly set values
     for config in configs {
         let remote_gas_data = oracle
             .methods()
-            .get_exchange_rate_and_gas_price(config.domain)
+            .get_remote_gas_data(config.domain)
             .simulate()
             .await
             .unwrap()
@@ -144,7 +144,7 @@ async fn test_exchange_rate_and_gas_price_unknown_domain() {
         token_decimals,
     } = oracle
         .methods()
-        .get_exchange_rate_and_gas_price(1234)
+        .get_remote_gas_data(1234)
         .simulate()
         .await
         .unwrap()
