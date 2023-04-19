@@ -2,7 +2,7 @@ use ethers::prelude::rand;
 use fuels::{
     prelude::*,
     tx::{ContractId, Receipt},
-    types::{Bits256, Bytes, EvmAddress, B512, Identity},
+    types::{Bits256, Bytes, EvmAddress, Identity, B512},
 };
 
 use hyperlane_core::{

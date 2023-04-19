@@ -5,8 +5,11 @@ use fuels::{
     types::{Bits256, Bytes, Identity},
 };
 use hyperlane_core::{Decode, Encode, HyperlaneMessage as HyperlaneAgentMessage};
-use test_utils::{bits256_to_h256, get_revert_string, h256_to_bits256, funded_wallet_with_private_key, get_revert_reason};
 use std::str::FromStr;
+use test_utils::{
+    bits256_to_h256, funded_wallet_with_private_key, get_revert_reason, get_revert_string,
+    h256_to_bits256,
+};
 
 mod mailbox_contract {
     use fuels::prelude::abigen;
@@ -18,9 +21,7 @@ mod mailbox_contract {
     ));
 }
 
-use crate::mailbox_contract::{
-    DefaultIsmSetEvent, DispatchIdEvent, Mailbox, ProcessEvent,
-};
+use crate::mailbox_contract::{DefaultIsmSetEvent, DispatchIdEvent, Mailbox, ProcessEvent};
 
 mod test_interchain_security_module_contract {
     use fuels::prelude::abigen;
@@ -472,15 +473,15 @@ async fn test_set_default_ism() {
 
 #[tokio::test]
 async fn test_set_default_ism_reverts_if_not_owner() {
-    
     let (mailbox, _, _, _) = get_contract_instance().await;
     let new_default_ism =
-    ContractId::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
-    .unwrap();
+        ContractId::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
+            .unwrap();
 
-    let non_owner_wallet = funded_wallet_with_private_key(&mailbox.account(), NON_OWNER_PRIVATE_KEY)
-        .await
-        .unwrap();
+    let non_owner_wallet =
+        funded_wallet_with_private_key(&mailbox.account(), NON_OWNER_PRIVATE_KEY)
+            .await
+            .unwrap();
 
     let call = mailbox
         .with_account(non_owner_wallet)
