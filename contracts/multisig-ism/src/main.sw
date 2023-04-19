@@ -19,7 +19,19 @@ use merkle::StorageMerkleTree;
 
 use interface::MultisigIsm;
 
-use hyperlane_interfaces::{InterchainSecurityModule, ModuleType};
+use hyperlane_interfaces::{
+    ModuleType,
+    InterchainSecurityModule,
+    ownable::Ownable
+};
+
+use ownership::{
+    data_structures::State,
+    only_owner,
+    owner,
+    transfer_ownership,
+    set_ownership,
+};
 
 use multisig_ism_metadata::MultisigMetadata;
 
@@ -174,6 +186,7 @@ impl MultisigIsm for Contract {
     /// Must be less than or equal to the number of validators.
     #[storage(read, write)]
     fn set_threshold(domain: u32, threshold: u8) {
+        only_owner();
         set_threshold(domain, threshold);
     }
 
@@ -181,12 +194,14 @@ impl MultisigIsm for Contract {
     /// Must not already be enrolled.
     #[storage(read, write)]
     fn enroll_validator(domain: u32, validator: EvmAddress) {
+        only_owner();
         enroll_validator(domain, validator);
     }
 
     /// Batches validator enrollment for a list of domains.
     #[storage(read, write)]
     fn enroll_validators(domains: Vec<u32>, validators: Vec<Vec<EvmAddress>>) {
+        only_owner();
         let domain_len = domains.len();
         require(domain_len == validators.len(), "!length");
 
@@ -209,6 +224,7 @@ impl MultisigIsm for Contract {
     /// Batches threshold setting for a list of domains.
     #[storage(read, write)]
     fn set_thresholds(domains: Vec<u32>, thresholds: Vec<u8>) {
+        only_owner();
         let domain_len = domains.len();
         require(domain_len == thresholds.len(), "!length");
 
@@ -222,9 +238,32 @@ impl MultisigIsm for Contract {
     /// Unenrolls a validator for the domain (and updates commitment).
     #[storage(read, write)]
     fn unenroll_validator(domain: u32, validator: EvmAddress) {
+        only_owner();
         let index = index_of(domain, validator);
         require(index.is_some(), "!enrolled");
         let removed = storage.validators.swap_remove(domain, index.unwrap());
         assert(removed == validator);
+    }
+}
+
+impl Ownable for Contract {
+    /// Gets the current owner.
+    #[storage(read)]
+    fn owner() -> State {
+        owner()
+    }
+
+    /// Transfers ownership to `new_owner`.
+    /// Reverts if the msg_sender is not the current owner.
+    #[storage(read, write)]
+    fn transfer_ownership(new_owner: Identity) {
+        transfer_ownership(new_owner);
+    }
+
+    /// Initializes ownership to `new_owner`.
+    /// Reverts if owner already initialized.
+    #[storage(read, write)]
+    fn set_ownership(new_owner: Identity) {
+        set_ownership(new_owner);
     }
 }

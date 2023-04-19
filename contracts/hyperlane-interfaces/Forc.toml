@@ -6,3 +6,4 @@ name = "hyperlane_interfaces"
 
 [dependencies]
 hyperlane_message = { path = "../hyperlane-message" }
+ownership = { git = "https://github.com/fuellabs/sway-libs", rev = "v0.8.0" }

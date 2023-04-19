@@ -64,6 +64,20 @@ pub async fn sign_compact<T: Signable + std::marker::Send>(signer: &Signers, sig
     return B512::try_from(signature_to_compact(&signed.signature).as_slice()).unwrap();
 }
 
+// TODO: figure out why this has different behavior than get_revert_string
+pub fn get_revert_reason(call_error: Error) -> String {
+    let reason = if let Error::RevertTransactionError { reason, .. } = call_error {
+        reason
+    } else {
+        panic!(
+            "Error is not a RevertTransactionError. Error: {:?}",
+            call_error
+        );
+    };
+
+    return reason;
+}
+
 // Given an Error from a call or simulation, returns the revert reason.
 // Panics if it's unable to find the revert reason.
 pub fn get_revert_string(call_error: Error) -> String {

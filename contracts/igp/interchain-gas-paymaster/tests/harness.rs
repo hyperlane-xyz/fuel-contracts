@@ -5,7 +5,7 @@ use fuels::{
     types::{Bits256, Identity},
 };
 
-use test_utils::{funded_wallet_with_private_key, get_revert_string};
+use test_utils::{funded_wallet_with_private_key, get_revert_reason, get_revert_string};
 
 // Load abi from json
 abigen!(Contract(
@@ -69,10 +69,11 @@ impl From<u64> for U128 {
 
 use gas_oracle::{RemoteGasDataConfig, StorageGasOracle};
 
-const INTIAL_OWNER_PRIVATE_KEY: &str =
-    "0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c";
-const INITIAL_OWNER_ADDRESS: &str =
+const INITIAL_BENEFICIARY_ADDRESS: &str =
     "0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e";
+
+const NON_OWNER_PRIVATE_KEY: &str =
+    "0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c";
 
 const TEST_DESTINATION_DOMAIN: u32 = 11111;
 const TEST_GAS_AMOUNT: u64 = 300000;
@@ -123,6 +124,14 @@ async fn get_contract_instances() -> (
     .unwrap();
     let igp = InterchainGasPaymaster::new(igp_id, wallet.clone());
 
+    let owner_identity = Identity::Address(wallet.address().into());
+
+    igp.methods()
+        .set_ownership(owner_identity.clone())
+        .call()
+        .await
+        .unwrap();
+
     let storage_gas_oracle_id = Contract::deploy(
         "../storage-gas-oracle/out/debug/storage-gas-oracle.bin",
         &wallet,
@@ -135,11 +144,14 @@ async fn get_contract_instances() -> (
     .unwrap();
     let storage_gas_oracle = StorageGasOracle::new(storage_gas_oracle_id.clone(), wallet);
 
-    let owner_wallet = initial_owner_account(&igp.account()).await.unwrap();
-
-    igp.with_account(owner_wallet)
-        .unwrap()
+    storage_gas_oracle
         .methods()
+        .set_ownership(owner_identity)
+        .call()
+        .await
+        .unwrap();
+
+    igp.methods()
         .set_gas_oracle(
             TEST_DESTINATION_DOMAIN,
             Bits256(storage_gas_oracle_id.hash().into()),
@@ -151,17 +163,11 @@ async fn get_contract_instances() -> (
     (igp, storage_gas_oracle)
 }
 
-async fn initial_owner_account(funder: &WalletUnlocked) -> Result<WalletUnlocked> {
-    funded_wallet_with_private_key(funder, INTIAL_OWNER_PRIVATE_KEY).await
-}
-
 async fn set_remote_gas_data(
     oracle: &StorageGasOracle<WalletUnlocked>,
     remote_gas_data_config: RemoteGasDataConfig,
 ) -> Result<()> {
-    let owner_wallet = initial_owner_account(&oracle.account()).await?;
     oracle
-        .with_account(owner_wallet)?
         .methods()
         .set_remote_gas_data_configs(vec![remote_gas_data_config])
         .call()
@@ -197,18 +203,11 @@ fn get_token_exchange_rate(exchange_rate: u128, local_decimals: u32, remote_deci
 }
 
 #[tokio::test]
-async fn test_initial_owner_and_beneficiary() {
+async fn test_initial_beneficiary() {
     let (igp, _) = get_contract_instances().await;
 
-    let owner = igp.methods().owner().simulate().await.unwrap().value;
-
-    let expected_owner: Option<Identity> = Some(Identity::Address(
-        Address::from_str(INITIAL_OWNER_ADDRESS).unwrap(),
-    ));
-    assert_eq!(owner, expected_owner);
-
     let expected_beneficiary: Identity =
-        Identity::Address(Address::from_str(INITIAL_OWNER_ADDRESS).unwrap());
+        Identity::Address(Address::from_str(INITIAL_BENEFICIARY_ADDRESS).unwrap());
     let beneficiary = igp.methods().beneficiary().simulate().await.unwrap().value;
     assert_eq!(beneficiary, expected_beneficiary);
 }
@@ -580,8 +579,6 @@ async fn test_quote_gas_payment_reverts_if_no_gas_oracle_set() {
 async fn test_set_gas_oracle() {
     let (igp, oracle) = get_contract_instances().await;
 
-    let owner_wallet = initial_owner_account(&igp.account()).await.unwrap();
-
     let remote_domain = TEST_DESTINATION_DOMAIN + 1;
     let oracle_contract_id_bits256 = Bits256(oracle.contract_id().hash().into());
 
@@ -597,8 +594,6 @@ async fn test_set_gas_oracle() {
 
     // Now set the gas oracle
     let call = igp
-        .with_account(owner_wallet)
-        .unwrap()
         .methods()
         .set_gas_oracle(remote_domain, oracle_contract_id_bits256)
         .call()
@@ -631,14 +626,20 @@ async fn test_set_gas_oracle_reverts_if_not_owner() {
     let remote_domain = TEST_DESTINATION_DOMAIN + 1;
     let oracle_contract_id_bits256 = Bits256(oracle.contract_id().hash().into());
 
+    let non_owner_wallet = funded_wallet_with_private_key(&oracle.account(), NON_OWNER_PRIVATE_KEY)
+        .await
+        .unwrap();
+
     let call = igp
+        .with_account(non_owner_wallet)
+        .unwrap()
         .methods()
         .set_gas_oracle(remote_domain, oracle_contract_id_bits256)
         .call()
         .await;
 
     assert!(call.is_err());
-    assert_eq!(get_revert_string(call.err().unwrap()), "!owner");
+    assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner");
 }
 
 // ============ set_beneficiary ============
@@ -647,13 +648,9 @@ async fn test_set_gas_oracle_reverts_if_not_owner() {
 async fn test_set_beneficiary() {
     let (igp, _) = get_contract_instances().await;
 
-    let owner_wallet = initial_owner_account(&igp.account()).await.unwrap();
-
     let new_beneficiary = Identity::Address(Address::from_str(TEST_REFUND_ADDRESS).unwrap());
 
     let call = igp
-        .with_account(owner_wallet)
-        .unwrap()
         .methods()
         .set_beneficiary(new_beneficiary.clone())
         .call()
@@ -676,13 +673,22 @@ async fn test_set_beneficiary() {
 #[tokio::test]
 async fn test_set_beneficiary_reverts_if_not_owner() {
     let (igp, _) = get_contract_instances().await;
+    let non_owner_wallet = funded_wallet_with_private_key(&igp.account(), NON_OWNER_PRIVATE_KEY)
+        .await
+        .unwrap();
 
     let new_beneficiary = Identity::Address(Address::from_str(TEST_REFUND_ADDRESS).unwrap());
 
-    let call = igp.methods().set_beneficiary(new_beneficiary).call().await;
+    let call = igp
+        .with_account(non_owner_wallet)
+        .unwrap()
+        .methods()
+        .set_beneficiary(new_beneficiary)
+        .call()
+        .await;
 
     assert!(call.is_err());
-    assert_eq!(get_revert_string(call.err().unwrap()), "!owner");
+    assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner");
 }
 
 // ============ claim ============
@@ -707,7 +713,7 @@ async fn test_claim() {
 
     let provider = wallet.provider().unwrap();
 
-    let beneficiary = Address::from_str(INITIAL_OWNER_ADDRESS).unwrap();
+    let beneficiary = Address::from_str(INITIAL_BENEFICIARY_ADDRESS).unwrap();
 
     let beneficiary_balance_before = get_balance(provider, &beneficiary.into()).await.unwrap();
     let igp_balance_before = get_contract_balance(provider, igp.contract_id())
