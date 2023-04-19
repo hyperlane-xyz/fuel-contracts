@@ -64,6 +64,20 @@ pub async fn sign_compact<T: Signable + std::marker::Send>(signer: &Signers, sig
     return B512::try_from(signature_to_compact(&signed.signature).as_slice()).unwrap();
 }
 
+// TODO: figure out why this has different behavior than get_revert_string
+pub fn get_revert_reason(call_error: Error) -> String {
+    let reason = if let Error::RevertTransactionError { reason, .. } = call_error {
+        reason
+    } else {
+        panic!(
+            "Error is not a RevertTransactionError. Error: {:?}",
+            call_error
+        );
+    };
+
+    return reason;
+}
+
 // Given an Error from a call or simulation, returns the revert reason.
 // Panics if it's unable to find the revert reason.
 pub fn get_revert_string(call_error: Error) -> String {
@@ -149,4 +163,28 @@ async fn fund_address(from_wallet: &WalletUnlocked, to: &Bech32Address) -> Resul
         .transfer(to, amount, AssetId::BASE, TxParameters::default())
         .await?;
     Ok(())
+}
+
+/// Encodes a MultisigMetadata struct into a Vec<u8>
+/// with the format expected by the Sway contracts.
+pub fn encode_multisig_metadata(
+    root: &H256,
+    index: u32,
+    mailbox: &H256,
+    proof: &Vec<H256>,
+    signatures: &Vec<B512>,
+) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(&root.0);
+    bytes.extend_from_slice(&index.to_be_bytes());
+    bytes.extend_from_slice(&mailbox.0);
+    for proof in proof {
+        bytes.extend_from_slice(&proof.0);
+    }
+    for signature in signatures {
+        for b256 in signature.bytes.iter() {
+            bytes.extend_from_slice(&b256.0);
+        }
+    }
+    bytes
 }
