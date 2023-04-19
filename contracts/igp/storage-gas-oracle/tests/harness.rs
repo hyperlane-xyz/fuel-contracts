@@ -68,6 +68,7 @@ fn get_test_remote_gas_data_configs() -> Vec<RemoteGasDataConfig> {
             remote_gas_data: RemoteGasData {
                 token_exchange_rate: 22222.into(),
                 gas_price: 33333.into(),
+                token_decimals: 18u8,
             },
         },
         RemoteGasDataConfig {
@@ -75,13 +76,14 @@ fn get_test_remote_gas_data_configs() -> Vec<RemoteGasDataConfig> {
             remote_gas_data: RemoteGasData {
                 token_exchange_rate: 55555.into(),
                 gas_price: 66666.into(),
+                token_decimals: 9u8,
             },
         },
     ]
 }
 
 #[tokio::test]
-async fn test_set_remote_gas_data_configs_and_get_exchange_rate_and_gas_price() {
+async fn test_set_remote_gas_data_configs_and_get_remote_gas_data() {
     let (oracle, _) = get_contract_instance().await;
 
     let configs = get_test_remote_gas_data_configs();
@@ -104,12 +106,12 @@ async fn test_set_remote_gas_data_configs_and_get_exchange_rate_and_gas_price() 
             .collect::<Vec<_>>(),
     );
 
-    // Ensure now `get_exchange_rate_and_gas_price` returns
+    // Ensure now `get_remote_gas_data` returns
     // the newly set values
     for config in configs {
         let remote_gas_data = oracle
             .methods()
-            .get_exchange_rate_and_gas_price(config.domain)
+            .get_remote_gas_data(config.domain)
             .simulate()
             .await
             .unwrap()
@@ -125,15 +127,17 @@ async fn test_exchange_rate_and_gas_price_unknown_domain() {
     let RemoteGasData {
         token_exchange_rate,
         gas_price,
+        token_decimals,
     } = oracle
         .methods()
-        .get_exchange_rate_and_gas_price(1234)
+        .get_remote_gas_data(1234)
         .simulate()
         .await
         .unwrap()
         .value;
     assert_eq!(token_exchange_rate, 0.into());
     assert_eq!(gas_price, 0.into());
+    assert_eq!(token_decimals, 9u8);
 }
 
 #[tokio::test]

@@ -12,9 +12,10 @@ use std::{
     logging::log,
     token::transfer,
     u128::U128,
+    u256::U256,
 };
 
-use std_lib_extended::{option::*, result::*};
+use std_lib_extended::{option::*, result::*, u256::*};
 
 use ownership::{data_structures::State, only_owner, owner, set_ownership, transfer_ownership};
 
@@ -32,6 +33,8 @@ use interface::{BeneficiarySetEvent, Claimable, ClaimEvent, GasOracleSetEvent, O
 
 /// The scale of a token exchange rate. 1e19.
 const TOKEN_EXCHANGE_RATE_SCALE: u64 = 10_000_000_000_000_000_000;
+
+const BASE_ASSET_DECIMALS: u8 = 9;
 
 // TODO: set this at compile / deploy time.
 // NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
@@ -54,6 +57,9 @@ impl InterchainGasPaymaster for Contract {
     /// * `destination_domain` - The destination domain of the message.
     /// * `gas_amount` - The amount of destination gas to pay for.
     /// * `refund_address` - The address to refund any overpayment to.
+    ///
+    /// While this IGP doesn't make any storage writes, the interface allows
+    /// this for future IGP implementations that may need to write to storage.
     #[storage(read, write)]
     #[payable]
     fn pay_for_gas(
@@ -99,8 +105,8 @@ impl GasOracle for Contract {
     /// configured gas oracle.
     /// Reverts if no gas oracle is set.
     #[storage(read)]
-    fn get_exchange_rate_and_gas_price(destination_domain: u32) -> RemoteGasData {
-        get_exchange_rate_and_gas_price(destination_domain)
+    fn get_remote_gas_data(destination_domain: u32) -> RemoteGasData {
+        get_remote_gas_data(destination_domain)
     }
 }
 
@@ -180,11 +186,11 @@ impl OnChainFeeQuoting for Contract {
 /// configured gas oracle.
 /// Reverts if no gas oracle is set.
 #[storage(read)]
-fn get_exchange_rate_and_gas_price(destination_domain: u32) -> RemoteGasData {
+fn get_remote_gas_data(destination_domain: u32) -> RemoteGasData {
     let gas_oracle_id = storage.gas_oracles.get(destination_domain).expect("no gas oracle set for destination domain");
 
     let gas_oracle = abi(GasOracle, gas_oracle_id);
-    gas_oracle.get_exchange_rate_and_gas_price(destination_domain)
+    gas_oracle.get_remote_gas_data(destination_domain)
 }
 
 /// Quotes the required interchain gas payment to be paid in the base asset.
@@ -195,13 +201,71 @@ fn quote_gas_payment(destination_domain: u32, gas_amount: u64) -> u64 {
     let RemoteGasData {
         token_exchange_rate,
         gas_price,
-    } = get_exchange_rate_and_gas_price(destination_domain);
+        token_decimals,
+    } = get_remote_gas_data(destination_domain);
+
+    // All arithmetic is done using U256 to avoid overflows.
 
     // The total cost quoted in destination chain's native token.
-    let destination_gas_cost = U128::from((0, gas_amount)) * gas_price;
+    let destination_gas_cost = U256::from((0, 0, 0, gas_amount)) * U256::from(gas_price);
 
     // Convert to the local native token.
-    let origin_cost = (destination_gas_cost * token_exchange_rate) / U128::from((0, TOKEN_EXCHANGE_RATE_SCALE));
+    let origin_cost = (destination_gas_cost * U256::from(token_exchange_rate)) / U256::from((0, 0, 0, TOKEN_EXCHANGE_RATE_SCALE));
+
+    // Convert from the remote token's decimals to the local token's decimals.
+    let origin_cost = convert_decimals(origin_cost, token_decimals, BASE_ASSET_DECIMALS);
 
     origin_cost.as_u64().expect("quote_gas_payment overflow")
+}
+
+/// Converts `num` from `from_decimals` to `to_decimals`.
+fn convert_decimals(num: U256, from_decimals: u8, to_decimals: u8) -> U256 {
+    if from_decimals == to_decimals {
+        return num;
+    }
+
+    if from_decimals > to_decimals {
+        let diff: u64 = from_decimals - to_decimals;
+        let divisor = U256::from((0, 0, 0, 10)).pow(U256::from((0, 0, 0, diff)));
+        num / divisor
+    } else {
+        let diff: u64 = to_decimals - from_decimals;
+        let multiplier = U256::from((0, 0, 0, 10)).pow(U256::from((0, 0, 0, diff)));
+        num * multiplier
+    }
+}
+
+#[test()]
+fn test_convert_decimals() {
+    let num = U256::from((0, 0, 0, 1000000));
+    let from_decimals = 9;
+    let to_decimals = 9;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(result == num);
+
+    let num = U256::from((0, 0, 0, 1000000000000000));
+    let from_decimals = 18;
+    let to_decimals = 9;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(result == U256::from((0, 0, 0, 1000000)));
+
+    let num = U256::from((0, 0, 0, 1000000));
+    let from_decimals = 4;
+    let to_decimals = 9;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(result == U256::from((0, 0, 0, 100000000000)));
+
+    // Some loss of precision
+    let num = U256::from((0, 0, 0, 9999999));
+    let from_decimals = 9;
+    let to_decimals = 4;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(result == U256::from((0, 0, 0, 99)));
+
+    // Total loss of precision
+    let num = U256::from((0, 0, 0, 999));
+    let from_decimals = 9;
+    let to_decimals = 4;
+    let result = convert_decimals(num, from_decimals, to_decimals);
+    assert(result == U256::from((0, 0, 0, 0)));
 }
