@@ -19,8 +19,13 @@ use std_lib_extended::{option::*, result::*};
 use ownership::{data_structures::State, only_owner, owner, set_ownership, transfer_ownership};
 
 use hyperlane_interfaces::{
-    igp::{GasOracle, GasPaymentEvent, InterchainGasPaymaster, RemoteGasData},
-    ownable::Ownable 
+    igp::{
+        GasOracle,
+        GasPaymentEvent,
+        InterchainGasPaymaster,
+        RemoteGasData,
+    },
+    ownable::Ownable,
 };
 
 use interface::{BeneficiarySetEvent, Claimable, ClaimEvent, GasOracleSetEvent, OnChainFeeQuoting};

@@ -14,8 +14,8 @@ use hyperlane_interfaces::{
     InterchainSecurityModule,
     Mailbox,
     MessageRecipient,
+    ownable::Ownable,
     ProcessEvent,
-    ownable::Ownable
 };
 use hyperlane_message::{EncodedMessage, Message};
 

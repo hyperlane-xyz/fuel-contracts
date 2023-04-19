@@ -4,7 +4,7 @@ use fuels::{
     types::{Bits256, B512},
 };
 use hyperlane_core::{utils::domain_hash, Checkpoint, Signable, H256};
-use test_utils::{bits256_to_h256, h256_to_bits256};
+use test_utils::{bits256_to_h256, encode_multisig_metadata, h256_to_bits256};
 
 // Load abi from json
 abigen!(Contract(
@@ -127,4 +127,56 @@ async fn test_checkpoint_digest() {
         bits256_to_h256(checkpoint_digest),
         checkpoint.eth_signed_message_hash()
     );
+}
+
+#[tokio::test]
+async fn test_bytes_to_multisig_metadata() {
+    let (instance, _id) = get_contract_instance().await;
+
+    let (_, metadata) = get_test_checkpoint_and_metadata();
+    let threshold = metadata.signatures.len() as u64;
+
+    let (root, index, mailbox, proof) = instance
+        .methods()
+        .bytes_to_multisig_metadata_parts(Bytes(metadata.clone().into()), threshold)
+        .simulate()
+        .await
+        .unwrap()
+        .value;
+    let signatures = instance
+        .methods()
+        .bytes_to_multisig_metadata_signatures(Bytes(metadata.clone().into()), threshold)
+        .simulate()
+        .await
+        .unwrap()
+        .value;
+    assert_eq!(
+        metadata,
+        MultisigMetadata {
+            root,
+            index,
+            mailbox,
+            proof,
+            signatures,
+        },
+    );
+}
+
+/// Encodes a MultisigMetadata struct into a Vec<u8>
+/// with the format expected by the Sway contracts.
+impl Into<Vec<u8>> for MultisigMetadata {
+    fn into(self) -> Vec<u8> {
+        encode_multisig_metadata(
+            &bits256_to_h256(self.root),
+            self.index,
+            &bits256_to_h256(self.mailbox),
+            &self
+                .proof
+                .iter()
+                .cloned()
+                .map(|p| bits256_to_h256(p))
+                .collect::<Vec<_>>(),
+            &self.signatures,
+        )
+    }
 }
