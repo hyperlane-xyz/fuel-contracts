@@ -45,11 +45,7 @@ const TEST_LOCAL_DOMAIN: u32 = 0x6675656cu32;
 const TEST_REMOTE_DOMAIN: u32 = 0x112233cu32;
 const TEST_RECIPIENT: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
-async fn get_contract_instance() -> (
-    Mailbox<WalletUnlocked>,
-    Bech32ContractId,
-    Bech32ContractId,
-) {
+async fn get_contract_instance() -> (Mailbox<WalletUnlocked>, Bech32ContractId, Bech32ContractId) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -272,12 +268,7 @@ async fn test_dispatch_reverts_if_paused() {
     let (mailbox, _, _) = get_contract_instance().await;
 
     // First pause...
-    mailbox
-        .methods()
-        .pause()
-        .call()
-        .await
-        .unwrap();
+    mailbox.methods().pause().call().await.unwrap();
 
     let call = mailbox
         .methods()
@@ -461,12 +452,7 @@ async fn test_process_reverts_if_paused() {
     let (mailbox, ism_id, recipient_id) = get_contract_instance().await;
 
     // Pause the contract
-    mailbox
-        .methods()
-        .pause()
-        .call()
-        .await
-        .unwrap();
+    mailbox.methods().pause().call().await.unwrap();
 
     let metadata = vec![5u8; 100];
 
@@ -490,12 +476,7 @@ async fn test_process_reverts_if_paused() {
 async fn test_pause() {
     let (mailbox, _, _) = get_contract_instance().await;
 
-    mailbox
-        .methods()
-        .pause()
-        .call()
-        .await
-        .unwrap();
+    mailbox.methods().pause().call().await.unwrap();
 
     let paused: bool = mailbox
         .methods()
@@ -512,11 +493,18 @@ async fn test_pause() {
 async fn test_pause_reverts_if_not_owner() {
     let (mailbox, _, _) = get_contract_instance().await;
 
-    let non_owner_wallet = funded_wallet_with_private_key(&mailbox.account(), NON_OWNER_PRIVATE_KEY)
-        .await
-        .unwrap();
+    let non_owner_wallet =
+        funded_wallet_with_private_key(&mailbox.account(), NON_OWNER_PRIVATE_KEY)
+            .await
+            .unwrap();
 
-    let call = mailbox.with_account(non_owner_wallet).unwrap().methods().pause().call().await;
+    let call = mailbox
+        .with_account(non_owner_wallet)
+        .unwrap()
+        .methods()
+        .pause()
+        .call()
+        .await;
     assert!(call.is_err());
     assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner");
 }
@@ -528,20 +516,10 @@ async fn test_unpause() {
     let (mailbox, _, _) = get_contract_instance().await;
 
     // First pause...
-    mailbox
-        .methods()
-        .pause()
-        .call()
-        .await
-        .unwrap();
+    mailbox.methods().pause().call().await.unwrap();
 
     // Now unpause!
-    mailbox
-        .methods()
-        .unpause()
-        .call()
-        .await
-        .unwrap();
+    mailbox.methods().unpause().call().await.unwrap();
 
     let paused: bool = mailbox
         .methods()
@@ -558,17 +536,13 @@ async fn test_unpause() {
 async fn test_unpause_reverts_if_not_owner() {
     let (mailbox, _, _) = get_contract_instance().await;
 
-    let non_owner_wallet = funded_wallet_with_private_key(&mailbox.account(), NON_OWNER_PRIVATE_KEY)
-        .await
-        .unwrap();
+    let non_owner_wallet =
+        funded_wallet_with_private_key(&mailbox.account(), NON_OWNER_PRIVATE_KEY)
+            .await
+            .unwrap();
 
     // First pause...
-    mailbox
-        .methods()
-        .pause()
-        .call()
-        .await
-        .unwrap();
+    mailbox.methods().pause().call().await.unwrap();
 
     let call = mailbox
         .with_account(non_owner_wallet.clone())
