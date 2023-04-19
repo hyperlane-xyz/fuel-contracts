@@ -1,6 +1,7 @@
 library;
 
 mod igp;
+mod ownable;
 
 use std::bytes::Bytes;
 

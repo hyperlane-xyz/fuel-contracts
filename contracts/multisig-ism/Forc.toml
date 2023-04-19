@@ -11,3 +11,4 @@ merkle = { path = "../merkle" }
 multisig_ism_metadata = { path = "../multisig-ism-metadata" }
 std_lib_extended = { path = "../std-lib-extended" }
 storagemapvec = { git = "https://github.com/FuelLabs/sway-libs", tag = "v0.8.0" }
+ownership = { git = "https://github.com/fuellabs/sway-libs", rev = "v0.8.0" }

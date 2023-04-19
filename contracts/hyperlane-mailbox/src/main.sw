@@ -8,17 +8,8 @@ use merkle::StorageMerkleTree;
 
 use ownership::{data_structures::State, only_owner, owner, set_ownership, transfer_ownership};
 
-abi Ownable {
-    #[storage(read)]
-    fn owner() -> State;
-    #[storage(read, write)]
-    fn transfer_ownership(new_owner: Identity);
-    #[storage(read, write)]
-    fn set_ownership(new_owner: Identity);
-}
-
-use hyperlane_interfaces::{InterchainSecurityModule, Mailbox, MessageRecipient};
-use hyperlane_message::{EncodedMessage, Message};
+use hyperlane_interfaces::{Mailbox, MessageRecipient, InterchainSecurityModule, ownable::Ownable};
+use hyperlane_message::{Message, EncodedMessage};
 
 /// The mailbox version.
 const VERSION: u8 = 0;
