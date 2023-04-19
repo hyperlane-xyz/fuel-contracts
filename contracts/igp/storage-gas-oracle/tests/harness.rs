@@ -1,6 +1,6 @@
 use fuels::{prelude::*, tx::ContractId, types::Identity};
 
-use test_utils::{funded_wallet_with_private_key, get_revert_reason, get_revert_string};
+use test_utils::{funded_wallet_with_private_key, get_revert_reason};
 
 // Load abi from json
 abigen!(Contract(
