@@ -4,10 +4,7 @@ mod interface;
 
 use std::{logging::log, u128::U128};
 
-use hyperlane_interfaces::{
-    igp::{GasOracle, RemoteGasData},
-    ownable::{Ownable}
-};
+use hyperlane_interfaces::{igp::{GasOracle, RemoteGasData}, ownable::{Ownable}};
 
 use ownership::{data_structures::State, only_owner, owner, set_ownership, transfer_ownership};
 
