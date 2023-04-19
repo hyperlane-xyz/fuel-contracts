@@ -55,8 +55,8 @@ impl B512 {
 
     /// Gets a B512 from a pointer to packed bytes.
     fn from_packed_bytes(ptr: raw_ptr) -> Self {
-        let component_0 = asm(ptr: ptr) { ptr: b256 };
-        let component_1 = asm(ptr: ptr.add_uint_offset(B256_BYTE_COUNT)) { ptr: b256 };
+        let component_0 = b256::from_packed_bytes(ptr);
+        let component_1 = b256::from_packed_bytes(ptr.add_uint_offset(B256_BYTE_COUNT));
 
         B512::from((component_0, component_1))
     }
