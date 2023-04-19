@@ -388,7 +388,7 @@ fn write_and_read_evm_address(ref mut bytes: Bytes, offset: u64, value: EvmAddre
 fn test_write_and_read_evm_address() {
     let mut bytes = Bytes::with_length(64);
 
-    let value: EvmAddress = EvmAddress::from(0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe);
+    let value: EvmAddress = EvmAddress::from(0xdeadeadeadeadeadeadeadeacafecafecafecafecafecafecafecafecafecafe);
 
     // Sanity check that an EvmAddress will zero out the first 12 bytes of the b256
     assert(value == EvmAddress::from(0x000000000000000000000000cafecafecafecafecafecafecafecafecafecafe));

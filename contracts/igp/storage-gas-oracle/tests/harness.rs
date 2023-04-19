@@ -1,8 +1,6 @@
-use std::str::FromStr;
-
 use fuels::{prelude::*, tx::ContractId, types::Identity};
 
-use test_utils::{funded_wallet_with_private_key, get_revert_string};
+use test_utils::{funded_wallet_with_private_key, get_revert_reason};
 
 // Load abi from json
 abigen!(Contract(
@@ -21,10 +19,8 @@ impl From<u64> for U128 {
     }
 }
 
-const INTIAL_OWNER_PRIVATE_KEY: &str =
+const NON_OWNER_PRIVATE_KEY: &str =
     "0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c";
-const INITIAL_OWNER_ADDRESS: &str =
-    "0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e";
 
 async fn get_contract_instance() -> (StorageGasOracle<WalletUnlocked>, ContractId) {
     // Launch a local network and deploy the contract
@@ -51,13 +47,18 @@ async fn get_contract_instance() -> (StorageGasOracle<WalletUnlocked>, ContractI
     .await
     .unwrap();
 
+    let owner_identity = Identity::Address(wallet.address().into());
+
     let instance = StorageGasOracle::new(id.clone(), wallet);
 
-    (instance, id.into())
-}
+    instance
+        .methods()
+        .set_ownership(owner_identity)
+        .call()
+        .await
+        .unwrap();
 
-async fn initial_owner_account(funder: &WalletUnlocked) -> Result<WalletUnlocked> {
-    funded_wallet_with_private_key(funder, INTIAL_OWNER_PRIVATE_KEY).await
+    (instance, id.into())
 }
 
 fn get_test_remote_gas_data_configs() -> Vec<RemoteGasDataConfig> {
@@ -80,27 +81,12 @@ fn get_test_remote_gas_data_configs() -> Vec<RemoteGasDataConfig> {
 }
 
 #[tokio::test]
-async fn test_initial_owner() {
-    let (oracle, _) = get_contract_instance().await;
-
-    let expected_owner: Option<Identity> = Some(Identity::Address(
-        Address::from_str(INITIAL_OWNER_ADDRESS).unwrap(),
-    ));
-
-    let owner = oracle.methods().owner().simulate().await.unwrap().value;
-    assert_eq!(owner, expected_owner);
-}
-
-#[tokio::test]
 async fn test_set_remote_gas_data_configs_and_get_exchange_rate_and_gas_price() {
     let (oracle, _) = get_contract_instance().await;
-    let owner_wallet = initial_owner_account(&oracle.account()).await.unwrap();
 
     let configs = get_test_remote_gas_data_configs();
 
     let call = oracle
-        .with_account(owner_wallet)
-        .unwrap()
         .methods()
         .set_remote_gas_data_configs(configs.clone())
         .call()
@@ -153,6 +139,18 @@ async fn test_exchange_rate_and_gas_price_unknown_domain() {
 #[tokio::test]
 async fn test_set_remote_gas_data_configs_reverts_if_not_owner() {
     let (oracle, _) = get_contract_instance().await;
+    let non_owner_wallet = funded_wallet_with_private_key(&oracle.account(), NON_OWNER_PRIVATE_KEY)
+        .await
+        .unwrap();
+    let non_owner_identity = Identity::Address(non_owner_wallet.address().into());
+
+    oracle
+        .methods()
+        .transfer_ownership(non_owner_identity)
+        .call()
+        .await
+        .unwrap();
+
     let configs = get_test_remote_gas_data_configs();
     let call = oracle
         .methods()
@@ -160,5 +158,5 @@ async fn test_set_remote_gas_data_configs_reverts_if_not_owner() {
         .call()
         .await;
     assert!(call.is_err());
-    assert_eq!(get_revert_string(call.err().unwrap()), "!owner");
+    assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner");
 }

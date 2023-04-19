@@ -2,7 +2,7 @@ use ethers::prelude::rand;
 use fuels::{
     prelude::*,
     tx::{ContractId, Receipt},
-    types::{Bits256, Bytes, EvmAddress, B512},
+    types::{Bits256, Bytes, EvmAddress, B512, Identity},
 };
 
 use hyperlane_core::{
@@ -69,6 +69,15 @@ async fn get_contract_instance() -> (MultisigIsm<WalletUnlocked>, ContractId, Wa
     .unwrap();
 
     let instance = MultisigIsm::new(id.clone(), wallet.clone());
+
+    let owner_identity = Identity::Address(wallet.address().into());
+
+    instance
+        .methods()
+        .set_ownership(owner_identity)
+        .call()
+        .await
+        .unwrap();
 
     (instance, id.into(), wallet)
 }

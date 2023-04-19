@@ -8,5 +8,5 @@ name = "hyperlane-mailbox"
 hyperlane_interfaces = { path = "../hyperlane-interfaces" }
 hyperlane_message = { path = "../hyperlane-message" }
 merkle = { path = "../merkle" }
-ownership = { path = "../ownership" }
+ownership = { git = "https://github.com/fuellabs/sway-libs", tag = "v0.8.0" }
 std_lib_extended = { path = "../std-lib-extended" }
