@@ -45,12 +45,7 @@ const TEST_LOCAL_DOMAIN: u32 = 0x6675656cu32;
 const TEST_REMOTE_DOMAIN: u32 = 0x112233cu32;
 const TEST_RECIPIENT: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
-async fn get_contract_instance() -> (
-    Mailbox<WalletUnlocked>,
-    Bech32ContractId,
-    Bech32ContractId,
-    WalletUnlocked,
-) {
+async fn get_contract_instance() -> (Mailbox<WalletUnlocked>, Bech32ContractId, Bech32ContractId) {
     // Launch a local network and deploy the contract
     let mut wallets = launch_custom_provider_and_get_wallets(
         WalletsConfig::new(
@@ -130,7 +125,7 @@ async fn get_contract_instance() -> (
         .unwrap();
     assert_eq!(default_ism.value, raw_ism_id);
 
-    (mailbox, ism_id, msg_recipient_id, wallet)
+    (mailbox, ism_id, msg_recipient_id)
 }
 
 // Gets the wallet address from the `Mailbox` instance, and
@@ -160,9 +155,11 @@ fn test_message(
     }
 }
 
+// ============ dispatch ============
+
 #[tokio::test]
 async fn test_dispatch_too_large_message() {
-    let (mailbox, _, _, _) = get_contract_instance().await;
+    let (mailbox, _, _) = get_contract_instance().await;
 
     let large_message_body = vec![0u8; 3000];
 
@@ -182,7 +179,7 @@ async fn test_dispatch_too_large_message() {
 
 #[tokio::test]
 async fn test_dispatch_logs_message() {
-    let (mailbox, _, recipient, _) = get_contract_instance().await;
+    let (mailbox, _, recipient) = get_contract_instance().await;
 
     let message = test_message(&mailbox, recipient, true);
     let message_id = message.id();
@@ -224,7 +221,7 @@ async fn test_dispatch_logs_message() {
 
 #[tokio::test]
 async fn test_dispatch_returns_id() {
-    let (mailbox, _, recipient, _) = get_contract_instance().await;
+    let (mailbox, _, recipient) = get_contract_instance().await;
 
     let message = test_message(&mailbox, recipient, true);
 
@@ -246,7 +243,7 @@ async fn test_dispatch_returns_id() {
 
 #[tokio::test]
 async fn test_dispatch_inserts_into_tree() {
-    let (mailbox, _, _, _) = get_contract_instance().await;
+    let (mailbox, _, _) = get_contract_instance().await;
 
     let message_body = vec![10u8; 100];
 
@@ -267,8 +264,30 @@ async fn test_dispatch_inserts_into_tree() {
 }
 
 #[tokio::test]
+async fn test_dispatch_reverts_if_paused() {
+    let (mailbox, _, _) = get_contract_instance().await;
+
+    // First pause...
+    mailbox.methods().pause().call().await.unwrap();
+
+    let call = mailbox
+        .methods()
+        .dispatch(
+            TEST_REMOTE_DOMAIN,
+            Bits256::from_hex_str(TEST_RECIPIENT).unwrap(),
+            Bytes(vec![10u8; 100]),
+        )
+        .call()
+        .await;
+    assert!(call.is_err());
+    assert_eq!(get_revert_string(call.unwrap_err()), "contract is paused");
+}
+
+// ============ latest_checkpoint ============
+
+#[tokio::test]
 async fn test_latest_checkpoint() {
-    let (mailbox, _, _, _) = get_contract_instance().await;
+    let (mailbox, _, _) = get_contract_instance().await;
 
     let message_body = vec![10u8; 100];
 
@@ -303,9 +322,11 @@ async fn test_latest_checkpoint() {
     assert_eq!(index, 0u32);
 }
 
+// ============ process ============
+
 #[tokio::test]
 async fn test_process_id() {
-    let (mailbox, ism_id, recipient_id, _) = get_contract_instance().await;
+    let (mailbox, ism_id, recipient_id) = get_contract_instance().await;
 
     let metadata = vec![5u8; 100];
 
@@ -337,7 +358,7 @@ async fn test_process_id() {
 
 #[tokio::test]
 async fn test_process_handle() {
-    let (mailbox, ism_id, recipient_id, wallet) = get_contract_instance().await;
+    let (mailbox, ism_id, recipient_id) = get_contract_instance().await;
 
     let metadata = vec![5u8; 100];
 
@@ -354,27 +375,25 @@ async fn test_process_handle() {
         .await
         .unwrap();
 
-    let msg_recipient = TestMessageRecipient::new(recipient_id, wallet);
+    let msg_recipient = TestMessageRecipient::new(recipient_id, mailbox.account());
     let handled = msg_recipient.methods().handled().simulate().await.unwrap();
     assert!(handled.value);
 }
 
 #[tokio::test]
 async fn test_process_deliver_twice() {
-    let (mailbox, ism_id, recipient_id, _) = get_contract_instance().await;
+    let (mailbox, ism_id, recipient_id) = get_contract_instance().await;
 
-    let metadata = Bytes(vec![5u8; 100]);
+    let metadata = vec![5u8; 100];
 
     let agent_message = test_message(&mailbox, recipient_id.clone(), false);
     let agent_message_id = agent_message.id();
-
-    let raw_message = Bytes(agent_message.to_vec());
 
     let contract_inputs = vec![ism_id.clone(), recipient_id];
 
     mailbox
         .methods()
-        .process(metadata.clone(), raw_message.clone())
+        .process(Bytes(metadata.clone()), Bytes(agent_message.to_vec()))
         .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::default().set_gas_limit(1_200_000))
         .call()
@@ -393,7 +412,7 @@ async fn test_process_deliver_twice() {
 
     let process_delivered_error = mailbox
         .methods()
-        .process(metadata, raw_message)
+        .process(Bytes(metadata), Bytes(agent_message.to_vec()))
         .set_contract_ids(&contract_inputs)
         .tx_params(TxParameters::default().set_gas_limit(1_200_000))
         .call()
@@ -405,7 +424,7 @@ async fn test_process_deliver_twice() {
 
 #[tokio::test]
 async fn test_process_module_reject() {
-    let (mailbox, ism_id, recipient_id, wallet) = get_contract_instance().await;
+    let (mailbox, ism_id, recipient_id) = get_contract_instance().await;
 
     let metadata = vec![5u8; 100];
 
@@ -413,7 +432,7 @@ async fn test_process_module_reject() {
 
     let contract_inputs = vec![ism_id.clone(), recipient_id];
 
-    let test_ism = TestInterchainSecurityModule::new(ism_id, wallet);
+    let test_ism = TestInterchainSecurityModule::new(ism_id, mailbox.account());
     test_ism.methods().set_accept(false).call().await.unwrap();
 
     let process_module_error = mailbox
@@ -429,8 +448,116 @@ async fn test_process_module_reject() {
 }
 
 #[tokio::test]
+async fn test_process_reverts_if_paused() {
+    let (mailbox, ism_id, recipient_id) = get_contract_instance().await;
+
+    // Pause the contract
+    mailbox.methods().pause().call().await.unwrap();
+
+    let metadata = vec![5u8; 100];
+
+    let agent_message = test_message(&mailbox, recipient_id.clone(), false);
+    let contract_inputs = vec![ism_id.clone(), recipient_id];
+
+    let call = mailbox
+        .methods()
+        .process(Bytes(metadata), Bytes(agent_message.to_vec()))
+        .set_contract_ids(&contract_inputs)
+        .tx_params(TxParameters::default().set_gas_limit(1_200_000))
+        .call()
+        .await;
+    assert!(call.is_err());
+    assert_eq!(get_revert_string(call.unwrap_err()), "contract is paused");
+}
+
+// ============ pause ============
+
+#[tokio::test]
+async fn test_pause() {
+    let (mailbox, _, _) = get_contract_instance().await;
+
+    mailbox.methods().pause().call().await.unwrap();
+
+    let paused: bool = mailbox
+        .methods()
+        .is_paused()
+        .simulate()
+        .await
+        .unwrap()
+        .value;
+
+    assert!(paused);
+}
+
+#[tokio::test]
+async fn test_pause_reverts_if_not_owner() {
+    let (mailbox, _, _) = get_contract_instance().await;
+
+    let non_owner_wallet =
+        funded_wallet_with_private_key(&mailbox.account(), NON_OWNER_PRIVATE_KEY)
+            .await
+            .unwrap();
+
+    let call = mailbox
+        .with_account(non_owner_wallet)
+        .unwrap()
+        .methods()
+        .pause()
+        .call()
+        .await;
+    assert!(call.is_err());
+    assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner");
+}
+
+// ============ unpause ============
+
+#[tokio::test]
+async fn test_unpause() {
+    let (mailbox, _, _) = get_contract_instance().await;
+
+    // First pause...
+    mailbox.methods().pause().call().await.unwrap();
+
+    // Now unpause!
+    mailbox.methods().unpause().call().await.unwrap();
+
+    let paused: bool = mailbox
+        .methods()
+        .is_paused()
+        .simulate()
+        .await
+        .unwrap()
+        .value;
+
+    assert!(!paused);
+}
+
+#[tokio::test]
+async fn test_unpause_reverts_if_not_owner() {
+    let (mailbox, _, _) = get_contract_instance().await;
+
+    let non_owner_wallet =
+        funded_wallet_with_private_key(&mailbox.account(), NON_OWNER_PRIVATE_KEY)
+            .await
+            .unwrap();
+
+    // First pause...
+    mailbox.methods().pause().call().await.unwrap();
+
+    let call = mailbox
+        .with_account(non_owner_wallet.clone())
+        .unwrap()
+        .methods()
+        .unpause()
+        .call()
+        .await;
+    assert!(call.is_err());
+    assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner");
+}
+
+#[tokio::test]
 async fn test_set_default_ism() {
-    let (mailbox, ism_id, _, _) = get_contract_instance().await;
+    let (mailbox, ism_id, _) = get_contract_instance().await;
 
     // Sanity check the current default ISM is the one we expect
     let default_ism = mailbox
@@ -473,7 +600,7 @@ async fn test_set_default_ism() {
 
 #[tokio::test]
 async fn test_set_default_ism_reverts_if_not_owner() {
-    let (mailbox, _, _, _) = get_contract_instance().await;
+    let (mailbox, _, _) = get_contract_instance().await;
     let new_default_ism =
         ContractId::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
             .unwrap();

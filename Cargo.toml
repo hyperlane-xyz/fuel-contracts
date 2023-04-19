@@ -9,6 +9,7 @@ members = [
     "contracts/merkle-test",
     "contracts/multisig-ism",
     "contracts/multisig-ism-metadata-test",
+    "contracts/pause-test",
     "contracts/validator-announce",
     "test-utils",
 ]

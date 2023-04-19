@@ -19,6 +19,8 @@ dependencies = [
     'hyperlane_message',
     'merkle',
     'ownership git+https://github.com/fuellabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a',
+    'pause',
+    'reentrancy',
     'std',
     'std_lib_extended',
 ]
@@ -136,6 +138,24 @@ dependencies = ['std']
 [[package]]
 name = 'ownership'
 source = 'git+https://github.com/fuellabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a'
+dependencies = ['std']
+
+[[package]]
+name = 'pause'
+source = 'member'
+dependencies = ['std']
+
+[[package]]
+name = 'pause-test'
+source = 'member'
+dependencies = [
+    'pause',
+    'std',
+]
+
+[[package]]
+name = 'reentrancy'
+source = 'git+https://github.com/FuelLabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a'
 dependencies = ['std']
 
 [[package]]

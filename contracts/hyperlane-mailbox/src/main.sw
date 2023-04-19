@@ -5,8 +5,9 @@ use std::{auth::msg_sender, bytes::Bytes, call_frames::contract_id, logging::log
 use std_lib_extended::bytes::*;
 
 use merkle::StorageMerkleTree;
-
 use ownership::{data_structures::State, only_owner, owner, set_ownership, transfer_ownership};
+use pause::{interface::Pausable, is_paused, pause, require_unpaused, unpause};
+use reentrancy::reentrancy_guard;
 
 use hyperlane_interfaces::{
     DefaultIsmSetEvent,
@@ -58,6 +59,9 @@ impl Mailbox for Contract {
         recipient: b256,
         message_body: Bytes,
     ) -> b256 {
+        // Prevent messages from being dispatched when the mailbox is paused.
+        require_unpaused();
+
         require(message_body.len() <= MAX_MESSAGE_BODY_BYTES, "msg too long");
 
         let message = EncodedMessage::new(VERSION, count(), LOCAL_DOMAIN, msg_sender_b256(), destination_domain, recipient, message_body);
@@ -94,6 +98,11 @@ impl Mailbox for Contract {
 
     #[storage(read, write)]
     fn process(metadata: Bytes, _message: Bytes) {
+        // Prevent reentrancy.
+        reentrancy_guard();
+        // Prevent messages from being processed when the mailbox is paused.
+        require_unpaused();
+
         let message = EncodedMessage {
             bytes: _message,
         };
@@ -170,6 +179,30 @@ impl Ownable for Contract {
     #[storage(read, write)]
     fn set_ownership(new_owner: Identity) {
         set_ownership(new_owner);
+    }
+}
+
+impl Pausable for Contract {
+    /// Returns whether the contract has been paused.
+    #[storage(read)]
+    fn is_paused() -> bool {
+        is_paused()
+    }
+
+    /// Pauses the contract if it is not already paused.
+    /// Reverts if the msg_sender is not the current owner.
+    #[storage(read, write)]
+    fn pause() {
+        only_owner();
+        pause()
+    }
+
+    /// Unpauses the contract if it is paused.
+    /// Reverts if the msg_sender is not the current owner.
+    #[storage(read, write)]
+    fn unpause() {
+        only_owner();
+        unpause()
     }
 }
 
