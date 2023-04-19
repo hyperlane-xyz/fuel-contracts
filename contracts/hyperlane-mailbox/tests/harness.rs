@@ -5,7 +5,8 @@ use fuels::{
     types::{Bits256, Bytes, Identity},
 };
 use hyperlane_core::{Decode, Encode, HyperlaneMessage as HyperlaneAgentMessage};
-use test_utils::{bits256_to_h256, get_revert_string, h256_to_bits256};
+use test_utils::{bits256_to_h256, get_revert_string, h256_to_bits256, funded_wallet_with_private_key, get_revert_reason};
+use std::str::FromStr;
 
 mod mailbox_contract {
     use fuels::prelude::abigen;
@@ -18,7 +19,7 @@ mod mailbox_contract {
 }
 
 use crate::mailbox_contract::{
-    DefaultIsmSetEvent, DispatchIdEvent, Mailbox, OwnershipTransferredEvent, ProcessEvent,
+    DefaultIsmSetEvent, DispatchIdEvent, Mailbox, OwnershipTransferred, ProcessEvent,
 };
 
 mod test_interchain_security_module_contract {
@@ -34,6 +35,9 @@ abigen!(Contract(
     name = "TestMessageRecipient",
     abi = "contracts/hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test-abi.json"
 ));
+
+const NON_OWNER_PRIVATE_KEY: &str =
+    "0xde97d8624a438121b86a1956544bd72ed68cd69f2c99555b08b1e8c51ffd511c";
 
 // At the moment, the origin domain is hardcoded in the Mailbox contract.
 const TEST_LOCAL_DOMAIN: u32 = 0x6675656cu32;
@@ -442,14 +446,7 @@ async fn test_set_default_ism() {
             .unwrap();
     assert_ne!(default_ism, new_default_ism);
 
-    let initial_owner_wallet =
-        funded_wallet_with_private_key(&mailbox.account(), INTIAL_OWNER_PRIVATE_KEY)
-            .await
-            .unwrap();
-
     let call = mailbox
-        .with_account(initial_owner_wallet)
-        .unwrap()
         .methods()
         .set_default_ism(new_default_ism)
         .call()
@@ -475,16 +472,23 @@ async fn test_set_default_ism() {
 
 #[tokio::test]
 async fn test_set_default_ism_reverts_if_not_owner() {
+    
     let (mailbox, _, _, _) = get_contract_instance().await;
     let new_default_ism =
-        ContractId::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
-            .unwrap();
+    ContractId::from_str("0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe")
+    .unwrap();
+
+    let non_owner_wallet = funded_wallet_with_private_key(&mailbox.account(), NON_OWNER_PRIVATE_KEY)
+        .await
+        .unwrap();
 
     let call = mailbox
+        .with_account(non_owner_wallet)
+        .unwrap()
         .methods()
         .set_default_ism(new_default_ism)
         .call()
         .await;
     assert!(call.is_err());
-    assert_eq!(get_revert_string(call.err().unwrap()), "!owner",);
+    assert_eq!(get_revert_reason(call.err().unwrap()), "NotOwner",);
 }
