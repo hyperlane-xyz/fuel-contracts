@@ -5,7 +5,8 @@ use std::{auth::msg_sender, bytes::Bytes, call_frames::contract_id, logging::log
 use std_lib_extended::bytes::*;
 
 use merkle::StorageMerkleTree;
-use ownership::{interface::Ownable, log_ownership_transferred, require_msg_sender};
+
+use ownership::{data_structures::State, only_owner, owner, set_ownership, transfer_ownership};
 
 use hyperlane_interfaces::{
     DefaultIsmSetEvent,
@@ -13,6 +14,7 @@ use hyperlane_interfaces::{
     InterchainSecurityModule,
     Mailbox,
     MessageRecipient,
+    ownable::Ownable,
     ProcessEvent,
 };
 use hyperlane_message::{EncodedMessage, Message};
@@ -23,10 +25,6 @@ const VERSION: u8 = 0;
 const MAX_MESSAGE_BODY_BYTES: u64 = 2048;
 /// The log ID for dispatched messages. "hyp" in bytes
 const DISPATCHED_MESSAGE_LOG_ID: u64 = 0x687970u64;
-// TODO: set this at compile / deploy time.
-// NOTE for now this is temporarily set to the address of a PUBLICLY KNOWN
-// PRIVATE KEY, which is the first default account when running fuel-client locally.
-const INITIAL_OWNER: Option<Identity> = Option::Some(Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e)));
 
 const ZERO_ID: ContractId = ContractId {
     value: 0x0000000000000000000000000000000000000000000000000000000000000000,
@@ -39,8 +37,6 @@ configurable {
 }
 
 storage {
-    /// The owner of the contract.
-    owner: Option<Identity> = INITIAL_OWNER,
     /// A merkle tree that includes outbound message IDs as leaves.
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
     delivered: StorageMap<b256, bool> = StorageMap {},
@@ -80,7 +76,7 @@ impl Mailbox for Contract {
 
     #[storage(read, write)]
     fn set_default_ism(module: ContractId) {
-        require_msg_sender(storage.owner);
+        only_owner();
         storage.default_ism = module;
 
         log(DefaultIsmSetEvent { module });
@@ -158,19 +154,22 @@ impl Mailbox for Contract {
 impl Ownable for Contract {
     /// Gets the current owner.
     #[storage(read)]
-    fn owner() -> Option<Identity> {
-        storage.owner
+    fn owner() -> State {
+        owner()
     }
 
     /// Transfers ownership to `new_owner`.
     /// Reverts if the msg_sender is not the current owner.
     #[storage(read, write)]
-    fn transfer_ownership(new_owner: Option<Identity>) {
-        let old_owner = storage.owner;
-        require_msg_sender(old_owner);
+    fn transfer_ownership(new_owner: Identity) {
+        transfer_ownership(new_owner);
+    }
 
-        storage.owner = new_owner;
-        log_ownership_transferred(old_owner, new_owner);
+    /// Initializes ownership to `new_owner`.
+    /// Reverts if owner already initialized.
+    #[storage(read, write)]
+    fn set_ownership(new_owner: Identity) {
+        set_ownership(new_owner);
     }
 }
 

@@ -1,6 +1,6 @@
 library;
 
-use std::{bytes::Bytes, constants::ZERO_B256, vm::evm::evm_address::EvmAddress};
+use std::{b512::B512, bytes::Bytes, constants::ZERO_B256, vm::evm::evm_address::EvmAddress};
 use ::mem::CopyTypeWrapper;
 
 /// The number of bytes in a b256.
@@ -41,6 +41,24 @@ impl EvmAddress {
         ptr.copy_bytes_to(value_ptr, EVM_ADDRESS_BYTE_COUNT);
         // Return the value.
         EvmAddress::from(value)
+    }
+}
+
+/// The number of bytes in a B512.
+pub const B512_BYTE_COUNT: u64 = 64u64;
+
+impl B512 {
+    /// Returns a pointer to the B512's packed bytes.
+    fn packed_bytes(self) -> raw_ptr {
+        __addr_of(self.bytes)
+    }
+
+    /// Gets a B512 from a pointer to packed bytes.
+    fn from_packed_bytes(ptr: raw_ptr) -> Self {
+        let component_0 = b256::from_packed_bytes(ptr);
+        let component_1 = b256::from_packed_bytes(ptr.add_uint_offset(B256_BYTE_COUNT));
+
+        B512::from((component_0, component_1))
     }
 }
 
@@ -160,6 +178,22 @@ impl Bytes {
         let read_ptr = self.get_read_ptr(offset, EVM_ADDRESS_BYTE_COUNT);
 
         EvmAddress::from_packed_bytes(read_ptr)
+    }
+
+    // ===== B512 ====
+    /// Writes a B512 at the specified offset. Reverts if it violates the
+    /// bounds of self.
+    /// Returns the byte index after the end of the B512.
+    pub fn write_b512(ref mut self, offset: u64, value: B512) -> u64 {
+        self.write_packed_bytes(offset, value.packed_bytes(), B512_BYTE_COUNT)
+    }
+
+    /// Reads a B512 at the specified offset.
+    /// Reverts if it violates the bounds of self.
+    pub fn read_b512(self, offset: u64) -> B512 {
+        let read_ptr = self.get_read_ptr(offset, B256_BYTE_COUNT);
+
+        B512::from_packed_bytes(read_ptr)
     }
 
     // ===== u64 ====
@@ -354,7 +388,7 @@ fn write_and_read_evm_address(ref mut bytes: Bytes, offset: u64, value: EvmAddre
 fn test_write_and_read_evm_address() {
     let mut bytes = Bytes::with_length(64);
 
-    let value: EvmAddress = EvmAddress::from(0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe);
+    let value: EvmAddress = EvmAddress::from(0xdeadeadeadeadeadeadeadeacafecafecafecafecafecafecafecafecafecafe);
 
     // Sanity check that an EvmAddress will zero out the first 12 bytes of the b256
     assert(value == EvmAddress::from(0x000000000000000000000000cafecafecafecafecafecafecafecafecafecafe));
@@ -367,6 +401,29 @@ fn test_write_and_read_evm_address() {
 
     // 40 byte offset - tests non-word-aligned case and overwriting existing bytes
     assert(value == write_and_read_evm_address(bytes, 40u64, value));
+}
+
+fn write_and_read_b512(ref mut bytes: Bytes, offset: u64, value: B512) -> B512 {
+    let _ = bytes.write_b512(offset, value);
+    bytes.read_b512(offset)
+}
+
+#[test()]
+fn test_write_and_read_b512() {
+    let mut bytes = Bytes::with_length(128);
+
+    let value: B512 = B512::from((
+        0xcafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe,
+        0xdeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadead,
+    ));
+    // 0 byte offset
+    assert(value == write_and_read_b512(bytes, 0u64, value));
+
+    // 64 byte offset - tests word-aligned case and writing to the end of the Bytes
+    assert(value == write_and_read_b512(bytes, 64u64, value));
+
+    // 50 byte offset - tests non-word-aligned case and overwriting existing bytes
+    assert(value == write_and_read_b512(bytes, 50u64, value));
 }
 
 fn write_and_read_u64(ref mut bytes: Bytes, offset: u64, value: u64) -> u64 {

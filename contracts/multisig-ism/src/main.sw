@@ -3,6 +3,7 @@ contract;
 mod interface;
 
 use std::{
+    bytes::Bytes,
     constants::ZERO_B256,
     logging::log,
     vm::evm::{
@@ -19,7 +20,9 @@ use merkle::StorageMerkleTree;
 
 use interface::MultisigIsm;
 
-use hyperlane_interfaces::{InterchainSecurityModule, ModuleType};
+use hyperlane_interfaces::{InterchainSecurityModule, ModuleType, ownable::Ownable};
+
+use ownership::{data_structures::State, only_owner, owner, set_ownership, transfer_ownership};
 
 use multisig_ism_metadata::MultisigMetadata;
 
@@ -63,12 +66,15 @@ pub fn verify_merkle_proof(metadata: MultisigMetadata, message: EncodedMessage) 
 
 /// Returns true if a threshold of metadata signatures match the stored validator set and threshold.
 #[storage(read)]
-pub fn verify_validator_signatures(metadata: MultisigMetadata, message: EncodedMessage) -> bool {
+pub fn verify_validator_signatures(
+    threshold: u64,
+    metadata: MultisigMetadata,
+    message: EncodedMessage,
+) -> bool {
     let origin = message.origin();
 
     let digest = metadata.checkpoint_digest(origin);
 
-    let threshold = storage.threshold.get(origin).unwrap();
     let validators = storage.validators.to_vec(origin);
     let validator_count = validators.len();
 
@@ -122,28 +128,24 @@ fn validators(domain: u32) -> Vec<EvmAddress> {
     return storage.validators.to_vec(domain);
 }
 
-
-// TODO: implement with generic ISM abi
-// impl InterchainSecurityModule for Contract {
-//     #[storage(read, write)]
-//     fn verify(metadata: Vec<u8>, message: EncodedMessage) -> bool {
-// }
-
-impl MultisigIsm for Contract {
+impl InterchainSecurityModule for Contract {
     #[storage(read)]
     fn module_type() -> ModuleType {
         ModuleType::MULTISIG
     }
 
-    #[storage(read)]
-    fn verify(metadata: MultisigMetadata, _message: Message) -> bool {
-        // TODO: revert once abigen handles Bytes
-        let message = EncodedMessage::from(_message);
+    #[storage(read, write)]
+    fn verify(metadata: Bytes, message: Bytes) -> bool {
+        let message = EncodedMessage { bytes: message };
+        let threshold = threshold(message.origin());
+        let metadata = MultisigMetadata::from_bytes(metadata, threshold);
         require(verify_merkle_proof(metadata, message), "!merkle");
-        require(verify_validator_signatures(metadata, message), "!signatures");
+        require(verify_validator_signatures(threshold, metadata, message), "!signatures");
         return true;
     }
+}
 
+impl MultisigIsm for Contract {
     /// Returns the threshold for the domain.
     #[storage(read)]
     fn threshold(domain: u32) -> u8 {
@@ -157,9 +159,8 @@ impl MultisigIsm for Contract {
     }
 
     #[storage(read)]
-    fn validators_and_threshold(_message: Message) -> (Vec<EvmAddress>, u8) {
-        // TODO: revert once abigen handles Bytes
-        let message = EncodedMessage::from(_message);
+    fn validators_and_threshold(message: Bytes) -> (Vec<EvmAddress>, u8) {
+        let message = EncodedMessage { bytes: message };
         let domain = message.origin();
         return (validators(domain), threshold(domain));
     }
@@ -174,6 +175,7 @@ impl MultisigIsm for Contract {
     /// Must be less than or equal to the number of validators.
     #[storage(read, write)]
     fn set_threshold(domain: u32, threshold: u8) {
+        only_owner();
         set_threshold(domain, threshold);
     }
 
@@ -181,12 +183,14 @@ impl MultisigIsm for Contract {
     /// Must not already be enrolled.
     #[storage(read, write)]
     fn enroll_validator(domain: u32, validator: EvmAddress) {
+        only_owner();
         enroll_validator(domain, validator);
     }
 
     /// Batches validator enrollment for a list of domains.
     #[storage(read, write)]
     fn enroll_validators(domains: Vec<u32>, validators: Vec<Vec<EvmAddress>>) {
+        only_owner();
         let domain_len = domains.len();
         require(domain_len == validators.len(), "!length");
 
@@ -209,6 +213,7 @@ impl MultisigIsm for Contract {
     /// Batches threshold setting for a list of domains.
     #[storage(read, write)]
     fn set_thresholds(domains: Vec<u32>, thresholds: Vec<u8>) {
+        only_owner();
         let domain_len = domains.len();
         require(domain_len == thresholds.len(), "!length");
 
@@ -222,9 +227,32 @@ impl MultisigIsm for Contract {
     /// Unenrolls a validator for the domain (and updates commitment).
     #[storage(read, write)]
     fn unenroll_validator(domain: u32, validator: EvmAddress) {
+        only_owner();
         let index = index_of(domain, validator);
         require(index.is_some(), "!enrolled");
         let removed = storage.validators.swap_remove(domain, index.unwrap());
         assert(removed == validator);
+    }
+}
+
+impl Ownable for Contract {
+    /// Gets the current owner.
+    #[storage(read)]
+    fn owner() -> State {
+        owner()
+    }
+
+    /// Transfers ownership to `new_owner`.
+    /// Reverts if the msg_sender is not the current owner.
+    #[storage(read, write)]
+    fn transfer_ownership(new_owner: Identity) {
+        transfer_ownership(new_owner);
+    }
+
+    /// Initializes ownership to `new_owner`.
+    /// Reverts if owner already initialized.
+    #[storage(read, write)]
+    fn set_ownership(new_owner: Identity) {
+        set_ownership(new_owner);
     }
 }
