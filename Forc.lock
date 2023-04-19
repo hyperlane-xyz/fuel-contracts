@@ -1,6 +1,6 @@
 [[package]]
 name = 'core'
-source = 'path+from-root-91563E0DA237BDEC'
+source = 'path+from-root-FDF4A5DCC6ECD181'
 
 [[package]]
 name = 'hyperlane-ism-test'
@@ -18,7 +18,7 @@ dependencies = [
     'hyperlane_interfaces',
     'hyperlane_message',
     'merkle',
-    'ownership',
+    'ownership git+https://github.com/fuellabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a',
     'std',
     'std_lib_extended',
 ]
@@ -46,6 +46,7 @@ name = 'hyperlane_interfaces'
 source = 'member'
 dependencies = [
     'hyperlane_message',
+    'ownership git+https://github.com/fuellabs/sway-libs?rev#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a',
     'std',
 ]
 
@@ -62,7 +63,7 @@ name = 'interchain-gas-paymaster'
 source = 'member'
 dependencies = [
     'hyperlane_interfaces',
-    'ownership',
+    'ownership git+https://github.com/fuellabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a',
     'std',
     'std_lib_extended',
 ]
@@ -104,6 +105,7 @@ dependencies = [
     'hyperlane_message',
     'merkle',
     'multisig_ism_metadata',
+    'ownership git+https://github.com/fuellabs/sway-libs?rev#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a',
     'std',
     'std_lib_extended',
     'storagemapvec',
@@ -122,9 +124,14 @@ name = 'overhead-igp'
 source = 'member'
 dependencies = [
     'hyperlane_interfaces',
-    'ownership',
+    'ownership git+https://github.com/fuellabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a',
     'std',
 ]
+
+[[package]]
+name = 'ownership'
+source = 'git+https://github.com/fuellabs/sway-libs?rev#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a'
+dependencies = ['std']
 
 [[package]]
 name = 'ownership'
@@ -133,7 +140,7 @@ dependencies = ['std']
 
 [[package]]
 name = 'std'
-source = 'git+https://github.com/fuellabs/sway?tag=v0.37.1#83e5479462ed2883591669a42552606ac25f0a04'
+source = 'git+https://github.com/fuellabs/sway?tag=v0.37.0#607ac50176db8bef936f91bacf435d0ea37d041e'
 dependencies = ['core']
 
 [[package]]
@@ -146,7 +153,7 @@ name = 'storage-gas-oracle'
 source = 'member'
 dependencies = [
     'hyperlane_interfaces',
-    'ownership',
+    'ownership git+https://github.com/fuellabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a',
     'std',
 ]
 
