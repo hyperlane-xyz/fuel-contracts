@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use ethers::signers::Signer;
 use ethers::types::{Signature, H256, U256};
+use fuels::programs::call_response::FuelCallResponse;
 use fuels::types::B512;
 use fuels::{
     accounts::{fuel_crypto::SecretKey, WalletUnlocked},
@@ -9,8 +10,7 @@ use fuels::{
     tx::{AssetId, Receipt},
     types::{errors::Error, Bits256, EvmAddress},
 };
-use hyperlane_core::HyperlaneSignerExt;
-use hyperlane_core::Signable;
+use hyperlane_core::{Decode, HyperlaneMessage, HyperlaneSignerExt, Signable};
 use hyperlane_ethereum::Signers;
 use serde::{de::Deserializer, Deserialize};
 
@@ -187,4 +187,26 @@ pub fn encode_multisig_metadata(
         }
     }
     bytes
+}
+
+/// The log ID for dispatched messages. "hyp" in bytes
+pub const DISPATCHED_MESSAGE_LOG_ID: u64 = 0x687970u64;
+
+pub fn get_dispatched_message<D>(call: &FuelCallResponse<D>) -> Option<HyperlaneMessage> {
+    call.receipts
+        .iter()
+        .find(|r| {
+            if let Receipt::LogData { rb, .. } = r {
+                *rb == DISPATCHED_MESSAGE_LOG_ID
+            } else {
+                false
+            }
+        })
+        .map(|r| {
+            if let Receipt::LogData { data, .. } = r {
+                HyperlaneMessage::read_from(&mut data.as_slice()).unwrap()
+            } else {
+                panic!("Expected LogData receipt. Receipt: {:?}", r);
+            }
+        })
 }
