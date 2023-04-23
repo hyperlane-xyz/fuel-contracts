@@ -18,7 +18,7 @@ dependencies = [
     'hyperlane_interfaces',
     'hyperlane_message',
     'merkle',
-    'ownership git+https://github.com/fuellabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a',
+    'ownership',
     'pause',
     'reentrancy',
     'std',
@@ -48,7 +48,7 @@ name = 'hyperlane_interfaces'
 source = 'member'
 dependencies = [
     'hyperlane_message',
-    'ownership git+https://github.com/fuellabs/sway-libs?rev#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a',
+    'ownership',
     'std',
 ]
 
@@ -65,7 +65,7 @@ name = 'interchain-gas-paymaster'
 source = 'member'
 dependencies = [
     'hyperlane_interfaces',
-    'ownership git+https://github.com/fuellabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a',
+    'ownership',
     'std',
     'std_lib_extended',
 ]
@@ -107,7 +107,7 @@ dependencies = [
     'hyperlane_message',
     'merkle',
     'multisig_ism_metadata',
-    'ownership git+https://github.com/fuellabs/sway-libs?rev#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a',
+    'ownership',
     'std',
     'std_lib_extended',
     'storagemapvec',
@@ -126,18 +126,13 @@ name = 'overhead-igp'
 source = 'member'
 dependencies = [
     'hyperlane_interfaces',
-    'ownership git+https://github.com/fuellabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a',
+    'ownership',
     'std',
 ]
 
 [[package]]
 name = 'ownership'
-source = 'git+https://github.com/fuellabs/sway-libs?rev#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a'
-dependencies = ['std']
-
-[[package]]
-name = 'ownership'
-source = 'git+https://github.com/fuellabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a'
+source = 'path+from-root-7908E40C5BBA5E4E'
 dependencies = ['std']
 
 [[package]]
@@ -155,7 +150,7 @@ dependencies = [
 
 [[package]]
 name = 'reentrancy'
-source = 'git+https://github.com/FuelLabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a'
+source = 'path+from-root-D26B060B9C691B9B'
 dependencies = ['std']
 
 [[package]]
@@ -173,13 +168,13 @@ name = 'storage-gas-oracle'
 source = 'member'
 dependencies = [
     'hyperlane_interfaces',
-    'ownership git+https://github.com/fuellabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a',
+    'ownership',
     'std',
 ]
 
 [[package]]
 name = 'storagemapvec'
-source = 'git+https://github.com/FuelLabs/sway-libs?tag=v0.8.0#f6bb5c234e020d556e1bc688e0f1f368dc9b0f9a'
+source = 'path+from-root-BFB7C317AD2BC5A8'
 dependencies = ['std']
 
 [[package]]
