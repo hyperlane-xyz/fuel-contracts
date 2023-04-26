@@ -21,11 +21,14 @@ async fn get_contract_instance() -> (PauseTest<WalletUnlocked>, ContractId) {
     .await;
     let wallet = wallets.pop().unwrap();
 
-    let id = Contract::deploy(
+    let id = Contract::load_from(
         "./out/debug/pause-test.bin",
-        &wallet,
-        DeployConfiguration::default(),
+        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
+            "./out/debug/pause-test-storage_slots.json",
+        ).unwrap()),
     )
+    .unwrap()
+    .deploy(&wallet, TxParameters::default())
     .await
     .unwrap();
 
@@ -56,7 +59,7 @@ async fn test_pause() {
     let call = contract.methods().pause().call().await.unwrap();
 
     // Expect an event
-    let events = call.get_logs_with_type::<PausedEvent>().unwrap();
+    let events = call.decode_logs_with_type::<PausedEvent>().unwrap();
     assert_eq!(events, vec![PausedEvent {}],);
 
     let paused = contract
@@ -102,7 +105,7 @@ async fn test_unpause() {
 
     let call = contract.methods().unpause().call().await.unwrap();
     // Expect an event
-    let events = call.get_logs_with_type::<UnpausedEvent>().unwrap();
+    let events = call.decode_logs_with_type::<UnpausedEvent>().unwrap();
     assert_eq!(events, vec![UnpausedEvent {}],);
 
     // And now expect the contract to not be paused

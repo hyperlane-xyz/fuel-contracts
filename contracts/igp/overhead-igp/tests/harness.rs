@@ -49,14 +49,14 @@ async fn get_contract_instances() -> (
     .await;
     let wallet = wallets.pop().unwrap();
 
-    let test_igp_id = Contract::deploy(
+    let test_igp_id = Contract::load_from(
         "../interchain-gas-paymaster-test/out/debug/interchain-gas-paymaster-test.bin",
-        &wallet,
-        DeployConfiguration::default().set_storage_configuration(StorageConfiguration::new(
-            "../interchain-gas-paymaster-test/out/debug/interchain-gas-paymaster-test-storage_slots.json".to_string(),
-            vec![],
-        )),
+        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
+            "../interchain-gas-paymaster-test/out/debug/interchain-gas-paymaster-test-storage_slots.json",
+        ).unwrap()),
     )
+    .unwrap()
+    .deploy(&wallet, TxParameters::default())
     .await
     .unwrap();
 
@@ -64,16 +64,14 @@ async fn get_contract_instances() -> (
 
     let overhead_igp_configurables =
         OverheadIgpConfigurables::default().set_INNER_IGP_ID(Bits256(test_igp_id.hash().into()));
-    let overhead_igp_id = Contract::deploy(
+    let overhead_igp_id = Contract::load_from(
         "./out/debug/overhead-igp.bin",
-        &wallet,
-        DeployConfiguration::default()
-            .set_storage_configuration(StorageConfiguration::new(
-                "./out/debug/overhead-igp-storage_slots.json".to_string(),
-                vec![],
-            ))
-            .set_configurables(overhead_igp_configurables),
+        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
+            "./out/debug/overhead-igp-storage_slots.json",
+        ).unwrap()).set_configurables(overhead_igp_configurables),
     )
+    .unwrap()
+    .deploy(&wallet, TxParameters::default())
     .await
     .unwrap();
 
@@ -152,7 +150,7 @@ async fn test_pay_for_gas() {
     // Check that the inner IGP was called with the correct parameters
     let events = test_igp
         .log_decoder()
-        .get_logs_with_type::<test_igp_contract::PayForGasCalled>(&call.receipts)
+        .decode_logs_with_type::<test_igp_contract::PayForGasCalled>(&call.receipts)
         .unwrap();
     assert_eq!(
         events,
@@ -167,7 +165,7 @@ async fn test_pay_for_gas() {
     // Also confirm the payment is what's expected
     let events = test_igp
         .log_decoder()
-        .get_logs_with_type::<test_igp_contract::GasPaymentEvent>(&call.receipts)
+        .decode_logs_with_type::<test_igp_contract::GasPaymentEvent>(&call.receipts)
         .unwrap();
     assert_eq!(
         events,
@@ -198,7 +196,7 @@ async fn test_quote_gas_payment() {
     // Check that the inner IGP was called with the correct parameters
     let events = test_igp
         .log_decoder()
-        .get_logs_with_type::<test_igp_contract::QuoteGasPaymentCalled>(&call.receipts)
+        .decode_logs_with_type::<test_igp_contract::QuoteGasPaymentCalled>(&call.receipts)
         .unwrap();
     assert_eq!(
         events,
@@ -250,7 +248,7 @@ async fn test_set_destination_gas_overheads() {
     }
 
     let events = call
-        .get_logs_with_type::<DestinationGasOverheadSetEvent>()
+        .decode_logs_with_type::<DestinationGasOverheadSetEvent>()
         .unwrap();
     assert_eq!(
         events,
