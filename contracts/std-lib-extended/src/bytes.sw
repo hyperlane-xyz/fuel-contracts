@@ -336,10 +336,10 @@ impl Bytes {
     /// Returns the byte index after the end of the U256.
     pub fn write_u256(ref mut self, offset: u64, value: U256) -> u64 {
         // self.write_packed_bytes(offset, value.packed_bytes(), U64_BYTE_COUNT)
-        let mut offset = self.write_u64(offset, value.d);
-        offset = self.write_u64(offset, value.c);
+        let mut offset = self.write_u64(offset, value.a);
         offset = self.write_u64(offset, value.b);
-        offset = self.write_u64(offset, value.a);
+        offset = self.write_u64(offset, value.c);
+        offset = self.write_u64(offset, value.d);
         offset
     }
 
@@ -347,10 +347,10 @@ impl Bytes {
     /// Reverts if it violates the bounds of self.
     pub fn read_u256(self, offset: u64) -> U256 {
         U256 {
-            d: self.read_u64(offset),
-            c: self.read_u64(offset + 8),
-            b: self.read_u64(offset + 16),
-            a: self.read_u64(offset + 24),
+            a: self.read_u64(offset),
+            b: self.read_u64(offset + 8),
+            c: self.read_u64(offset + 16),
+            d: self.read_u64(offset + 24),
         }
     }
 }
