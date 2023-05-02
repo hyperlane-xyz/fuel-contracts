@@ -17,7 +17,7 @@ use std::{
 
 use std_lib_extended::{option::*, result::*, u256::*};
 
-use ownership::{data_structures::State, only_owner, owner, set_ownership, transfer_ownership};
+use ownership::{data_structures::State, *};
 
 use hyperlane_interfaces::{
     igp::{
@@ -42,6 +42,7 @@ const BASE_ASSET_DECIMALS: u8 = 9;
 const INITIAL_BENEFICIARY = Identity::Address(Address::from(0x6b63804cfbf9856e68e5b6e7aef238dc8311ec55bec04df774003a2c96e0418e));
 
 storage {
+    ownership: Ownership = Ownership::uninitialized(),
     gas_oracles: StorageMap<u32, b256> = StorageMap {},
     beneficiary: Identity = INITIAL_BENEFICIARY,
 }
@@ -114,24 +115,24 @@ impl Claimable for Contract {
     /// Gets the current beneficiary.
     #[storage(read)]
     fn beneficiary() -> Identity {
-        storage.beneficiary
+        storage.beneficiary.read()
     }
 
     /// Sets the beneficiary to `beneficiary`. Only callable by the owner.
     #[storage(read, write)]
     fn set_beneficiary(beneficiary: Identity) {
-        only_owner();
+        storage.ownership.only_owner();
 
-        storage.beneficiary = beneficiary;
+        storage.beneficiary.write(beneficiary);
         log(BeneficiarySetEvent { beneficiary });
     }
 
     /// Sends all base asset funds to the beneficiary. Callable by anyone.
     #[storage(read)]
     fn claim() {
-        let beneficiary = storage.beneficiary;
+        let beneficiary = storage.beneficiary.read();
         let balance = this_balance(BASE_ASSET_ID);
-        transfer(balance, BASE_ASSET_ID, storage.beneficiary);
+        transfer(balance, BASE_ASSET_ID, beneficiary);
 
         log(ClaimEvent {
             beneficiary,
@@ -144,21 +145,21 @@ impl Ownable for Contract {
     /// Gets the current owner.
     #[storage(read)]
     fn owner() -> State {
-        owner()
+        storage.ownership.owner()
     }
 
     /// Transfers ownership to `new_owner`.
     /// Reverts if the msg_sender is not the current owner.
     #[storage(read, write)]
     fn transfer_ownership(new_owner: Identity) {
-        transfer_ownership(new_owner);
+        storage.ownership.transfer_ownership(new_owner);
     }
 
     /// Initializes ownership to `new_owner`.
     /// Reverts if owner already initialized.
     #[storage(read, write)]
     fn set_ownership(new_owner: Identity) {
-        set_ownership(new_owner);
+        storage.ownership.set_ownership(new_owner);
     }
 }
 
@@ -166,7 +167,7 @@ impl OnChainFeeQuoting for Contract {
     /// Sets the gas oracle for a given domain.
     #[storage(read, write)]
     fn set_gas_oracle(domain: u32, gas_oracle: b256) {
-        only_owner();
+        storage.ownership.only_owner();
 
         storage.gas_oracles.insert(domain, gas_oracle);
         log(GasOracleSetEvent {
@@ -178,7 +179,7 @@ impl OnChainFeeQuoting for Contract {
     /// Gets the gas oracle for a given domain.
     #[storage(read)]
     fn gas_oracle(domain: u32) -> Option<b256> {
-        storage.gas_oracles.get(domain)
+        storage.gas_oracles.get(domain).try_read()
     }
 }
 
@@ -187,7 +188,7 @@ impl OnChainFeeQuoting for Contract {
 /// Reverts if no gas oracle is set.
 #[storage(read)]
 fn get_remote_gas_data(destination_domain: u32) -> RemoteGasData {
-    let gas_oracle_id = storage.gas_oracles.get(destination_domain).expect("no gas oracle set for destination domain");
+    let gas_oracle_id = storage.gas_oracles.get(destination_domain).try_read().expect("no gas oracle set for destination domain");
 
     let gas_oracle = abi(GasOracle, gas_oracle_id);
     gas_oracle.get_remote_gas_data(destination_domain)

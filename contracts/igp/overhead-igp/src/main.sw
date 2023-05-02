@@ -6,7 +6,7 @@ use std::{call_frames::msg_asset_id, constants::ZERO_B256, context::msg_amount};
 
 use hyperlane_interfaces::{igp::InterchainGasPaymaster, ownable::Ownable};
 
-use ownership::{data_structures::State, only_owner, owner, set_ownership, transfer_ownership};
+use ownership::{data_structures::State, *};
 
 use interface::{DestinationGasOverheadSetEvent, GasOverheadConfig, OverheadIgp};
 
@@ -16,6 +16,7 @@ configurable {
 }
 
 storage {
+    ownership: Ownership = Ownership::uninitialized(),
     /// Destination domain -> gas overhead.
     destination_gas_overheads: StorageMap<u32, u64> = StorageMap {},
 }
@@ -28,7 +29,7 @@ impl OverheadIgp for Contract {
     /// Sets the gas overheads for destination domains.
     #[storage(read, write)]
     fn set_destination_gas_overheads(configs: Vec<GasOverheadConfig>) {
-        only_owner();
+        storage.ownership.only_owner();
 
         let count = configs.len();
         let mut i = 0;
@@ -86,26 +87,26 @@ impl Ownable for Contract {
     /// Gets the current owner.
     #[storage(read)]
     fn owner() -> State {
-        owner()
+        storage.ownership.owner()
     }
 
     /// Transfers ownership to `new_owner`.
     /// Reverts if the msg_sender is not the current owner.
     #[storage(read, write)]
     fn transfer_ownership(new_owner: Identity) {
-        transfer_ownership(new_owner);
+        storage.ownership.transfer_ownership(new_owner);
     }
 
     /// Initializes ownership to `new_owner`.
     /// Reverts if owner already initialized.
     #[storage(read, write)]
     fn set_ownership(new_owner: Identity) {
-        set_ownership(new_owner);
+        storage.ownership.set_ownership(new_owner);
     }
 }
 
 /// Gets the gas overhead for a domain, or 0 if none is set.
 #[storage(read)]
 fn destination_gas_overhead(domain: u32) -> u64 {
-    storage.destination_gas_overheads.get(domain).unwrap_or(0)
+    storage.destination_gas_overheads.get(domain).try_read().unwrap_or(0)
 }

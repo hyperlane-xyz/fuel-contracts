@@ -1,6 +1,6 @@
 [[package]]
 name = 'core'
-source = 'path+from-root-91563E0DA237BDEC'
+source = 'path+from-root-1AA1C8235B783A81'
 
 [[package]]
 name = 'hyperlane-ism-test'
@@ -18,7 +18,7 @@ dependencies = [
     'hyperlane_interfaces',
     'hyperlane_message',
     'merkle',
-    'ownership',
+    'ownership path+from-root-7908E40C5BBA5E4E',
     'pause',
     'reentrancy',
     'std',
@@ -48,7 +48,7 @@ name = 'hyperlane_interfaces'
 source = 'member'
 dependencies = [
     'hyperlane_message',
-    'ownership',
+    'ownership path+from-root-7908E40C5BBA5E4E',
     'std',
 ]
 
@@ -65,7 +65,7 @@ name = 'interchain-gas-paymaster'
 source = 'member'
 dependencies = [
     'hyperlane_interfaces',
-    'ownership',
+    'ownership path+from-root-7908E40C5BBA5E4E',
     'std',
     'std_lib_extended',
 ]
@@ -107,7 +107,7 @@ dependencies = [
     'hyperlane_message',
     'merkle',
     'multisig_ism_metadata',
-    'ownership',
+    'ownership path+from-root-7908E40C5BBA5E4E',
     'std',
     'std_lib_extended',
     'storagemapvec',
@@ -126,9 +126,14 @@ name = 'overhead-igp'
 source = 'member'
 dependencies = [
     'hyperlane_interfaces',
-    'ownership',
+    'ownership path+from-root-7908E40C5BBA5E4E',
     'std',
 ]
+
+[[package]]
+name = 'ownership'
+source = 'git+https://github.com/fuellabs/sway-libs?rev#5eab914a245600c9fb453b7715b92acb8015417a'
+dependencies = ['std']
 
 [[package]]
 name = 'ownership'
@@ -155,7 +160,7 @@ dependencies = ['std']
 
 [[package]]
 name = 'std'
-source = 'git+https://github.com/fuellabs/sway?tag=v0.37.1#83e5479462ed2883591669a42552606ac25f0a04'
+source = 'git+https://github.com/fuellabs/sway?tag=v0.38.0#2d16d70ab9d5ab0de0255941048f811b6d07c6b1'
 dependencies = ['core']
 
 [[package]]
@@ -168,7 +173,7 @@ name = 'storage-gas-oracle'
 source = 'member'
 dependencies = [
     'hyperlane_interfaces',
-    'ownership',
+    'ownership git+https://github.com/fuellabs/sway-libs?rev#5eab914a245600c9fb453b7715b92acb8015417a',
     'std',
 ]
 

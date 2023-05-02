@@ -4,8 +4,8 @@ use std::{auth::msg_sender, bytes::Bytes, call_frames::contract_id, logging::log
 
 use std_lib_extended::bytes::*;
 
-use merkle::StorageMerkleTree;
-use ownership::{data_structures::State, only_owner, owner, set_ownership, transfer_ownership};
+use merkle::*;
+use ownership::{data_structures::State, *};
 use pause::{interface::Pausable, is_paused, pause, require_unpaused, unpause};
 use reentrancy::reentrancy_guard;
 
@@ -38,6 +38,7 @@ configurable {
 }
 
 storage {
+    ownership: Ownership = Ownership::uninitialized(),
     /// A merkle tree that includes outbound message IDs as leaves.
     merkle_tree: StorageMerkleTree = StorageMerkleTree {},
     delivered: StorageMap<b256, bool> = StorageMap {},
@@ -80,15 +81,15 @@ impl Mailbox for Contract {
 
     #[storage(read, write)]
     fn set_default_ism(module: ContractId) {
-        only_owner();
-        storage.default_ism = module;
+        storage.ownership.only_owner();
+        storage.default_ism.write(module);
 
         log(DefaultIsmSetEvent { module });
     }
 
     #[storage(read)]
     fn get_default_ism() -> ContractId {
-        storage.default_ism
+        storage.default_ism.read()
     }
 
     #[storage(read)]
@@ -119,7 +120,7 @@ impl Mailbox for Contract {
         let msg_recipient = abi(MessageRecipient, recipient);
         let mut ism_id = msg_recipient.interchain_security_module();
         if (ism_id == ZERO_ID) {
-            ism_id = storage.default_ism;
+            ism_id = storage.default_ism.read();
         }
 
         let ism = abi(InterchainSecurityModule, ism_id.into());
@@ -164,21 +165,21 @@ impl Ownable for Contract {
     /// Gets the current owner.
     #[storage(read)]
     fn owner() -> State {
-        owner()
+        storage.ownership.owner()
     }
 
     /// Transfers ownership to `new_owner`.
     /// Reverts if the msg_sender is not the current owner.
     #[storage(read, write)]
     fn transfer_ownership(new_owner: Identity) {
-        transfer_ownership(new_owner);
+        storage.ownership.transfer_ownership(new_owner);
     }
 
     /// Initializes ownership to `new_owner`.
     /// Reverts if owner already initialized.
     #[storage(read, write)]
     fn set_ownership(new_owner: Identity) {
-        set_ownership(new_owner);
+        storage.ownership.set_ownership(new_owner);
     }
 }
 
@@ -193,7 +194,7 @@ impl Pausable for Contract {
     /// Reverts if the msg_sender is not the current owner.
     #[storage(read, write)]
     fn pause() {
-        only_owner();
+        storage.ownership.only_owner();
         pause()
     }
 
@@ -201,7 +202,7 @@ impl Pausable for Contract {
     /// Reverts if the msg_sender is not the current owner.
     #[storage(read, write)]
     fn unpause() {
-        only_owner();
+        storage.ownership.only_owner();
         unpause()
     }
 }
@@ -222,7 +223,7 @@ fn root() -> b256 {
 
 #[storage(read)]
 fn delivered(message_id: b256) -> bool {
-    storage.delivered.get(message_id).unwrap_or(false)
+    storage.delivered.get(message_id).try_read().unwrap_or(false)
 }
 
 /// Gets the b256 representation of the msg_sender.

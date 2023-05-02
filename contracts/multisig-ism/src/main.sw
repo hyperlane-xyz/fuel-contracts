@@ -6,6 +6,10 @@ use std::{
     bytes::Bytes,
     constants::ZERO_B256,
     logging::log,
+    storage::{
+        storage_map::*,
+        storage_vec::*,
+    },
     vm::evm::{
         ecr::ec_recover_evm_address,
         evm_address::EvmAddress,
@@ -22,7 +26,7 @@ use interface::MultisigIsm;
 
 use hyperlane_interfaces::{InterchainSecurityModule, ModuleType, ownable::Ownable};
 
-use ownership::{data_structures::State, only_owner, owner, set_ownership, transfer_ownership};
+use ownership::{data_structures::State, *};
 
 use multisig_ism_metadata::MultisigMetadata;
 
@@ -31,7 +35,8 @@ use std_lib_extended::{option::*, result::*};
 /// See https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/isms/MultisigIsm.sol
 /// for the reference implementation.
 storage {
-    validators: StorageMapVec<u32, EvmAddress> = StorageMapVec {},
+    ownership: Ownership = Ownership::uninitialized(),
+    validators: StorageMap<u32, StorageVec<EvmAddress>> = StorageMap {},
     threshold: StorageMap<u32, u8> = StorageMap {},
 }
 
@@ -39,11 +44,11 @@ storage {
 /// Currently O(n) but could be O(1) with a set data structure
 #[storage(read)]
 fn index_of(domain: u32, validator: EvmAddress) -> Option<u32> {
-    let validators = storage.validators.to_vec(domain);
+    let validators = storage.validators.get(domain);
     let mut i: u32 = 0;
     let len = validators.len();
     while i < len {
-        if validators.get(i).unwrap() == validator {
+        if validators.get(i).unwrap().read() == validator {
             return Option::Some(i);
         }
         i += 1;
@@ -54,7 +59,7 @@ fn index_of(domain: u32, validator: EvmAddress) -> Option<u32> {
 /// Returns true if the validator is on the multisig for the domain
 #[storage(read)]
 fn is_enrolled(domain: u32, validator: EvmAddress) -> bool {
-    let len = storage.validators.len(domain);
+    let len = storage.validators.get(domain).len();
     return index_of(domain, validator).is_some();
 }
 
@@ -75,7 +80,7 @@ pub fn verify_validator_signatures(
 
     let digest = metadata.checkpoint_digest(origin);
 
-    let validators = storage.validators.to_vec(origin);
+    let validators = storage.validators.get(origin);
     let validator_count = validators.len();
 
     let mut validator_index = 0;
@@ -88,7 +93,7 @@ pub fn verify_validator_signatures(
         let signer = ec_recover_evm_address(signature, digest).expect("validator signature recovery failed");
 
         // Loop through remaining validators until we find a match
-        while validator_index < validator_count && signer != validators.get(validator_index).unwrap() {
+        while validator_index < validator_count && signer != validators.get(validator_index).unwrap().read() {
             validator_index += 1;
         }
 
@@ -107,25 +112,33 @@ pub fn verify_validator_signatures(
 fn enroll_validator(domain: u32, validator: EvmAddress) {
     require(validator != EvmAddress::from(ZERO_B256), "zero address");
     require(!is_enrolled(domain, validator), "enrolled");
-    storage.validators.push(domain, validator);
+    storage.validators.get(domain).push(validator);
 }
 
 /// Sets the threshold for the domain. Must be less than or equal to the number of validators.
 #[storage(read, write)]
 fn set_threshold(domain: u32, threshold: u8) {
-    require(threshold > 0 && threshold <= storage.validators.len(domain), "!range");
+    require(threshold > 0 && threshold <= storage.validators.get(domain).len(), "!range");
     storage.threshold.insert(domain, threshold);
 }
 
 #[storage(read)]
 fn threshold(domain: u32) -> u8 {
-    storage.threshold.get(domain).unwrap()
+    storage.threshold.get(domain).read()
 }
 
 /// Returns the validator set enrolled for the domain.
 #[storage(read)]
 fn validators(domain: u32) -> Vec<EvmAddress> {
-    return storage.validators.to_vec(domain);
+    let stored_validators = storage.validators.get(domain);
+    let stored_validator_count = stored_validators.len();
+    let mut validators: Vec<EvmAddress> = Vec::with_capacity(stored_validator_count);
+    let mut i: u64 = 0;
+    while i < stored_validator_count {
+        validators.push(stored_validators.get(i).unwrap().read());
+        i += 1;
+    }
+    return validators;
 }
 
 impl InterchainSecurityModule for Contract {
@@ -175,7 +188,7 @@ impl MultisigIsm for Contract {
     /// Must be less than or equal to the number of validators.
     #[storage(read, write)]
     fn set_threshold(domain: u32, threshold: u8) {
-        only_owner();
+        storage.ownership.only_owner();
         set_threshold(domain, threshold);
     }
 
@@ -183,14 +196,14 @@ impl MultisigIsm for Contract {
     /// Must not already be enrolled.
     #[storage(read, write)]
     fn enroll_validator(domain: u32, validator: EvmAddress) {
-        only_owner();
+        storage.ownership.only_owner();
         enroll_validator(domain, validator);
     }
 
     /// Batches validator enrollment for a list of domains.
     #[storage(read, write)]
     fn enroll_validators(domains: Vec<u32>, validators: Vec<Vec<EvmAddress>>) {
-        only_owner();
+        storage.ownership.only_owner();
         let domain_len = domains.len();
         require(domain_len == validators.len(), "!length");
 
@@ -213,7 +226,7 @@ impl MultisigIsm for Contract {
     /// Batches threshold setting for a list of domains.
     #[storage(read, write)]
     fn set_thresholds(domains: Vec<u32>, thresholds: Vec<u8>) {
-        only_owner();
+        storage.ownership.only_owner();
         let domain_len = domains.len();
         require(domain_len == thresholds.len(), "!length");
 
@@ -227,10 +240,10 @@ impl MultisigIsm for Contract {
     /// Unenrolls a validator for the domain (and updates commitment).
     #[storage(read, write)]
     fn unenroll_validator(domain: u32, validator: EvmAddress) {
-        only_owner();
+        storage.ownership.only_owner();
         let index = index_of(domain, validator);
         require(index.is_some(), "!enrolled");
-        let removed = storage.validators.swap_remove(domain, index.unwrap());
+        let removed = storage.validators.get(domain).swap_remove(index.unwrap());
         assert(removed == validator);
     }
 }
@@ -239,20 +252,20 @@ impl Ownable for Contract {
     /// Gets the current owner.
     #[storage(read)]
     fn owner() -> State {
-        owner()
+        storage.ownership.owner()
     }
 
     /// Transfers ownership to `new_owner`.
     /// Reverts if the msg_sender is not the current owner.
     #[storage(read, write)]
     fn transfer_ownership(new_owner: Identity) {
-        transfer_ownership(new_owner);
+        storage.ownership.transfer_ownership(new_owner);
     }
 
     /// Initializes ownership to `new_owner`.
     /// Reverts if owner already initialized.
     #[storage(read, write)]
     fn set_ownership(new_owner: Identity) {
-        set_ownership(new_owner);
+        storage.ownership.set_ownership(new_owner);
     }
 }

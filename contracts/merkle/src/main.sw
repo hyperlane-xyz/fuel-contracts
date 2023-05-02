@@ -1,6 +1,6 @@
 library;
 
-use std::{constants::ZERO_B256, hash::{keccak256, sha256}, storage::{get, store}};
+use std::{constants::ZERO_B256, hash::{keccak256, sha256}, storage::{storage_api::*, storage_key::*}};
 
 // The depth of the merkle tree.
 // Forc has a bug that thinks this is unused when it's only used
@@ -70,40 +70,40 @@ pub struct StorageMerkleTree {}
 // As a workaround, helper fns are defined in a separate impl
 // above the call sites.
 // See https://fuellabs.github.io/sway/v0.31.1/reference/known_issues_and_workarounds.html#known-issues
-impl StorageMerkleTree {
+impl StorageKey<StorageMerkleTree> {
     // Gets the storage key of an element in `branch`.
-    fn get_branch_storage_key(index: u64) -> b256 {
-        sha256((index, __get_storage_key()))
+    fn get_branch_storage_key(self, index: u64) -> b256 {
+        sha256((index, self.slot))
     }
 }
 
-impl StorageMerkleTree {
+impl StorageKey<StorageMerkleTree> {
     // Reads an element of `branch` from storage.
     #[storage(read)]
     pub fn get_branch(self, index: u64) -> b256 {
-        get(StorageMerkleTree::get_branch_storage_key(index)).unwrap_or(ZERO_B256)
+        read(self.get_branch_storage_key(index), 0).unwrap_or(ZERO_B256)
     }
 
     // Writes an element of `branch` into storage.
     #[storage(write)]
     fn store_branch(self, index: u64, value: b256) {
-        store(StorageMerkleTree::get_branch_storage_key(index), value)
+        write(self.get_branch_storage_key(index), 0, value)
     }
 
     // Reads the `count` from storage.
     #[storage(read)]
     pub fn get_count(self) -> u64 {
-        get(__get_storage_key()).unwrap_or(0)
+        read(self.slot, self.offset).unwrap_or(0)
     }
 
     // Writes the `count` into storage.
     #[storage(write)]
     fn store_count(self, count: u64) {
-        store(__get_storage_key(), count)
+        write(self.slot, self.offset, count)
     }
 }
 
-impl StorageMerkleTree {
+impl StorageKey<StorageMerkleTree> {
     // Inserts `leaf` into the tree.
     // Reverts if the merkle tree is full.
     #[storage(read, write)]
@@ -154,6 +154,9 @@ impl StorageMerkleTree {
         current
     }
 
+}
+
+impl StorageMerkleTree {
     // Calculates and returns the root calculated from a provided `leaf`,
     // `branch`, and the leaf's `index`.
     pub fn branch_root(leaf: b256, branch: [b256; 32], index: u64) -> b256 {
