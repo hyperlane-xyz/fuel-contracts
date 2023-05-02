@@ -16,7 +16,7 @@ abi TestISM {
 impl TestISM for Contract {
     #[storage(write)]
     fn set_accept(accept: bool) {
-        storage.accept = accept;
+        storage.accept.write(accept);
     }
 }
 
@@ -24,9 +24,9 @@ impl InterchainSecurityModule for Contract {
     #[storage(read, write)]
     fn verify(metadata: Bytes, message: Bytes) -> bool {
         // To ignore a compiler warning that no storage writes are made.
-        storage.accept = storage.accept;
+        storage.accept.write(storage.accept.read());
 
-        return storage.accept;
+        return storage.accept.read();
     }
 
     #[storage(read)]

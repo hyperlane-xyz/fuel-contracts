@@ -31,14 +31,17 @@ async fn get_contract_instance() -> (TestMultisigIsmMetadata<WalletUnlocked>, Co
     .await;
     let wallet = wallets.pop().unwrap();
 
-    let id = Contract::deploy(
+    let id = Contract::load_from(
         "./out/debug/multisig-ism-metadata-test.bin",
-        &wallet,
-        DeployConfiguration::default().set_storage_configuration(StorageConfiguration::new(
-            "./out/debug/multisig-ism-metadata-test-storage_slots.json".to_string(),
-            vec![],
-        )),
+        LoadConfiguration::default().set_storage_configuration(
+            StorageConfiguration::load_from(
+                "./out/debug/multisig-ism-metadata-test-storage_slots.json",
+            )
+            .unwrap(),
+        ),
     )
+    .unwrap()
+    .deploy(&wallet, TxParameters::default())
     .await
     .unwrap();
 

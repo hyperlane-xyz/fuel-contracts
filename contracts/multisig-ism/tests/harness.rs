@@ -57,14 +57,14 @@ async fn get_contract_instance() -> (MultisigIsm<WalletUnlocked>, ContractId, Wa
     .await;
     let wallet = wallets.pop().unwrap();
 
-    let id = Contract::deploy(
+    let id = Contract::load_from(
         "./out/debug/multisig_ism.bin",
-        &wallet,
-        DeployConfiguration::default().set_storage_configuration(StorageConfiguration::new(
-            "./out/debug/multisig_ism-storage_slots.json".to_string(),
-            vec![],
-        )),
+        LoadConfiguration::default().set_storage_configuration(
+            StorageConfiguration::load_from("./out/debug/multisig_ism-storage_slots.json").unwrap(),
+        ),
     )
+    .unwrap()
+    .deploy(&wallet, TxParameters::default())
     .await
     .unwrap();
 
@@ -86,16 +86,19 @@ async fn deploy_mailbox(wallet: WalletUnlocked) -> Mailbox<WalletUnlocked> {
     let mailbox_configurables =
         mailbox_contract::MailboxConfigurables::new().set_LOCAL_DOMAIN(TEST_LOCAL_DOMAIN);
 
-    let mailbox_id = Contract::deploy(
+    let mailbox_id = Contract::load_from(
         "../hyperlane-mailbox/out/debug/hyperlane-mailbox.bin",
-        &wallet,
-        DeployConfiguration::default()
-            .set_storage_configuration(StorageConfiguration::new(
-                "../hyperlane-mailbox/out/debug/hyperlane-mailbox-storage_slots.json".to_string(),
-                vec![],
-            ))
+        LoadConfiguration::default()
+            .set_storage_configuration(
+                StorageConfiguration::load_from(
+                    "../hyperlane-mailbox/out/debug/hyperlane-mailbox-storage_slots.json",
+                )
+                .unwrap(),
+            )
             .set_configurables(mailbox_configurables),
     )
+    .unwrap()
+    .deploy(&wallet, TxParameters::default())
     .await
     .unwrap();
 

@@ -62,16 +62,17 @@ async fn get_contract_instance() -> (Mailbox<WalletUnlocked>, Bech32ContractId, 
     let mailbox_configurables =
         mailbox_contract::MailboxConfigurables::new().set_LOCAL_DOMAIN(TEST_LOCAL_DOMAIN);
 
-    let mailbox_id = Contract::deploy(
+    let mailbox_id = Contract::load_from(
         "./out/debug/hyperlane-mailbox.bin",
-        &wallet,
-        DeployConfiguration::default()
-            .set_storage_configuration(StorageConfiguration::new(
-                "./out/debug/hyperlane-mailbox-storage_slots.json".to_string(),
-                vec![],
-            ))
+        LoadConfiguration::default()
+            .set_storage_configuration(
+                StorageConfiguration::load_from("./out/debug/hyperlane-mailbox-storage_slots.json")
+                    .unwrap(),
+            )
             .set_configurables(mailbox_configurables),
     )
+    .unwrap()
+    .deploy(&wallet, TxParameters::default())
     .await
     .unwrap();
 
@@ -86,26 +87,28 @@ async fn get_contract_instance() -> (Mailbox<WalletUnlocked>, Bech32ContractId, 
         .await
         .unwrap();
 
-    let ism_id = Contract::deploy(
+    let ism_id = Contract::load_from(
         "../hyperlane-ism-test/out/debug/hyperlane-ism-test.bin",
-        &wallet,
-        DeployConfiguration::default().set_storage_configuration(StorageConfiguration::new(
-            "../hyperlane-ism-test/out/debug/hyperlane-ism-test-storage_slots.json".to_string(),
-            vec![],
-        )),
+        LoadConfiguration::default().set_storage_configuration(
+            StorageConfiguration::load_from(
+                "../hyperlane-ism-test/out/debug/hyperlane-ism-test-storage_slots.json",
+            )
+            .unwrap(),
+        ),
     )
+    .unwrap()
+    .deploy(&wallet, TxParameters::default())
     .await
     .unwrap();
 
-    let msg_recipient_id = Contract::deploy(
+    let msg_recipient_id = Contract::load_from(
         "../hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test.bin",
-        &wallet,
-        DeployConfiguration::default()
-        .set_storage_configuration(
-        StorageConfiguration::new(
-            "../hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test-storage_slots.json".to_string(),
-            vec![])),
+        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
+            "../hyperlane-msg-recipient-test/out/debug/hyperlane-msg-recipient-test-storage_slots.json",
+        ).unwrap()),
     )
+    .unwrap()
+    .deploy(&wallet, TxParameters::default())
     .await
     .unwrap();
 
@@ -209,7 +212,7 @@ async fn test_dispatch_logs_message() {
 
     // Also make sure the DispatchIdEvent was logged
     let events = dispatch_call
-        .get_logs_with_type::<DispatchIdEvent>()
+        .decode_logs_with_type::<DispatchIdEvent>()
         .unwrap();
     assert_eq!(
         events,
@@ -344,7 +347,9 @@ async fn test_process_id() {
         .unwrap();
 
     // Also make sure the ProcessEvent was logged
-    let events = process_call.get_logs_with_type::<ProcessEvent>().unwrap();
+    let events = process_call
+        .decode_logs_with_type::<ProcessEvent>()
+        .unwrap();
     assert_eq!(
         events,
         vec![ProcessEvent {
@@ -582,7 +587,7 @@ async fn test_set_default_ism() {
         .unwrap();
     // Ensure the event was logged
     assert_eq!(
-        call.get_logs_with_type::<DefaultIsmSetEvent>().unwrap(),
+        call.decode_logs_with_type::<DefaultIsmSetEvent>().unwrap(),
         vec![DefaultIsmSetEvent {
             module: new_default_ism,
         }]

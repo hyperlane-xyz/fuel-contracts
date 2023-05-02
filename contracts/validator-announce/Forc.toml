@@ -6,4 +6,3 @@ name = "validator-announce"
 
 [dependencies]
 std_lib_extended = { path = "../std-lib-extended" }
-storagemapvec = { git = "https://github.com/FuelLabs/sway-libs", tag = "v0.8.0" }

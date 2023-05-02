@@ -28,22 +28,19 @@ storage {
 impl MessageRecipient for Contract {
     #[storage(read, write)]
     fn handle(origin: u32, sender: b256, message_body: Bytes) {
-        // To ignore a compiler warning that no storage reads are made.
-        let _ = storage.module;
-
-        storage.handled = true;
+        storage.handled.write(true);
     }
 
     #[storage(read)]
     fn interchain_security_module() -> ContractId {
-        storage.module
+        storage.module.read()
     }
 }
 
 impl TestMessageRecipient for Contract {
     #[storage(read)]
     fn handled() -> bool {
-        storage.handled
+        storage.handled.read()
     }
 
     fn dispatch(

@@ -1,6 +1,12 @@
 library;
 
-use std::{b512::B512, bytes::Bytes, constants::ZERO_B256, vm::evm::evm_address::EvmAddress};
+use std::{
+    b512::B512,
+    bytes::Bytes,
+    constants::ZERO_B256,
+    u256::U256,
+    vm::evm::evm_address::EvmAddress,
+};
 use ::mem::CopyTypeWrapper;
 
 /// The number of bytes in a b256.
@@ -126,7 +132,7 @@ impl Bytes {
         offset: u64,
         bytes_ptr: raw_ptr,
         byte_count: u64,
-    ) -> u64 {
+) -> u64 {
         let new_byte_offset = offset + byte_count;
         // Ensure that the written bytes will stay within the correct bounds.
         assert(new_byte_offset <= self.len);
@@ -329,6 +335,30 @@ impl Bytes {
         assert(offset == _self.len);
         _self
     }
+
+    // ===== U256 ====
+    /// Writes a U256 at the specified offset. Reverts if it violates the
+    /// bounds of self.
+    /// Returns the byte index after the end of the U256.
+    pub fn write_u256(ref mut self, offset: u64, value: U256) -> u64 {
+        // self.write_packed_bytes(offset, value.packed_bytes(), U64_BYTE_COUNT)
+        let mut offset = self.write_u64(offset, value.a);
+        offset = self.write_u64(offset, value.b);
+        offset = self.write_u64(offset, value.c);
+        offset = self.write_u64(offset, value.d);
+        offset
+    }
+
+    /// Reads a U256 at the specified offset.
+    /// Reverts if it violates the bounds of self.
+    pub fn read_u256(self, offset: u64) -> U256 {
+        U256 {
+            a: self.read_u64(offset),
+            b: self.read_u64(offset + 8),
+            c: self.read_u64(offset + 16),
+            d: self.read_u64(offset + 24),
+        }
+    }
 }
 
 /// Bytes::from_vec_u8 requires a mutable Vec<u8> to be passed in.
@@ -424,6 +454,26 @@ fn test_write_and_read_b512() {
 
     // 50 byte offset - tests non-word-aligned case and overwriting existing bytes
     assert(value == write_and_read_b512(bytes, 50u64, value));
+}
+
+fn write_and_read_u256(ref mut bytes: Bytes, offset: u64, value: U256) -> U256 {
+    let _ = bytes.write_u256(offset, value);
+    bytes.read_u256(offset)
+}
+
+#[test()]
+fn test_write_and_read_u256() {
+    let mut bytes = Bytes::with_length(64);
+    let value = U256::from((1, 2, 3, 4));
+
+    // 0 byte offset
+    assert(value == write_and_read_u256(bytes, 0u64, value));
+
+    // 32 byte offset - tests word-aligned case and writing to the end of the Bytes
+    assert(value == write_and_read_u256(bytes, 32u64, value));
+
+    // 18 byte offset - tests non-word-aligned case and overwriting existing bytes
+    assert(value == write_and_read_u256(bytes, 18u64, value));
 }
 
 fn write_and_read_u64(ref mut bytes: Bytes, offset: u64, value: u64) -> u64 {
@@ -544,7 +594,6 @@ fn test_write_and_read_str() {
     let mut bytes = Bytes::with_length(64);
 
     let value = "\x19Ethereum Signed Message:\n";
-    let value_len = 30u64;
 
     assert(std::hash::sha256(value) == std::hash::sha256(write_and_read_str(bytes, 0u64, value)));
 }

@@ -3,7 +3,7 @@ library;
 mod interface;
 mod r#storage;
 
-use std::{logging::log, storage::{get, store}};
+use std::{logging::log, storage::storage_api::{read, write}};
 
 use interface::{PausedEvent, UnpausedEvent};
 use storage::PAUSED_STORAGE_KEY;
@@ -16,7 +16,7 @@ pub fn require_unpaused() {
 /// Returns whether the contract is paused.
 #[storage(read)]
 pub fn is_paused() -> bool {
-    get(PAUSED_STORAGE_KEY).unwrap_or(false)
+    read(PAUSED_STORAGE_KEY, 0).unwrap_or(false)
 }
 
 /// Sets the contract to paused.
@@ -24,7 +24,7 @@ pub fn is_paused() -> bool {
 #[storage(read, write)]
 pub fn pause() {
     require(!is_paused(), "contract is already paused");
-    store(PAUSED_STORAGE_KEY, true);
+    write(PAUSED_STORAGE_KEY, 0, true);
     log(PausedEvent {})
 }
 
@@ -33,6 +33,6 @@ pub fn pause() {
 #[storage(read, write)]
 pub fn unpause() {
     require(is_paused(), "contract is not paused");
-    store(PAUSED_STORAGE_KEY, false);
+    write(PAUSED_STORAGE_KEY, 0, false);
     log(UnpausedEvent {})
 }

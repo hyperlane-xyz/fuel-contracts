@@ -57,16 +57,19 @@ async fn get_contract_instance() -> (ValidatorAnnounce<WalletUnlocked>, Contract
         .set_LOCAL_DOMAIN(TEST_LOCAL_DOMAIN)
         .set_MAILBOX_ID(Bits256::from_hex_str(TEST_MAILBOX_ID).unwrap());
 
-    let id = Contract::deploy(
+    let id = Contract::load_from(
         "./out/debug/validator-announce.bin",
-        &wallet,
-        DeployConfiguration::default()
-            .set_storage_configuration(StorageConfiguration::new(
-                "./out/debug/validator-announce-storage_slots.json".to_string(),
-                vec![],
-            ))
+        LoadConfiguration::default()
+            .set_storage_configuration(
+                StorageConfiguration::load_from(
+                    "./out/debug/validator-announce-storage_slots.json",
+                )
+                .unwrap(),
+            )
             .set_configurables(configurables),
     )
+    .unwrap()
+    .deploy(&wallet, TxParameters::default())
     .await
     .unwrap();
 
@@ -119,7 +122,7 @@ async fn test_announce() {
         .unwrap();
 
     let events = call
-        .get_logs_with_type::<ValidatorAnnouncementEvent>()
+        .decode_logs_with_type::<ValidatorAnnouncementEvent>()
         .unwrap();
     assert_eq!(
         events,

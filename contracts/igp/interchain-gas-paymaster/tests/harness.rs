@@ -113,16 +113,20 @@ async fn get_contract_instances() -> (
     .await;
     let wallet = wallets.pop().unwrap();
 
-    let igp_id = Contract::deploy(
+    let igp_id = Contract::load_from(
         "./out/debug/interchain-gas-paymaster.bin",
-        &wallet,
-        DeployConfiguration::default().set_storage_configuration(StorageConfiguration::new(
-            "./out/debug/interchain-gas-paymaster-storage_slots.json".to_string(),
-            vec![],
-        )),
+        LoadConfiguration::default().set_storage_configuration(
+            StorageConfiguration::load_from(
+                "./out/debug/interchain-gas-paymaster-storage_slots.json",
+            )
+            .unwrap(),
+        ),
     )
+    .unwrap()
+    .deploy(&wallet, TxParameters::default())
     .await
     .unwrap();
+
     let igp = InterchainGasPaymaster::new(igp_id, wallet.clone());
 
     let owner_identity = Identity::Address(wallet.address().into());
@@ -133,14 +137,17 @@ async fn get_contract_instances() -> (
         .await
         .unwrap();
 
-    let storage_gas_oracle_id = Contract::deploy(
+    let storage_gas_oracle_id = Contract::load_from(
         "../storage-gas-oracle/out/debug/storage-gas-oracle.bin",
-        &wallet,
-        DeployConfiguration::default().set_storage_configuration(StorageConfiguration::new(
-            "../storage-gas-oracle/out/debug/storage-gas-oracle-storage_slots.json".to_string(),
-            vec![],
-        )),
+        LoadConfiguration::default().set_storage_configuration(
+            StorageConfiguration::load_from(
+                "../storage-gas-oracle/out/debug/storage-gas-oracle-storage_slots.json",
+            )
+            .unwrap(),
+        ),
     )
+    .unwrap()
+    .deploy(&wallet, TxParameters::default())
     .await
     .unwrap();
     let storage_gas_oracle = StorageGasOracle::new(storage_gas_oracle_id.clone(), wallet);
@@ -281,7 +288,7 @@ async fn test_pay_for_gas() {
     );
 
     // And that the transaction logged the GasPaymentEvent
-    let events = call.get_logs_with_type::<GasPaymentEvent>().unwrap();
+    let events = call.decode_logs_with_type::<GasPaymentEvent>().unwrap();
     assert_eq!(
         events,
         vec![GasPaymentEvent {
@@ -584,7 +591,7 @@ async fn test_set_gas_oracle() {
         .call()
         .await
         .unwrap();
-    let events = call.get_logs_with_type::<GasOracleSetEvent>().unwrap();
+    let events = call.decode_logs_with_type::<GasOracleSetEvent>().unwrap();
     assert_eq!(
         events,
         vec![GasOracleSetEvent {
@@ -642,7 +649,7 @@ async fn test_set_beneficiary() {
         .await
         .unwrap();
 
-    let events = call.get_logs_with_type::<BeneficiarySetEvent>().unwrap();
+    let events = call.decode_logs_with_type::<BeneficiarySetEvent>().unwrap();
     assert_eq!(
         events,
         vec![BeneficiarySetEvent {
@@ -716,7 +723,7 @@ async fn test_claim() {
         .await
         .unwrap();
 
-    let events = call.get_logs_with_type::<ClaimEvent>().unwrap();
+    let events = call.decode_logs_with_type::<ClaimEvent>().unwrap();
     assert_eq!(
         events,
         vec![ClaimEvent {

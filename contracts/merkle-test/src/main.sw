@@ -1,6 +1,6 @@
 contract;
 
-use merkle::StorageMerkleTree;
+use merkle::*;
 
 // A contract to test the StorageMerkleTree.
 abi TestStorageMerkleTree {
