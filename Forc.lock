@@ -110,7 +110,6 @@ dependencies = [
     'ownership',
     'std',
     'std_lib_extended',
-    'storagemapvec',
 ]
 
 [[package]]
@@ -173,15 +172,9 @@ dependencies = [
 ]
 
 [[package]]
-name = 'storagemapvec'
-source = 'git+https://github.com/fuellabs/sway-libs?tag=v0.9.0#01cb23bfc13be2a95c81dec17933f84991337ac9'
-dependencies = ['std']
-
-[[package]]
 name = 'validator-announce'
 source = 'member'
 dependencies = [
     'std',
     'std_lib_extended',
-    'storagemapvec',
 ]

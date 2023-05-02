@@ -15,8 +15,6 @@ use std::{
     },
 };
 
-use storagemapvec::StorageMapVec;
-
 use digest::{get_announcement_digest, get_replay_id};
 use interface::{ValidatorAnnounce, ValidatorAnnouncementEvent};
 use storable_string::{MAX_STORABLE_STRING_CHARS, StorableString};

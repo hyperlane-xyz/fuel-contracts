@@ -16,8 +16,6 @@ use std::{
     },
 };
 
-use storagemapvec::StorageMapVec;
-
 use hyperlane_message::{EncodedMessage, Message};
 
 use merkle::StorageMerkleTree;
