@@ -1,8 +1,7 @@
 library;
 
 use std::{
-    b
-512::B512,
+    b512::B512,
     bytes::Bytes,
     constants::ZERO_B256,
     hash::keccak256,
