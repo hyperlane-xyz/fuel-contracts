@@ -18,7 +18,7 @@ dependencies = [
     'hyperlane_interfaces',
     'hyperlane_message',
     'merkle',
-    'ownership path+from-root-7908E40C5BBA5E4E',
+    'ownership',
     'pause',
     'reentrancy',
     'std',
@@ -48,7 +48,7 @@ name = 'hyperlane_interfaces'
 source = 'member'
 dependencies = [
     'hyperlane_message',
-    'ownership path+from-root-7908E40C5BBA5E4E',
+    'ownership',
     'std',
 ]
 
@@ -65,7 +65,7 @@ name = 'interchain-gas-paymaster'
 source = 'member'
 dependencies = [
     'hyperlane_interfaces',
-    'ownership path+from-root-7908E40C5BBA5E4E',
+    'ownership',
     'std',
     'std_lib_extended',
 ]
@@ -107,7 +107,7 @@ dependencies = [
     'hyperlane_message',
     'merkle',
     'multisig_ism_metadata',
-    'ownership path+from-root-7908E40C5BBA5E4E',
+    'ownership',
     'std',
     'std_lib_extended',
     'storagemapvec',
@@ -126,18 +126,13 @@ name = 'overhead-igp'
 source = 'member'
 dependencies = [
     'hyperlane_interfaces',
-    'ownership path+from-root-7908E40C5BBA5E4E',
+    'ownership',
     'std',
 ]
 
 [[package]]
 name = 'ownership'
-source = 'git+https://github.com/fuellabs/sway-libs?rev#5eab914a245600c9fb453b7715b92acb8015417a'
-dependencies = ['std']
-
-[[package]]
-name = 'ownership'
-source = 'path+from-root-7908E40C5BBA5E4E'
+source = 'git+https://github.com/fuellabs/sway-libs?tag=v0.9.0#01cb23bfc13be2a95c81dec17933f84991337ac9'
 dependencies = ['std']
 
 [[package]]
@@ -155,7 +150,7 @@ dependencies = [
 
 [[package]]
 name = 'reentrancy'
-source = 'path+from-root-D26B060B9C691B9B'
+source = 'git+https://github.com/fuellabs/sway-libs?tag=v0.9.0#01cb23bfc13be2a95c81dec17933f84991337ac9'
 dependencies = ['std']
 
 [[package]]
@@ -173,13 +168,13 @@ name = 'storage-gas-oracle'
 source = 'member'
 dependencies = [
     'hyperlane_interfaces',
-    'ownership git+https://github.com/fuellabs/sway-libs?rev#5eab914a245600c9fb453b7715b92acb8015417a',
+    'ownership',
     'std',
 ]
 
 [[package]]
 name = 'storagemapvec'
-source = 'path+from-root-BFB7C317AD2BC5A8'
+source = 'git+https://github.com/fuellabs/sway-libs?tag=v0.9.0#01cb23bfc13be2a95c81dec17933f84991337ac9'
 dependencies = ['std']
 
 [[package]]
