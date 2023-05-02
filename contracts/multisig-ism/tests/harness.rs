@@ -59,9 +59,9 @@ async fn get_contract_instance() -> (MultisigIsm<WalletUnlocked>, ContractId, Wa
 
     let id = Contract::load_from(
         "./out/debug/multisig_ism.bin",
-        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
-            "./out/debug/multisig_ism-storage_slots.json"
-        ).unwrap()),
+        LoadConfiguration::default().set_storage_configuration(
+            StorageConfiguration::load_from("./out/debug/multisig_ism-storage_slots.json").unwrap(),
+        ),
     )
     .unwrap()
     .deploy(&wallet, TxParameters::default())
@@ -88,9 +88,14 @@ async fn deploy_mailbox(wallet: WalletUnlocked) -> Mailbox<WalletUnlocked> {
 
     let mailbox_id = Contract::load_from(
         "../hyperlane-mailbox/out/debug/hyperlane-mailbox.bin",
-        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
-            "../hyperlane-mailbox/out/debug/hyperlane-mailbox-storage_slots.json"
-        ).unwrap()).set_configurables(mailbox_configurables),
+        LoadConfiguration::default()
+            .set_storage_configuration(
+                StorageConfiguration::load_from(
+                    "../hyperlane-mailbox/out/debug/hyperlane-mailbox-storage_slots.json",
+                )
+                .unwrap(),
+            )
+            .set_configurables(mailbox_configurables),
     )
     .unwrap()
     .deploy(&wallet, TxParameters::default())

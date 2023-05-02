@@ -26,9 +26,9 @@ async fn get_contract_instance() -> (TestStorageMerkleTree<WalletUnlocked>, Cont
 
     let id = Contract::load_from(
         "./out/debug/merkle-test.bin",
-        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
-            "./out/debug/merkle-test-storage_slots.json",
-        ).unwrap()),
+        LoadConfiguration::default().set_storage_configuration(
+            StorageConfiguration::load_from("./out/debug/merkle-test-storage_slots.json").unwrap(),
+        ),
     )
     .unwrap()
     .deploy(&wallet, TxParameters::default())

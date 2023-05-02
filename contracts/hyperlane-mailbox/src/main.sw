@@ -5,7 +5,7 @@ use std::{auth::msg_sender, bytes::Bytes, call_frames::contract_id, logging::log
 use std_lib_extended::bytes::*;
 
 use merkle::*;
-use ownership::{data_structures::State, *};
+use ownership::{*, data_structures::State};
 use pause::{interface::Pausable, is_paused, pause, require_unpaused, unpause};
 use reentrancy::reentrancy_guard;
 

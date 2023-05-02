@@ -1,6 +1,16 @@
 library;
 
-use std::{constants::ZERO_B256, hash::{keccak256, sha256}, storage::{storage_api::*, storage_key::*}};
+use std::{
+    constants::ZERO_B256,
+    hash::{
+        keccak256,
+        sha256,
+    },
+    storage::{
+        storage_api::*,
+        storage_key::*,
+    },
+};
 
 // The depth of the merkle tree.
 // Forc has a bug that thinks this is unused when it's only used
@@ -153,7 +163,6 @@ impl StorageKey<StorageMerkleTree> {
 
         current
     }
-
 }
 
 impl StorageMerkleTree {

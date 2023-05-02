@@ -1,6 +1,12 @@
 library;
 
-use std::{b512::B512, bytes::Bytes, constants::ZERO_B256, u256::U256, vm::evm::evm_address::EvmAddress};
+use std::{
+    b512::B512,
+    bytes::Bytes,
+    constants::ZERO_B256,
+    u256::U256,
+    vm::evm::evm_address::EvmAddress,
+};
 use ::mem::CopyTypeWrapper;
 
 /// The number of bytes in a b256.
@@ -126,7 +132,7 @@ impl Bytes {
         offset: u64,
         bytes_ptr: raw_ptr,
         byte_count: u64,
-    ) -> u64 {
+) -> u64 {
         let new_byte_offset = offset + byte_count;
         // Ensure that the written bytes will stay within the correct bounds.
         assert(new_byte_offset <= self.len);
@@ -459,7 +465,7 @@ fn write_and_read_u256(ref mut bytes: Bytes, offset: u64, value: U256) -> U256 {
 fn test_write_and_read_u256() {
     let mut bytes = Bytes::with_length(64);
     let value = U256::from((1, 2, 3, 4));
-    
+
     // 0 byte offset
     assert(value == write_and_read_u256(bytes, 0u64, value));
 

@@ -6,7 +6,7 @@ use std::{call_frames::msg_asset_id, constants::ZERO_B256, context::msg_amount};
 
 use hyperlane_interfaces::{igp::InterchainGasPaymaster, ownable::Ownable};
 
-use ownership::{data_structures::State, *};
+use ownership::{*, data_structures::State};
 
 use interface::{DestinationGasOverheadSetEvent, GasOverheadConfig, OverheadIgp};
 

@@ -33,9 +33,12 @@ async fn get_contract_instance() -> (TestMultisigIsmMetadata<WalletUnlocked>, Co
 
     let id = Contract::load_from(
         "./out/debug/multisig-ism-metadata-test.bin",
-        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
-            "./out/debug/multisig-ism-metadata-test-storage_slots.json"
-        ).unwrap()),
+        LoadConfiguration::default().set_storage_configuration(
+            StorageConfiguration::load_from(
+                "./out/debug/multisig-ism-metadata-test-storage_slots.json",
+            )
+            .unwrap(),
+        ),
     )
     .unwrap()
     .deploy(&wallet, TxParameters::default())

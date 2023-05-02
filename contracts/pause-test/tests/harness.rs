@@ -23,9 +23,9 @@ async fn get_contract_instance() -> (PauseTest<WalletUnlocked>, ContractId) {
 
     let id = Contract::load_from(
         "./out/debug/pause-test.bin",
-        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
-            "./out/debug/pause-test-storage_slots.json",
-        ).unwrap()),
+        LoadConfiguration::default().set_storage_configuration(
+            StorageConfiguration::load_from("./out/debug/pause-test-storage_slots.json").unwrap(),
+        ),
     )
     .unwrap()
     .deploy(&wallet, TxParameters::default())

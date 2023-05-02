@@ -64,9 +64,12 @@ async fn get_contract_instance() -> (Mailbox<WalletUnlocked>, Bech32ContractId, 
 
     let mailbox_id = Contract::load_from(
         "./out/debug/hyperlane-mailbox.bin",
-        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
-            "./out/debug/hyperlane-mailbox-storage_slots.json",
-        ).unwrap()).set_configurables(mailbox_configurables),
+        LoadConfiguration::default()
+            .set_storage_configuration(
+                StorageConfiguration::load_from("./out/debug/hyperlane-mailbox-storage_slots.json")
+                    .unwrap(),
+            )
+            .set_configurables(mailbox_configurables),
     )
     .unwrap()
     .deploy(&wallet, TxParameters::default())
@@ -86,9 +89,12 @@ async fn get_contract_instance() -> (Mailbox<WalletUnlocked>, Bech32ContractId, 
 
     let ism_id = Contract::load_from(
         "../hyperlane-ism-test/out/debug/hyperlane-ism-test.bin",
-        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
-            "../hyperlane-ism-test/out/debug/hyperlane-ism-test-storage_slots.json",
-        ).unwrap()),
+        LoadConfiguration::default().set_storage_configuration(
+            StorageConfiguration::load_from(
+                "../hyperlane-ism-test/out/debug/hyperlane-ism-test-storage_slots.json",
+            )
+            .unwrap(),
+        ),
     )
     .unwrap()
     .deploy(&wallet, TxParameters::default())
@@ -341,7 +347,9 @@ async fn test_process_id() {
         .unwrap();
 
     // Also make sure the ProcessEvent was logged
-    let events = process_call.decode_logs_with_type::<ProcessEvent>().unwrap();
+    let events = process_call
+        .decode_logs_with_type::<ProcessEvent>()
+        .unwrap();
     assert_eq!(
         events,
         vec![ProcessEvent {

@@ -7,8 +7,8 @@ mod interface;
 use std::{
     b512::B512,
     bytes::Bytes,
-    storage::storage_vec::*,
     storage::storage_map::*,
+    storage::storage_vec::*,
     vm::evm::{
         ecr::ec_recover_evm_address,
         evm_address::EvmAddress,
@@ -148,7 +148,8 @@ impl ValidatorAnnounce for Contract {
 /// Idemptotent.
 #[storage(read, write)]
 fn upsert_validator(validator: EvmAddress) {
-    if storage.validators_map.get(validator).try_read().is_none() {
+    if storage.validators_map.get(validator).try_read().is_none()
+    {
         storage.validators_vec.push(validator);
     }
     storage.validators_map.insert(validator, true);

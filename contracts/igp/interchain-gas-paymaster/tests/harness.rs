@@ -115,15 +115,17 @@ async fn get_contract_instances() -> (
 
     let igp_id = Contract::load_from(
         "./out/debug/interchain-gas-paymaster.bin",
-        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
-            "./out/debug/interchain-gas-paymaster-storage_slots.json",
-        ).unwrap()),
+        LoadConfiguration::default().set_storage_configuration(
+            StorageConfiguration::load_from(
+                "./out/debug/interchain-gas-paymaster-storage_slots.json",
+            )
+            .unwrap(),
+        ),
     )
     .unwrap()
     .deploy(&wallet, TxParameters::default())
     .await
     .unwrap();
-
 
     let igp = InterchainGasPaymaster::new(igp_id, wallet.clone());
 
@@ -137,9 +139,12 @@ async fn get_contract_instances() -> (
 
     let storage_gas_oracle_id = Contract::load_from(
         "../storage-gas-oracle/out/debug/storage-gas-oracle.bin",
-        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
-            "../storage-gas-oracle/out/debug/storage-gas-oracle-storage_slots.json",
-        ).unwrap()),
+        LoadConfiguration::default().set_storage_configuration(
+            StorageConfiguration::load_from(
+                "../storage-gas-oracle/out/debug/storage-gas-oracle-storage_slots.json",
+            )
+            .unwrap(),
+        ),
     )
     .unwrap()
     .deploy(&wallet, TxParameters::default())

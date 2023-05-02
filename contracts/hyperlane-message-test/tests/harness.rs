@@ -30,9 +30,12 @@ async fn get_contract_instance() -> (TestMessage<WalletUnlocked>, ContractId) {
 
     let id = Contract::load_from(
         "./out/debug/hyperlane-message-test.bin",
-        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
-            "./out/debug/hyperlane-message-test-storage_slots.json",
-        ).unwrap()),
+        LoadConfiguration::default().set_storage_configuration(
+            StorageConfiguration::load_from(
+                "./out/debug/hyperlane-message-test-storage_slots.json",
+            )
+            .unwrap(),
+        ),
     )
     .unwrap()
     .deploy(&wallet, TxParameters::default())

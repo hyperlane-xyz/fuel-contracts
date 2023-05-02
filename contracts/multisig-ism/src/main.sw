@@ -26,7 +26,7 @@ use interface::MultisigIsm;
 
 use hyperlane_interfaces::{InterchainSecurityModule, ModuleType, ownable::Ownable};
 
-use ownership::{data_structures::State, *};
+use ownership::{*, data_structures::State};
 
 use multisig_ism_metadata::MultisigMetadata;
 

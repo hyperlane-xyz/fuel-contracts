@@ -38,9 +38,10 @@ async fn get_contract_instance() -> (StorageGasOracle<WalletUnlocked>, ContractI
 
     let id = Contract::load_from(
         "./out/debug/storage-gas-oracle.bin",
-        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
-            "./out/debug/storage-gas-oracle-storage_slots.json"
-        ).unwrap()),
+        LoadConfiguration::default().set_storage_configuration(
+            StorageConfiguration::load_from("./out/debug/storage-gas-oracle-storage_slots.json")
+                .unwrap(),
+        ),
     )
     .unwrap()
     .deploy(&wallet, TxParameters::default())
@@ -96,7 +97,9 @@ async fn test_set_remote_gas_data_configs_and_get_remote_gas_data() {
         .unwrap();
 
     // Events all correctly logged
-    let events = call.decode_logs_with_type::<RemoteGasDataSetEvent>().unwrap();
+    let events = call
+        .decode_logs_with_type::<RemoteGasDataSetEvent>()
+        .unwrap();
     assert_eq!(
         events,
         configs

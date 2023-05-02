@@ -66,9 +66,12 @@ async fn get_contract_instances() -> (
         OverheadIgpConfigurables::default().set_INNER_IGP_ID(Bits256(test_igp_id.hash().into()));
     let overhead_igp_id = Contract::load_from(
         "./out/debug/overhead-igp.bin",
-        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
-            "./out/debug/overhead-igp-storage_slots.json",
-        ).unwrap()).set_configurables(overhead_igp_configurables),
+        LoadConfiguration::default()
+            .set_storage_configuration(
+                StorageConfiguration::load_from("./out/debug/overhead-igp-storage_slots.json")
+                    .unwrap(),
+            )
+            .set_configurables(overhead_igp_configurables),
     )
     .unwrap()
     .deploy(&wallet, TxParameters::default())

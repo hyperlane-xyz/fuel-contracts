@@ -17,7 +17,7 @@ use std::{
 
 use std_lib_extended::{option::*, result::*, u256::*};
 
-use ownership::{data_structures::State, *};
+use ownership::{*, data_structures::State};
 
 use hyperlane_interfaces::{
     igp::{

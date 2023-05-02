@@ -59,9 +59,14 @@ async fn get_contract_instance() -> (ValidatorAnnounce<WalletUnlocked>, Contract
 
     let id = Contract::load_from(
         "./out/debug/validator-announce.bin",
-        LoadConfiguration::default().set_storage_configuration(StorageConfiguration::load_from(
-            "./out/debug/validator-announce-storage_slots.json"
-        ).unwrap()).set_configurables(configurables),
+        LoadConfiguration::default()
+            .set_storage_configuration(
+                StorageConfiguration::load_from(
+                    "./out/debug/validator-announce-storage_slots.json",
+                )
+                .unwrap(),
+            )
+            .set_configurables(configurables),
     )
     .unwrap()
     .deploy(&wallet, TxParameters::default())
