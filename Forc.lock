@@ -1,6 +1,6 @@
 [[package]]
 name = 'core'
-source = 'path+from-root-1AA1C8235B783A81'
+source = 'path+from-root-9BFE6D5D0CBDF740'
 
 [[package]]
 name = 'hyperlane-ism-test'
@@ -131,7 +131,7 @@ dependencies = [
 
 [[package]]
 name = 'ownership'
-source = 'git+https://github.com/fuellabs/sway-libs?tag=v0.9.0#01cb23bfc13be2a95c81dec17933f84991337ac9'
+source = 'git+https://github.com/fuellabs/sway-libs?tag=v0.12.0#063f118a3104adb6a04207ca877993b5ad03a492'
 dependencies = ['std']
 
 [[package]]
@@ -149,12 +149,12 @@ dependencies = [
 
 [[package]]
 name = 'reentrancy'
-source = 'git+https://github.com/fuellabs/sway-libs?tag=v0.9.0#01cb23bfc13be2a95c81dec17933f84991337ac9'
+source = 'git+https://github.com/fuellabs/sway-libs?tag=v0.12.0#063f118a3104adb6a04207ca877993b5ad03a492'
 dependencies = ['std']
 
 [[package]]
 name = 'std'
-source = 'git+https://github.com/fuellabs/sway?tag=v0.38.0#2d16d70ab9d5ab0de0255941048f811b6d07c6b1'
+source = 'git+https://github.com/fuellabs/sway?tag=v0.42.1#3b66f8e424bd21e3ba467783b10b36e808cfa6ee'
 dependencies = ['core']
 
 [[package]]

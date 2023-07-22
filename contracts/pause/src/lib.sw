@@ -1,6 +1,6 @@
 library;
 
-mod interface;
+pub mod interface;
 mod r#storage;
 
 use std::{logging::log, storage::storage_api::{read, write}};

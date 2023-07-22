@@ -31,7 +31,7 @@ impl Power for U256 {
         if exp == one {
             // Manually clone `self`. Otherwise, we may have a `MemoryOverflow`
             // issue with code that looks like: `x = x.pow(other)`
-            return U256::from(self.into());
+            return U256::from(self.as_u128().expect("u256 -> u128 conversion failed"));
         }
 
         while exp & one == zero {
