@@ -365,23 +365,23 @@ impl Bytes {
 /// Certain situations, like when a Vec is a parameter to a public abi function,
 /// the Vec cannot be mutable. So instead we provide a non-mutable way to convert
 /// from Vec<u8> to Bytes.
-impl From<Vec<u8>> for Bytes {
-    fn from(vec: Vec<u8>) -> Self {
-        let vec_len = vec.len();
-        let mut bytes = Bytes::with_length(vec_len);
-        let mut i = 0;
-        while i < vec_len {
-            bytes.set(i, vec.get(i).unwrap());
-            i += 1;
-        }
-        bytes
-    }
+// impl From<Vec<u8>> for Bytes {
+//     fn from(vec: Vec<u8>) -> Self {
+//         let vec_len = vec.len();
+//         let mut bytes = Bytes::with_length(vec_len);
+//         let mut i = 0;
+//         while i < vec_len {
+//             bytes.set(i, vec.get(i).unwrap());
+//             i += 1;
+//         }
+//         bytes
+//     }
 
-    fn into(self) -> Vec<u8> {
-        require(false, "Bytes -> Vec<u8> not implemented");
-        Vec::new()
-    }
-}
+//     fn into(self) -> Vec<u8> {
+//         require(false, "Bytes -> Vec<u8> not implemented");
+//         Vec::new()
+//     }
+// }
 
 // ==================================================
 // =====                                        =====
